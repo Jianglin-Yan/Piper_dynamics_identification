@@ -1,0 +1,4 @@
+# Raw identification runs are large (~17 MB for 60 s at 500 Hz) and fully
+# reproducible from the excitation seed, so they are not tracked.
+results/raw_data*.npz
+results/*.npy
