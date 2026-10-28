@@ -9,8 +9,14 @@ class Controller:
         self.start=self.home.copy() if cfg['start_deg'] is None else np.deg2rad(cfg['start_deg'])
         self.lower=np.deg2rad(cfg['lower_deg'])+np.deg2rad(cfg['margin_deg'])
         self.upper=np.deg2rad(cfg['upper_deg'])-np.deg2rad(cfg['margin_deg'])
-        if np.any(self.home<self.lower) or np.any(self.home>self.upper):
-            raise ValueError('Startup pose outside safety interior; no automatic clipping/zeroing. Inspect pose and restart.')
+        outside=(self.home<self.lower)|(self.home>self.upper)
+        if np.any(outside):
+            raw_lower=np.deg2rad(cfg['lower_deg']);raw_upper=np.deg2rad(cfg['upper_deg'])
+            details=[]
+            for j in np.flatnonzero(outside):
+                kind='反馈超出配置范围' if self.home[j]<raw_lower[j] or self.home[j]>raw_upper[j] else '仅未满足程序余量'
+                details.append(f'J{j+1}={np.rad2deg(self.home[j]):.3f}°, 配置 [{cfg["lower_deg"][j]}, {cfg["upper_deg"][j]}]°, 程序内部区间 [{np.rad2deg(self.lower[j]):.1f}, {np.rad2deg(self.upper[j]):.1f}]°（{kind}）')
+            raise ValueError('启动检查器拒绝；这不等于固件已报机械超限：'+'；'.join(details)+'。保持原始读数，不自动钳位或改零位。')
         self.vmax=cfg['max_velocity_rad_s'];self.amax=cfg['max_acceleration_rad_s2']
         self.test=Excitation(self.start,cfg['joint']-1,np.deg2rad(cfg['amplitude_deg']),cfg['frequency_hz'],cfg['duration_s'],cfg['ramp_s'])
         self.outbound=transit(self.home,self.start,self.vmax,self.amax)

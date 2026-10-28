@@ -2,7 +2,7 @@
   "channel": "can0",
   "firmware_prefix": "S-V1.7-3",
   "model": "piper_x",
-  "model_confirmed": false,
+  "model_confirmed": true,
   "workspace_checked": false,
   "collision_policy_reviewed": false,
   "joint": 6,
