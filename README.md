@@ -1,5 +1,7 @@
 # 机械臂动力学参数辨识（Piper / MuJoCo）
 
+> 实机测试分支：新增 [G8 手柄单轴试采与独立仿真](real_robot/README.md)。从仓库根目录执行 `bash real_robot/pilot.sh pad` 检查手柄，或 `bash real_robot/pilot.sh sim` 预览动作。下文仍为原始仿真辨识说明。
+
 对 `agx_piper_grasp_sim` 里 6 自由度 Piper 机械臂做**刚体动力学参数辨识**：
 不用真机、不用标定板，只靠仿真器输出的关节量测，恢复每个连杆的
 **质量、质心位置、惯性张量**，并给出独立的验证结果。

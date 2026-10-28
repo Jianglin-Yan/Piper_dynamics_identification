@@ -1,0 +1,136 @@
+"""python -m real_robot.run --sim / --hardware / --read-only / --calibrate-pad"""
+import argparse, datetime, json, signal, time
+from pathlib import Path
+import numpy as np
+from .controller import Controller
+from .gamepad import Gamepad, calibrate
+
+BASE=Path(__file__).parent
+
+def serializable(x):
+    if isinstance(x,np.ndarray):return x.tolist()
+    if isinstance(x,np.generic):return x.item()
+    raise TypeError(type(x).__name__)
+
+def validate_config(c):
+    for key in ('lower_deg','upper_deg','simulation_initial_deg','max_current_feedback_A'):
+        if len(c[key])!=6 or not np.all(np.isfinite(c[key])):raise ValueError('Invalid '+key)
+    if np.any(np.array(c['max_current_feedback_A'])<=0):raise ValueError('Current thresholds must be positive')
+    if np.any(np.array(c['lower_deg'])+2*c['margin_deg']>=np.array(c['upper_deg'])):raise ValueError('Empty joint safety interval')
+    if c['start_deg'] is not None and (len(c['start_deg'])!=6 or not np.all(np.isfinite(c['start_deg']))):raise ValueError('Invalid start_deg')
+    for key in ('amplitude_deg','frequency_hz','duration_s','ramp_s','margin_deg','max_velocity_rad_s','max_acceleration_rad_s2','tracking_error_deg','settle_error_deg','settle_velocity_rad_s','settle_timeout_s','feedback_timeout_s','status_timeout_s','loop_watchdog_s','max_temperature_C','command_hz'):
+        if not np.isfinite(c[key]) or c[key]<=0:raise ValueError('Invalid '+key)
+    if type(c['joint']) is not int or c['joint'] not in range(1,7):raise ValueError('joint must be 1..6')
+    if c['model']!='piper_x':raise ValueError('Only nominal piper_x preview bundled; confirm actual model first')
+    if c['command_hz']!=100:raise ValueError('First pilot profile uses 100 Hz commands')
+    if c['max_velocity_rad_s']>.2 or c['max_acceleration_rad_s2']>.3 or c['amplitude_deg']>5 or c['frequency_hz']>.3:
+        raise ValueError('Outside small single-joint pilot profile')
+    if not 1<=c['move_speed_percent']<=20:raise ValueError('Pilot move speed percentage must be 1..20')
+    if c['duration_s']>120 or c['duration_s']<2*c['ramp_s']:raise ValueError('Invalid trial duration')
+
+def main():
+    ap=argparse.ArgumentParser(description=__doc__)
+    mode=ap.add_mutually_exclusive_group(required=True)
+    for flag in ('sim','hardware','read-only','calibrate-pad','monitor-pad'):mode.add_argument('--'+flag,action='store_true')
+    ap.add_argument('--config',type=Path,default=BASE/'config.json');ap.add_argument('--pad',type=Path,default=BASE/'g8.json')
+    ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort'],help='simulation only')
+    ap.add_argument('--output',type=Path,default=BASE.parent/'runs');ap.add_argument('--max-seconds',type=float,default=120)
+    a=ap.parse_args()
+    if a.scripted and not a.sim:ap.error('--scripted is simulation-only')
+    if not np.isfinite(a.max_seconds) or a.max_seconds<=0:ap.error('--max-seconds must be positive and finite')
+    if a.viewer and not a.sim:ap.error('--viewer is simulation-only')
+    if a.calibrate_pad:calibrate(a.pad);return
+    if a.monitor_pad:
+        pad=Gamepad(a.pad);print('只读手柄验证：LB+X / LB+Y / LB+RB；不连接 CAN。',flush=True);end=time.monotonic()+a.max_seconds
+        try:
+            while time.monotonic()<end:
+                action=pad.poll(time.monotonic())
+                if action:print(action,flush=True)
+                time.sleep(.005)
+        except KeyboardInterrupt:
+            print('手柄监视已结束。',flush=True)
+        finally:pad.close()
+        return
+    cfg=json.loads(a.config.read_text());validate_config(cfg)
+    path=a.output/datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f');path.mkdir(parents=True)
+    (path/'config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
+    b=None;pad=None;viewer=None;ctrl=None;lease=None;result={'mode':'sim' if a.sim else 'read-only' if a.read_only else 'hardware','completed':False}
+    events=(path/'events.jsonl').open('w',buffering=1);samples=(path/'samples.jsonl').open('w',buffering=65536)
+    def emit(msg):
+        print(msg,flush=True);events.write(json.dumps({'t_monotonic_s':time.monotonic(),'message':msg},ensure_ascii=False)+'\n')
+    stop_requested=False
+    def stop(signum,frame):
+        nonlocal stop_requested
+        # Keyboard interrupt is not an unattended return command.
+        stop_requested=True
+    old_handlers={s:signal.signal(s,stop) for s in (signal.SIGINT,signal.SIGTERM)}
+    try:
+        if a.sim:
+            from .simulation import Simulation
+            b=Simulation(cfg);emit('SIMULATION：名义 X 模型，简化几何；未连接机械臂。仿真增益不是实机建议值。')
+        else:
+            from .hardware import Hardware
+            if a.hardware:
+                import fcntl, re
+                if not re.fullmatch(r'[A-Za-z0-9_-]+',cfg['channel']):raise ValueError('Invalid CAN channel name')
+                lease=open('/tmp/piper-pilot-'+cfg['channel']+'.lock','w')
+                fcntl.flock(lease,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            b=Hardware(cfg,path);info=b.discover();(path/'hardware.json').write_text(json.dumps(info,ensure_ascii=False,indent=2));emit('只读查询完成：'+str(info))
+            s=b.snapshot();b.check(s,False)
+            if a.read_only:
+                samples.write(json.dumps(s,default=serializable)+'\n');result.update(completed=True,state='READ_ONLY');return
+            b.preflight(info)
+            (path/'effective_config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
+        if not a.scripted:pad=Gamepad(a.pad)
+        if a.viewer:
+            if not a.sim:raise ValueError('viewer is for simulation only')
+            import mujoco.viewer
+            viewer=mujoco.viewer.launch_passive(b.model,b.data)
+            viewer.cam.distance=1.3;viewer.cam.lookat[:]=[0,0,.3];viewer.cam.azimuth=135;viewer.cam.elevation=-25
+        s=b.snapshot();now=0. if a.sim else time.monotonic();ctrl=Controller(b,cfg,s,now,emit)
+        result['home_rad']=ctrl.home.tolist();dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline
+        while ctrl.state not in ('DONE','FAULT'):
+            now=step*dt if a.sim else time.monotonic()
+            if stop_requested:ctrl.fault('SIGINT/SIGTERM: quick stop, no automatic return');break
+            if viewer and not viewer.is_running():ctrl.fault('Viewer closed');break
+            if time.monotonic()-start_wall>a.max_seconds:ctrl.fault('Session timeout');break
+            action=pad.poll(time.monotonic()) if pad else None
+            if a.scripted:
+                if step==10:action='PREPARE'
+                elif step==30:action='START'
+                elif a.scripted=='abort' and step==550:action='ABORT'
+            if action:emit('手柄指令：'+action)
+            if a.sim:b.advance(dt)
+            s=b.snapshot()
+            if not a.sim and time.monotonic()-last_wall>cfg['loop_watchdog_s']:ctrl.fault('Control loop late');break
+            last_wall=time.monotonic();ctrl.tick(now,s,action)
+            samples.write(json.dumps({'t_control':now,'state':ctrl.state,'action':action,'q_target':ctrl.last_target,'feedback':s},default=serializable)+'\n')
+            if viewer:
+                j=cfg['joint']-1
+                viewer.set_texts((None,None,'SIM ONLY | '+ctrl.state+'\nLB+X prepare | LB+Y start | LB+RB abort',f'J{j+1}: {np.rad2deg(s["q"][j]):.2f} deg\nTarget: {np.rad2deg(ctrl.last_target[j]):.2f} deg'))
+                viewer.sync()
+            step+=1
+            if not a.scripted:
+                deadline+=dt;remaining=deadline-time.monotonic()
+                if remaining>0:time.sleep(remaining)
+                else:deadline=time.monotonic()
+        result.update(completed=ctrl.state=='DONE',state=ctrl.state,aborted=ctrl.aborted,last_q=b.snapshot()['q'].tolist(),max_requested_velocity=cfg['max_velocity_rad_s'])
+    except Exception as e:
+        result['error']=str(e);emit('STOPPED：'+str(e))
+        if ctrl:ctrl.fault(e)
+        if b and b.active:b.quick_stop(str(e))
+        result['state']='FAULT' if ctrl else 'PREFLIGHT_REJECTED'
+    finally:
+        if viewer and ctrl and ctrl.state=='DONE':
+            emit('仿真已结束，窗口保持显示。关闭窗口即可退出。')
+            view_deadline=time.monotonic()+60
+            while viewer.is_running() and not stop_requested and time.monotonic()<view_deadline:
+                viewer.sync();time.sleep(.02)
+        if viewer:viewer.close()
+        if pad:pad.close()
+        if b:b.close()
+        if lease:lease.close()
+        for s,h in old_handlers.items():signal.signal(s,h)
+        samples.close();events.close();(path/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2));print('Run files:',path,flush=True)
+    if result.get('state') in ('FAULT','PREFLIGHT_REJECTED'):raise SystemExit(2)
+if __name__=='__main__':main()

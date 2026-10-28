@@ -1,0 +1,59 @@
+{
+  "channel": "can0",
+  "firmware_prefix": "S-V1.7-3",
+  "model": "piper_x",
+  "model_confirmed": false,
+  "workspace_checked": false,
+  "collision_policy_reviewed": false,
+  "joint": 6,
+  "amplitude_deg": 5.0,
+  "frequency_hz": 0.1,
+  "duration_s": 20.0,
+  "ramp_s": 5.0,
+  "start_deg": null,
+  "simulation_initial_deg": [
+    0,
+    45,
+    -60,
+    0,
+    20,
+    0
+  ],
+  "lower_deg": [
+    -150,
+    0,
+    -170,
+    -89,
+    -70,
+    -120
+  ],
+  "upper_deg": [
+    150,
+    180,
+    0,
+    89,
+    70,
+    120
+  ],
+  "margin_deg": 5.0,
+  "max_velocity_rad_s": 0.12,
+  "max_acceleration_rad_s2": 0.12,
+  "tracking_error_deg": 3.0,
+  "settle_error_deg": 0.5,
+  "settle_velocity_rad_s": 0.025,
+  "settle_timeout_s": 10.0,
+  "feedback_timeout_s": 0.1,
+  "status_timeout_s": 0.15,
+  "loop_watchdog_s": 0.2,
+  "max_current_feedback_A": [
+    2.0,
+    2.0,
+    2.0,
+    1.5,
+    1.5,
+    1.5
+  ],
+  "max_temperature_C": 65,
+  "move_speed_percent": 10,
+  "command_hz": 100
+}

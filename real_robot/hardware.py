@@ -1,0 +1,134 @@
+"""SocketCAN adapter for the observed V1.7-3 position interface. Never writes calibration or protection settings."""
+import copy, json, socket, struct, threading, time
+import numpy as np
+from .protocol_read import decode
+
+
+class Hardware:
+    def __init__(self,cfg,run_dir):
+        self.c=cfg;self.latest={};self.limits={};self.acc={};self.firmware=bytearray();self.error=None
+        self.rx_lock=threading.Lock();self.tx_lock=threading.Lock();self.stopped=False;self.active=False
+        self.heartbeat=time.monotonic();self.done=threading.Event();self.raw=(run_dir/'raw_can.jsonl').open('w',buffering=65536)
+        self.tx_log=(run_dir/'tx_can.jsonl').open('w',buffering=1)
+        self.sock=socket.socket(socket.AF_CAN,socket.SOCK_RAW,socket.CAN_RAW)
+        try:
+            self.sock.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,1024*1024)
+            self.sock.setsockopt(socket.SOL_SOCKET,40,1) # SO_RXQ_OVFL
+            self.sock.bind((cfg['channel'],));self.sock.settimeout(.02)
+            self.reader=threading.Thread(target=self._receive,daemon=True);self.reader.start()
+            self.guard=threading.Thread(target=self._watchdog,daemon=True);self.guard.start()
+        except Exception:self.sock.close();self.raw.close();self.tx_log.close();raise
+    def _receive(self):
+        try:
+            while not self.done.is_set():
+                try: raw,anc,flags,addr=self.sock.recvmsg(16,128)
+                except socket.timeout:continue
+                if len(raw)!=16:continue
+                cid,n,data=struct.unpack('=IB3x8s',raw);data=data[:n];now=time.monotonic()
+                for level,kind,value in anc:
+                    if level==socket.SOL_SOCKET and kind==40 and struct.unpack('I',value[:4])[0]:raise RuntimeError('CAN receive buffer dropped frames')
+                if cid&0x20000000:raise RuntimeError('CAN error frame')
+                self.raw.write(json.dumps({'t_monotonic_s':now,'t_host_unix_ns':time.time_ns(),'can_id':hex(cid),'data_hex':data.hex()})+'\n')
+                decoded=decode(cid,data)
+                with self.rx_lock:
+                    if decoded:self.latest[cid]={'time':now,**decoded}
+                    if cid==0x473 and decoded:self.limits[data[0]]={'time':now,**decoded}
+                    if cid==0x47c and decoded:self.acc[data[0]]={'time':now,**decoded}
+                    if cid==0x4af:self.firmware.extend(data)
+        except Exception as e:
+            if not self.done.is_set():self.error=str(e)
+    def _send_locked(self,cid,data):
+        if len(data)!=8:raise ValueError('CAN payload must be 8 bytes')
+        self.sock.send(struct.pack('=IB3x8s',cid,8,bytes(data)))
+        self.tx_log.write(json.dumps({'t_monotonic_s':time.monotonic(),'can_id':hex(cid),'data_hex':bytes(data).hex()})+'\n')
+    def query(self,cid,data):
+        allowed=(cid==0x4af and data==[1,0,0,0,0,0,0,0]) or (cid==0x472 and data[0] in range(1,7) and data[1] in (1,2) and data[2:]==[0]*6) or (cid==0x477 and data==[2,0,0,0,3,0,0,0])
+        if not allowed:raise ValueError('query not whitelisted')
+        with self.tx_lock:self._send_locked(cid,data)
+    def discover(self):
+        self.query(0x4af,[1,0,0,0,0,0,0,0]);time.sleep(.5)
+        for j in range(1,7):
+            for kind,store in ((1,self.limits),(2,self.acc)):
+                sent=time.monotonic();self.query(0x472,[j,kind,0,0,0,0,0,0]);deadline=sent+.5
+                while time.monotonic()<deadline:
+                    with self.rx_lock:reply=copy.deepcopy(store.get(j))
+                    if reply and reply['time']>=sent:break
+                    time.sleep(.005)
+                else:raise RuntimeError('No fresh limit reply for joint '+str(j))
+        sent=time.monotonic();self.query(0x477,[2,0,0,0,3,0,0,0]);time.sleep(.1)
+        with self.rx_lock:
+            result={'firmware':self.firmware.decode('ascii',errors='replace'),'limits':copy.deepcopy(self.limits),'acceleration_limits':copy.deepcopy(self.acc),'collision':copy.deepcopy(self.latest.get(0x47b))}
+        if not result['collision'] or result['collision']['time']<sent:raise RuntimeError('No fresh collision policy reply')
+        return result
+    def preflight(self,info):
+        if self.c['firmware_prefix']!='S-V1.7-3' or 'S-V1.7-3250618' not in info['firmware']:
+            raise ValueError('Firmware not the reviewed S-V1.7-3250618 profile; no guessed torque scaling')
+        if self.c['model_confirmed'] is not True or self.c['workspace_checked'] is not True:
+            raise ValueError('Confirm model and clear workspace in config after inspecting preview; no motion sent')
+        if any(x==0 for x in info['collision']['collision_levels']) and self.c['collision_policy_reviewed'] is not True:
+            raise ValueError('Collision detection disabled; review actual protection policy before motion (not changed by this tool)')
+        for j in range(1,7):
+            lim=info['limits'][j];acc=info['acceleration_limits'][j]['max_acc_raw']
+            if lim['max_deg']<=lim['min_deg'] or not 0<lim['max_speed_raw']<32767 or not 0<acc<32767:raise ValueError('Invalid hardware limits')
+            self.c['lower_deg'][j-1]=max(self.c['lower_deg'][j-1],lim['min_deg'])
+            self.c['upper_deg'][j-1]=min(self.c['upper_deg'][j-1],lim['max_deg'])
+            if self.c['max_velocity_rad_s']>lim['max_speed_raw']*.01 or self.c['max_acceleration_rad_s2']>acc*.001:
+                raise ValueError('Configured pilot speed/acceleration exceeds hardware settings')
+    def snapshot(self):
+        with self.rx_lock:latest=copy.deepcopy(self.latest)
+        q=[];qt=[]
+        for cid in range(0x2a5,0x2a8):
+            x=latest.get(cid,{});q.extend(x.get('position_deg',[float('nan')]*2));qt.extend([x.get('time',0)]*2)
+        high=[latest.get(0x251+j,{}) for j in range(6)];low=[latest.get(0x261+j,{}) for j in range(6)]
+        current=np.array([x.get('current_signed_A',float('nan')) for x in high])
+        return {'time':time.monotonic(),'q':np.deg2rad(q),'qd':np.array([x.get('velocity_sdk_rad_s',float('nan')) for x in high]),'current_A':current,'tau_candidate_Nm':current*np.array([4.725]*3+[.95844]*3),
+                'q_times':np.array(qt),'drive_times':np.array([x.get('time',0) for x in high]),'low_times':np.array([x.get('time',0) for x in low]),
+                'enabled':np.array([x.get('enabled',False) for x in low]),'faults':[x.get('fault_bits_excluding_enable',255) for x in low],
+                'temp_C':[max(x.get('driver_temp_C',999),x.get('motor_temp_C',999)) for x in low], 'voltage_V':[x.get('voltage_V',0) for x in low],
+                'status':latest.get(0x2a1,{}),'gripper':latest.get(0x2a8,{})}
+    def check(self,s,active):
+        if self.error:raise RuntimeError(self.error)
+        if self.stopped:raise RuntimeError('Quick-stop latch is set')
+        for key in ('q','qd','current_A'):
+            if not np.all(np.isfinite(s[key])):raise RuntimeError('Missing '+key)
+        now=time.monotonic()
+        if max(now-np.min(s['q_times']),now-np.min(s['drive_times']))>self.c['feedback_timeout_s']:raise RuntimeError('Joint feedback stale')
+        if now-min(np.min(s['low_times']),s['status'].get('time',0))>self.c['status_timeout_s']:raise RuntimeError('Status feedback stale')
+        if s['status'].get('arm_status',255)!=0 or s['status'].get('error_code',65535)!=0 or any(s['faults']):raise RuntimeError('Arm/driver fault')
+        if s['status'].get('control_mode') not in (0,1):raise RuntimeError('Arm is under another control mode')
+        if active and s['status'].get('control_mode')!=1 and now-self.armed_at>.3:raise RuntimeError('Lost CAN position control')
+        if np.any(np.abs(s['current_A'])>self.c['max_current_feedback_A']):raise RuntimeError('Feedback current threshold exceeded')
+        if max(s['temp_C'])>self.c['max_temperature_C']:raise RuntimeError('Over-temperature threshold')
+        if min(s['voltage_V'])<20 or max(s['voltage_V'])>26:raise RuntimeError('Supply voltage outside pilot range')
+        self.heartbeat=now
+    def _pose_locked(self,q):
+        values=np.rint(np.rad2deg(q)*1000).astype(int)
+        for i in range(3):self._send_locked(0x155+i,list(struct.pack('>ii',*values[2*i:2*i+2])))
+    def arm(self,q):
+        with self.tx_lock:
+            if self.stopped:raise RuntimeError('Stop is latched')
+            self.heartbeat=time.monotonic();self.armed_at=self.heartbeat;self.active=True
+            # Seed position before selecting position mode and enabling the six arm motors.
+            self._pose_locked(q)
+            self._send_locked(0x151,[1,1,self.c['move_speed_percent'],0,0,0,0,0])
+            self._pose_locked(q)
+            for j in range(1,7):self._send_locked(0x471,[j,2,0,0,0,0,0,0])
+    def command(self,q):
+        with self.tx_lock:
+            if self.stopped:raise RuntimeError('Stop is latched; command suppressed')
+            self._pose_locked(q)
+    def quick_stop(self,reason):
+        with self.tx_lock:
+            if self.stopped:return
+            self.stopped=True;self.active=False
+            try:self._send_locked(0x150,[1,0,0,0,0,0,0,0])
+            except Exception as e:self.error='Quick stop could not be delivered: '+str(e)
+        # No disable, fault reset, re-enable or return after this.
+    def _watchdog(self):
+        while not self.done.wait(.01):
+            if self.active and (self.error or time.monotonic()-self.heartbeat>self.c['loop_watchdog_s']):
+                self.quick_stop('loop/receiver watchdog')
+    def finish(self):self.active=False
+    def close(self):
+        if self.active:self.quick_stop('closing while active')
+        self.done.set();self.reader.join(.2);self.guard.join(.2);self.sock.close();self.raw.close();self.tx_log.close()

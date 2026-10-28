@@ -2,3 +2,6 @@
 # reproducible from the excitation seed, so they are not tracked.
 results/raw_data*.npz
 results/*.npy
+
+# Real-hardware and simulation pilot recordings
+/runs/
