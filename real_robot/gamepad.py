@@ -44,6 +44,7 @@ class Gamepad:
     def __init__(self, config_path):
         import evdev
         self.evdev=evdev; c=json.loads(Path(config_path).read_text()); ds=devices()
+        if not ds:raise RuntimeError('未检测到游戏手柄，请唤醒或重连 G8 后重新运行；无需因休眠重新校准')
         matches=[d for d in ds if identity(d)==c['identity']]
         for d in ds:
             if d not in matches:d.close()

@@ -47,6 +47,11 @@ class Simulation:
         import mujoco
         self.mj=mujoco;self.c=cfg;self.model=mujoco.MjModel.from_xml_string(model_xml());self.data=mujoco.MjData(self.model)
         self.data.qpos[:]=np.deg2rad(cfg['simulation_initial_deg']);self.data.ctrl[:]=self.data.qpos
+        if cfg.get('current_pose_only',False):
+            from .current_pose import current_pose_bounds
+            lower,upper=current_pose_bounds(cfg,self.data.qpos.copy())
+            # Preview the same anchored parked coordinates. This changes only this simulated model.
+            self.model.jnt_range[:5,0]=lower[:5];self.model.jnt_range[:5,1]=upper[:5]
         mujoco.mj_forward(self.model,self.data);self.enabled=False;self.stopped=False;self.active=False
         self.target=self.data.qpos.copy();self.time=0.
     def advance(self,dt):

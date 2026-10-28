@@ -1,14 +1,19 @@
 """Backend-independent state machine. ABORT = controlled braking + return, not safety-rated E-stop."""
 import numpy as np
 from .trajectory import Excitation, transit, brake, check_path
+from .current_pose import current_pose_bounds, ARM_POSE_TOLERANCE_DEG
 
 
 class Controller:
     def __init__(self, backend, cfg, snapshot, now, emit=print):
         self.b=backend;self.c=cfg;self.emit=emit;self.home=snapshot['q'].copy();self.now=now
+        self.current_pose_only=cfg.get('current_pose_only',False)
         self.start=self.home.copy() if cfg['start_deg'] is None else np.deg2rad(cfg['start_deg'])
         self.lower=np.deg2rad(cfg['lower_deg'])+np.deg2rad(cfg['margin_deg'])
         self.upper=np.deg2rad(cfg['upper_deg'])-np.deg2rad(cfg['margin_deg'])
+        if self.current_pose_only:
+            self.lower,self.upper=current_pose_bounds(cfg,self.home)
+            self.emit('CURRENT_POSE：已锚定启动姿态，仅 J6 运动；J1–J5 保持原目标，允许测量漂移不超过 0.5°。')
         outside=(self.home<self.lower)|(self.home>self.upper)
         if np.any(outside):
             raw_lower=np.deg2rad(cfg['lower_deg']);raw_upper=np.deg2rad(cfg['upper_deg'])
@@ -36,10 +41,11 @@ class Controller:
         if self.active:self.b.quick_stop(str(reason))
         self.active=False
     def activate(self,s,now,next_state):
-        if np.max(np.abs(s['q']-self.home))>np.deg2rad(self.c['settle_error_deg']):
+        pose_tolerance=ARM_POSE_TOLERANCE_DEG if self.current_pose_only else self.c['settle_error_deg']
+        if np.max(np.abs(s['q']-self.home))>np.deg2rad(pose_tolerance):
             raise ValueError('Robot moved after startup; restart to capture a new home pose')
         if np.max(np.abs(s['qd']))>self.c['settle_velocity_rad_s']:raise ValueError('Robot is moving before arming')
-        self.active=True;self.b.arm(s['q']);self.state='ARMING';self.path_t=now;self.next_state=next_state
+        self.active=True;self.b.arm(self.home if self.current_pose_only else s['q']);self.state='ARMING';self.path_t=now;self.next_state=next_state
         self.event('ARMING：保持当前目标，等待六轴使能反馈。')
     def begin_ready_or_test(self,next_state,now):
         if next_state=='PREPARE':self.set_path('PREPARING',self.outbound,now)
@@ -58,6 +64,8 @@ class Controller:
         else:self.stable_since=None
         if now-self.settle_started>self.c['settle_timeout_s']:raise ValueError('Timed out settling at target')
     def command(self,q):
+        if self.current_pose_only and np.max(np.abs(np.asarray(q)[:5]-self.home[:5]))>1e-9:
+            raise ValueError('Current-pose pilot cannot change a held-axis command')
         if np.any(q<self.lower-1e-9) or np.any(q>self.upper+1e-9):raise ValueError('command outside bounds')
         self.b.command(q);self.last_target=np.asarray(q).copy()
     def tick(self,now,s,action=None):
@@ -74,7 +82,10 @@ class Controller:
                 if not self.active:
                     self.state='DONE';self.event('DONE：等待阶段已中止，没有发送运动指令。');return
                 if not np.all(s['enabled']):raise ValueError('Abort during incomplete enable: quick stop, no return')
-                p=brake(s['q'],s['qd'],self.vmax,self.amax);self.check(p)
+                brake_q=s['q'].copy();brake_v=s['qd'].copy()
+                if self.current_pose_only:
+                    brake_q[:5]=self.home[:5];brake_v[:5]=0.
+                p=brake(brake_q,brake_v,self.vmax,self.amax);self.check(p)
                 self.set_path('BRAKING',p,now)
                 self.event('LB+RB：立即取消激励，受限平滑制动后回到启动位置。')
             if self.state=='WAITING':

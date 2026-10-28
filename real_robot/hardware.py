@@ -63,10 +63,19 @@ class Hardware:
     def preflight(self,info):
         if self.c['firmware_prefix']!='S-V1.7-3' or 'S-V1.7-3250618' not in info['firmware']:
             raise ValueError('Firmware not the reviewed S-V1.7-3250618 profile; no guessed torque scaling')
-        if self.c['model_confirmed'] is not True or self.c['workspace_checked'] is not True:
-            raise ValueError('Confirm model and clear workspace in config after inspecting preview; no motion sent')
-        if any(x==0 for x in info['collision']['collision_levels']) and self.c['collision_policy_reviewed'] is not True:
-            raise ValueError('Collision detection disabled; review actual protection policy before motion (not changed by this tool)')
+        if self.c['model_confirmed'] is not True:
+            raise ValueError('Confirm the actual PiPER X model before motion')
+        current_pose = self.c.get('current_pose_only',False)
+        # The operator explicitly selects this bounded stationary-body wrist trial.
+        # Keep workspace/protection metadata truthful; never mark unchecked facts as confirmed.
+        if current_pose:
+            if self.c['joint']!=6 or self.c['start_deg'] is not None or self.c['amplitude_deg']>5 or self.c['frequency_hz']>.1:
+                raise ValueError('Invalid current-pose J6 pilot profile')
+        else:
+            if self.c['workspace_checked'] is not True:
+                raise ValueError('Confirm the workspace for a trial with a separate start pose')
+            if any(x==0 for x in info['collision']['collision_levels']) and self.c['collision_policy_reviewed'] is not True:
+                raise ValueError('Collision detection disabled; review protection policy for a general trial')
         for j in range(1,7):
             lim=info['limits'][j];acc=info['acceleration_limits'][j]['max_acc_raw']
             if lim['max_deg']<=lim['min_deg'] or not 0<lim['max_speed_raw']<32767 or not 0<acc<32767:raise ValueError('Invalid hardware limits')
@@ -94,7 +103,7 @@ class Hardware:
         now=time.monotonic()
         if max(now-np.min(s['q_times']),now-np.min(s['drive_times']))>self.c['feedback_timeout_s']:raise RuntimeError('Joint feedback stale')
         if now-min(np.min(s['low_times']),s['status'].get('time',0))>self.c['status_timeout_s']:raise RuntimeError('Status feedback stale')
-        if s['status'].get('arm_status',255)!=0 or s['status'].get('error_code',65535)!=0 or any(s['faults']):raise RuntimeError('Arm/driver fault')
+        if s['status'].get('arm_status',255)!=0 or s['status'].get('error_code',65535)!=0 or any(s['faults']):raise RuntimeError(f'Arm/driver fault: arm_status={s["status"].get("arm_status")}, error_code={s["status"].get("error_code")}, driver_bits={s["faults"]}; if current-pose target was rejected, no automatic retries')
         if s['status'].get('control_mode') not in (0,1):raise RuntimeError('Arm is under another control mode')
         if active and s['status'].get('control_mode')!=1 and now-self.armed_at>.3:raise RuntimeError('Lost CAN position control')
         if np.any(np.abs(s['current_A'])>self.c['max_current_feedback_A']):raise RuntimeError('Feedback current threshold exceeded')

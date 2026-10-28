@@ -33,12 +33,16 @@ def main():
     mode=ap.add_mutually_exclusive_group(required=True)
     for flag in ('sim','hardware','read-only','calibrate-pad','monitor-pad'):mode.add_argument('--'+flag,action='store_true')
     ap.add_argument('--config',type=Path,default=BASE/'config.json');ap.add_argument('--pad',type=Path,default=BASE/'g8.json')
+    ap.add_argument('--from-current',action='store_true',help='J6-only trial anchored at actual startup pose; limited parked J2/J3 exceptions')
+    ap.add_argument('--preflight-only',action='store_true',help='validate the hardware session without reading button actions or enabling motors')
     ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort'],help='simulation only')
     ap.add_argument('--output',type=Path,default=BASE.parent/'runs');ap.add_argument('--max-seconds',type=float,default=120)
     a=ap.parse_args()
     if a.scripted and not a.sim:ap.error('--scripted is simulation-only')
     if not np.isfinite(a.max_seconds) or a.max_seconds<=0:ap.error('--max-seconds must be positive and finite')
     if a.viewer and not a.sim:ap.error('--viewer is simulation-only')
+    if a.from_current and not (a.hardware or a.sim):ap.error('--from-current requires --hardware or --sim')
+    if a.preflight_only and not a.hardware:ap.error('--preflight-only requires --hardware')
     if a.calibrate_pad:calibrate(a.pad);return
     if a.monitor_pad:
         pad=Gamepad(a.pad);print('只读手柄验证：LB+X / LB+Y / LB+RB；不连接 CAN。',flush=True);end=time.monotonic()+a.max_seconds
@@ -51,7 +55,12 @@ def main():
             print('手柄监视已结束。',flush=True)
         finally:pad.close()
         return
-    cfg=json.loads(a.config.read_text());validate_config(cfg)
+    cfg=json.loads(a.config.read_text());cfg['current_pose_only']=a.from_current;validate_config(cfg)
+    if a.from_current:
+        from .current_pose import current_pose_bounds
+        # Validate mode restrictions before opening CAN; actual bounds use a fresh snapshot later.
+        if cfg['joint']!=6 or cfg['start_deg'] is not None or cfg['frequency_hz']>.1:
+            raise ValueError('--from-current requires joint=6, start_deg=null, frequency<=0.1 Hz')
     path=a.output/datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f');path.mkdir(parents=True)
     (path/'config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
     b=None;pad=None;viewer=None;ctrl=None;lease=None;result={'mode':'sim' if a.sim else 'read-only' if a.read_only else 'hardware','completed':False}
@@ -75,20 +84,31 @@ def main():
                 if not re.fullmatch(r'[A-Za-z0-9_-]+',cfg['channel']):raise ValueError('Invalid CAN channel name')
                 lease=open('/tmp/piper-pilot-'+cfg['channel']+'.lock','w')
                 fcntl.flock(lease,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            b=Hardware(cfg,path);info=b.discover();(path/'hardware.json').write_text(json.dumps(info,ensure_ascii=False,indent=2));emit('只读查询完成：'+str(info))
+            b=Hardware(cfg,path);info=b.discover();(path/'hardware.json').write_text(json.dumps(info,ensure_ascii=False,indent=2));emit('只读查询完成：'+next((x for x in info['firmware'].split('\x00') if x.startswith('S-V')),'未知固件')+'；详细参数已保存 hardware.json')
             s=b.snapshot();b.check(s,False)
             if a.read_only:
                 samples.write(json.dumps(s,default=serializable)+'\n');result.update(completed=True,state='READ_ONLY');return
             b.preflight(info)
+            if a.from_current:
+                emit('FROM_CURRENT：按操作者指定使用当前姿态，只进行 J6 有界试采；不修改限位/零位/保护等级。')
+                emit('当前碰撞检测等级：'+str(info['collision']['collision_levels']))
             (path/'effective_config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
-        if not a.scripted:pad=Gamepad(a.pad)
+        if not a.scripted and not a.preflight_only:pad=Gamepad(a.pad)
         if a.viewer:
             if not a.sim:raise ValueError('viewer is for simulation only')
             import mujoco.viewer
             viewer=mujoco.viewer.launch_passive(b.model,b.data)
             viewer.cam.distance=1.3;viewer.cam.lookat[:]=[0,0,.3];viewer.cam.azimuth=135;viewer.cam.elevation=-25
         s=b.snapshot();now=0. if a.sim else time.monotonic();ctrl=Controller(b,cfg,s,now,emit)
-        result['home_rad']=ctrl.home.tolist();dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline
+        result['home_rad']=ctrl.home.tolist()
+        result['current_pose_only']=a.from_current
+        (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.lower).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint']},ensure_ascii=False,indent=2))
+        emit('启动角度（度）：'+str(np.round(np.rad2deg(ctrl.home),3).tolist()))
+        if a.preflight_only:
+            samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
+            result.update(completed=True,state='PREFLIGHT_ONLY')
+            return
+        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline
         while ctrl.state not in ('DONE','FAULT'):
             now=step*dt if a.sim else time.monotonic()
             if stop_requested:ctrl.fault('SIGINT/SIGTERM: quick stop, no automatic return');break
