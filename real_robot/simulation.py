@@ -47,16 +47,22 @@ class Simulation:
         import mujoco
         self.mj=mujoco;self.c=cfg;self.model=mujoco.MjModel.from_xml_string(model_xml());self.data=mujoco.MjData(self.model)
         self.data.qpos[:]=np.deg2rad(cfg['simulation_initial_deg']);self.data.ctrl[:]=self.data.qpos
+        if cfg.get('standing_start',False):
+            from .standing import standing_plan
+            _,_,lower,upper=standing_plan(cfg,self.data.qpos.copy())
+            self.model.jnt_range[:,0]=lower;self.model.jnt_range[:,1]=upper
         if cfg.get('current_pose_only',False):
             from .current_pose import current_pose_bounds
             lower,upper=current_pose_bounds(cfg,self.data.qpos.copy())
             # Preview the same anchored parked coordinates. This changes only this simulated model.
             self.model.jnt_range[:5,0]=lower[:5];self.model.jnt_range[:5,1]=upper[:5]
         mujoco.mj_forward(self.model,self.data);self.enabled=False;self.stopped=False;self.active=False
-        self.target=self.data.qpos.copy();self.time=0.
+        self.target=self.data.qpos.copy();self.time=0.;self.native_path=None;self.native_time=0.
     def advance(self,dt):
         for _ in range(round(dt/self.model.opt.timestep)):
-            if self.enabled:self.data.ctrl[:]=self.target;self.mj.mj_step(self.model,self.data)
+            if self.enabled:
+                control=self.native_path.at(self.time-self.native_time)[0] if self.native_path else self.target
+                self.data.ctrl[:]=control;self.mj.mj_step(self.model,self.data)
             self.time+=self.model.opt.timestep
     def snapshot(self):
         return {'time':self.time,'q':self.data.qpos.copy(),'qd':self.data.qvel.copy(),'current_A':np.zeros(6),'tau_candidate_Nm':self.data.qfrc_actuator.copy(),'torque_source':'simulation actuator with gravity compensation; not identification ground truth',
@@ -65,6 +71,11 @@ class Simulation:
     def check(self,s,active):
         if self.stopped:raise RuntimeError('simulation stop latched')
     def arm(self,q):self.target=q.copy();self.enabled=True;self.active=True
+    def begin_native_move(self,q):
+        from .trajectory import transit
+        self.native_path=transit(self.data.qpos.copy(),q,min(.06,self.c['max_velocity_rad_s']),self.c['max_acceleration_rad_s2'])
+        self.native_time=self.time;self.target=q.copy()
+    def finish_native_move(self):self.native_path=None
     def command(self,q):
         if self.stopped:raise RuntimeError('command after stop')
         self.target=q.copy()

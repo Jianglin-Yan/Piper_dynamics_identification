@@ -66,10 +66,11 @@ class Hardware:
         if self.c['model_confirmed'] is not True:
             raise ValueError('Confirm the actual PiPER X model before motion')
         current_pose = self.c.get('current_pose_only',False)
+        standing = self.c.get('standing_start',False)
         # The operator explicitly selects this bounded stationary-body wrist trial.
         # Keep workspace/protection metadata truthful; never mark unchecked facts as confirmed.
-        if current_pose:
-            if self.c['joint']!=6 or self.c['start_deg'] is not None or self.c['amplitude_deg']>5 or self.c['frequency_hz']>.1:
+        if current_pose or standing:
+            if self.c['joint']!=6 or (self.c['start_deg'] is not None and not standing) or self.c['amplitude_deg']>5 or self.c['frequency_hz']>.1:
                 raise ValueError('Invalid current-pose J6 pilot profile')
         else:
             if self.c['workspace_checked'] is not True:
@@ -122,9 +123,16 @@ class Hardware:
             self._send_locked(0x151,[1,1,self.c['move_speed_percent'],0,0,0,0,0])
             self._pose_locked(q)
             for j in range(1,7):self._send_locked(0x471,[j,2,0,0,0,0,0,0])
+    def begin_native_move(self,q):
+        self.native_speed_percent=2
+        self.command(q)
+    def finish_native_move(self):self.native_speed_percent=None
     def command(self,q):
         with self.tx_lock:
             if self.stopped:raise RuntimeError('Stop is latched; command suppressed')
+            # Match the official V2 joint-control demo: keep mode/speed alive with each target.
+            speed=getattr(self,'native_speed_percent',None) or self.c['move_speed_percent']
+            self._send_locked(0x151,[1,1,speed,0,0,0,0,0])
             self._pose_locked(q)
     def quick_stop(self,reason):
         with self.tx_lock:

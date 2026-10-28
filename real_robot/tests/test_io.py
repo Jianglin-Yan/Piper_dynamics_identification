@@ -50,6 +50,11 @@ class TestHardwarePackets(unittest.TestCase):
         self.h.quick_stop('test');msg=PiperMessage();msg.type_=ArmMsgType.PiperMsgMotionCtrl_1
         msg.arm_motion_ctrl_1.emergency_stop=1;msg.arm_motion_ctrl_1.track_ctrl=0;msg.arm_motion_ctrl_1.grag_teach_ctrl=0
         frame=can.Message();parser.EncodeMessage(msg,frame);self.assertEqual(self.frames[-1],(frame.arbitration_id,bytes(frame.data)))
+    def test_each_position_target_refreshes_mode_and_speed(self):
+        self.h.command(np.zeros(6))
+        self.assertEqual([cid for cid,data in self.frames],[0x151,0x155,0x156,0x157])
+        self.h.begin_native_move(np.zeros(6));self.assertEqual(self.frames[-4][1][2],2)
+        self.h.finish_native_move();self.h.command(np.zeros(6));self.assertEqual(self.frames[-4][1][2],10)
     def test_latched_stop_suppresses_future_position_and_enable(self):
         self.h.quick_stop('test');n=len(self.frames)
         for fn in (self.h.command,self.h.arm):

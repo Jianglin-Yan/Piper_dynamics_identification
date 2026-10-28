@@ -33,6 +33,7 @@ def main():
     mode=ap.add_mutually_exclusive_group(required=True)
     for flag in ('sim','hardware','read-only','calibrate-pad','monitor-pad'):mode.add_argument('--'+flag,action='store_true')
     ap.add_argument('--config',type=Path,default=BASE/'config.json');ap.add_argument('--pad',type=Path,default=BASE/'g8.json')
+    ap.add_argument('--standing',action='store_true',help='LB+X performs boundary entry then moves to a fixed standing test pose')
     ap.add_argument('--from-current',action='store_true',help='J6-only trial anchored at actual startup pose; limited parked J2/J3 exceptions')
     ap.add_argument('--preflight-only',action='store_true',help='validate the hardware session without reading button actions or enabling motors')
     ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort'],help='simulation only')
@@ -41,6 +42,8 @@ def main():
     if a.scripted and not a.sim:ap.error('--scripted is simulation-only')
     if not np.isfinite(a.max_seconds) or a.max_seconds<=0:ap.error('--max-seconds must be positive and finite')
     if a.viewer and not a.sim:ap.error('--viewer is simulation-only')
+    if a.standing and a.from_current:ap.error('--standing and --from-current cannot be combined')
+    if a.standing and not (a.hardware or a.sim):ap.error('--standing requires --hardware or --sim')
     if a.from_current and not (a.hardware or a.sim):ap.error('--from-current requires --hardware or --sim')
     if a.preflight_only and not a.hardware:ap.error('--preflight-only requires --hardware')
     if a.calibrate_pad:calibrate(a.pad);return
@@ -55,7 +58,11 @@ def main():
             print('手柄监视已结束。',flush=True)
         finally:pad.close()
         return
-    cfg=json.loads(a.config.read_text());cfg['current_pose_only']=a.from_current;validate_config(cfg)
+    cfg=json.loads(a.config.read_text());cfg['current_pose_only']=a.from_current;cfg['standing_start']=a.standing
+    if a.standing:
+        from .standing import STANDING_DEG
+        cfg['start_deg']=cfg.get('standing_start_deg',STANDING_DEG)
+    validate_config(cfg)
     if a.from_current:
         from .current_pose import current_pose_bounds
         # Validate mode restrictions before opening CAN; actual bounds use a fresh snapshot later.
@@ -91,6 +98,7 @@ def main():
             b.preflight(info)
             if a.from_current:
                 emit('FROM_CURRENT：按操作者指定使用当前姿态，只进行 J6 有界试采；不修改限位/零位/保护等级。')
+            if a.from_current or a.standing:
                 emit('当前碰撞检测等级：'+str(info['collision']['collision_levels']))
             (path/'effective_config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
         if not a.scripted and not a.preflight_only:pad=Gamepad(a.pad)
@@ -102,13 +110,14 @@ def main():
         s=b.snapshot();now=0. if a.sim else time.monotonic();ctrl=Controller(b,cfg,s,now,emit)
         result['home_rad']=ctrl.home.tolist()
         result['current_pose_only']=a.from_current
+        result['standing_start']=a.standing
         (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.lower).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint']},ensure_ascii=False,indent=2))
         emit('启动角度（度）：'+str(np.round(np.rad2deg(ctrl.home),3).tolist()))
         if a.preflight_only:
             samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
             result.update(completed=True,state='PREFLIGHT_ONLY')
             return
-        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline
+        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False
         while ctrl.state not in ('DONE','FAULT'):
             now=step*dt if a.sim else time.monotonic()
             if stop_requested:ctrl.fault('SIGINT/SIGTERM: quick stop, no automatic return');break
@@ -117,8 +126,9 @@ def main():
             action=pad.poll(time.monotonic()) if pad else None
             if a.scripted:
                 if step==10:action='PREPARE'
-                elif step==30:action='START'
-                elif a.scripted=='abort' and step==550:action='ABORT'
+                elif ctrl.state=='READY' and not scripted_started:action='START';scripted_started=True
+                elif a.scripted=='abort' and ctrl.state=='TESTING' and now-ctrl.path_t>=5.2 and not scripted_aborted:
+                    action='ABORT';scripted_aborted=True
             if action:emit('手柄指令：'+action)
             if a.sim:b.advance(dt)
             s=b.snapshot()
