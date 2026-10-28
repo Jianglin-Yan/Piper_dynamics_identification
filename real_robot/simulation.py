@@ -79,6 +79,12 @@ class Simulation:
     def command(self,q):
         if self.stopped:raise RuntimeError('command after stop')
         self.target=q.copy()
-    def quick_stop(self,reason):self.stopped=True;self.active=False;self.target=self.data.qpos.copy();self.data.qvel[:]=0
+    def quick_stop(self,reason):
+        self.stopped=True;self.active=False
+        # Qualitative gravity/damping preview only: vendor damping gains are unknown.
+        # The old frozen-pose preview incorrectly suggested a real electronic stop holds up the arm.
+        self.model.body_gravcomp[:]=0
+        self.model.actuator_gainprm[:]=0;self.model.actuator_biasprm[:]=0
+        self.model.dof_damping[:]=np.maximum(self.model.dof_damping,[2.,2.,2.,.15,.15,.08])
     def finish(self):self.active=False
     def close(self):pass

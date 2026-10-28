@@ -55,5 +55,13 @@
   ],
   "max_temperature_C": 65,
   "move_speed_percent": 10,
-  "command_hz": 100
+  "command_hz": 100,
+  "feedback_speed_warning_rad_s": 0.3,
+  "feedback_speed_stop_rad_s": 0.6,
+  "feedback_speed_stop_duration_s": 0.15,
+  "feedback_speed_emergency_rad_s": 1.2,
+  "feedback_current_stop_duration_s": 0.2,
+  "feedback_current_emergency_multiplier": 2.0,
+  "settle_position_window_deg": 0.2,
+  "arming_velocity_limit_rad_s": 0.15
 }

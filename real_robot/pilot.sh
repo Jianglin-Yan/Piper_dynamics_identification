@@ -6,6 +6,7 @@ case "${1:-sim}" in
   pad) shift; exec env -u LD_PRELOAD "$piper_python" -m real_robot.run --monitor-pad --max-seconds 300 "$@" ;;
   sim) if [ "$#" -gt 0 ]; then shift; fi; exec env -u LD_PRELOAD "$piper_python" -m real_robot.run --sim --viewer --max-seconds 300 "$@" ;;
   read) shift; exec env -u LD_PRELOAD "$piper_python" -m real_robot.run --read-only "$@" ;;
+  recover) shift; exec env -u LD_PRELOAD "$piper_python" -m real_robot.run --recover "$@" ;;
   hardware) shift; exec env -u LD_PRELOAD "$piper_python" -m real_robot.run --hardware --max-seconds 300 "$@" ;;
-  *) printf '%s\n' 'Usage: bash real_robot/pilot.sh [pad|sim|read|hardware]'; exit 2 ;;
+  *) printf '%s\n' 'Usage: bash real_robot/pilot.sh [pad|sim|read|recover --supported|hardware]'; exit 2 ;;
 esac

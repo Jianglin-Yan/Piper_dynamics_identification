@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 from .controller import Controller
 from .gamepad import Gamepad, calibrate
+from .monitoring import validate_speed_limits
 
 BASE=Path(__file__).parent
 
@@ -13,6 +14,10 @@ def serializable(x):
     raise TypeError(type(x).__name__)
 
 def validate_config(c):
+    validate_speed_limits(c)
+    c.setdefault('settle_position_window_deg',.20);c.setdefault('arming_velocity_limit_rad_s',.15)
+    for key in ('settle_position_window_deg','arming_velocity_limit_rad_s'):
+        if not np.isfinite(c[key]) or c[key]<=0:raise ValueError('Invalid '+key)
     for key in ('lower_deg','upper_deg','simulation_initial_deg','max_current_feedback_A'):
         if len(c[key])!=6 or not np.all(np.isfinite(c[key])):raise ValueError('Invalid '+key)
     if np.any(np.array(c['max_current_feedback_A'])<=0):raise ValueError('Current thresholds must be positive')
@@ -31,12 +36,13 @@ def validate_config(c):
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     mode=ap.add_mutually_exclusive_group(required=True)
-    for flag in ('sim','hardware','read-only','calibrate-pad','monitor-pad'):mode.add_argument('--'+flag,action='store_true')
+    for flag in ('sim','hardware','read-only','calibrate-pad','monitor-pad','recover'):mode.add_argument('--'+flag,action='store_true')
+    ap.add_argument('--supported',action='store_true',help='explicit recovery only: confirm the folded arm is physically supported for power loss')
     ap.add_argument('--config',type=Path,default=BASE/'config.json');ap.add_argument('--pad',type=Path,default=BASE/'g8.json')
     ap.add_argument('--standing',action='store_true',help='LB+X performs boundary entry then moves to a fixed standing test pose')
     ap.add_argument('--from-current',action='store_true',help='J6-only trial anchored at actual startup pose; limited parked J2/J3 exceptions')
     ap.add_argument('--preflight-only',action='store_true',help='validate the hardware session without reading button actions or enabling motors')
-    ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort'],help='simulation only')
+    ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort','speed-stop'],help='simulation only; speed-stop injects speed feedback to preview a controlled stop')
     ap.add_argument('--output',type=Path,default=BASE.parent/'runs');ap.add_argument('--max-seconds',type=float,default=120)
     a=ap.parse_args()
     if a.scripted and not a.sim:ap.error('--scripted is simulation-only')
@@ -46,6 +52,8 @@ def main():
     if a.standing and not (a.hardware or a.sim):ap.error('--standing requires --hardware or --sim')
     if a.from_current and not (a.hardware or a.sim):ap.error('--from-current requires --hardware or --sim')
     if a.preflight_only and not a.hardware:ap.error('--preflight-only requires --hardware')
+    if a.recover and not a.supported:ap.error('恢复会立即失电：先支撑好蜷缩机械臂，再使用 recover --supported 明确确认；不会自动使能。')
+    if a.supported and not a.recover:ap.error('--supported is only for --recover')
     if a.calibrate_pad:calibrate(a.pad);return
     if a.monitor_pad:
         pad=Gamepad(a.pad);print('只读手柄验证：LB+X / LB+Y / LB+RB；不连接 CAN。',flush=True);end=time.monotonic()+a.max_seconds
@@ -70,7 +78,7 @@ def main():
             raise ValueError('--from-current requires joint=6, start_deg=null, frequency<=0.1 Hz')
     path=a.output/datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f');path.mkdir(parents=True)
     (path/'config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
-    b=None;pad=None;viewer=None;ctrl=None;lease=None;result={'mode':'sim' if a.sim else 'read-only' if a.read_only else 'hardware','completed':False}
+    b=None;pad=None;viewer=None;ctrl=None;lease=None;result={'mode':'sim' if a.sim else 'recovery' if a.recover else 'read-only' if a.read_only else 'hardware','completed':False}
     events=(path/'events.jsonl').open('w',buffering=1);samples=(path/'samples.jsonl').open('w',buffering=65536)
     def emit(msg):
         print(msg,flush=True);events.write(json.dumps({'t_monotonic_s':time.monotonic(),'message':msg},ensure_ascii=False)+'\n')
@@ -86,16 +94,27 @@ def main():
             b=Simulation(cfg);emit('SIMULATION：名义 X 模型，简化几何；未连接机械臂。仿真增益不是实机建议值。')
         else:
             from .hardware import Hardware
-            if a.hardware:
+            if a.hardware or a.recover:
                 import fcntl, re
                 if not re.fullmatch(r'[A-Za-z0-9_-]+',cfg['channel']):raise ValueError('Invalid CAN channel name')
                 lease=open('/tmp/piper-pilot-'+cfg['channel']+'.lock','w')
                 fcntl.flock(lease,fcntl.LOCK_EX|fcntl.LOCK_NB)
             b=Hardware(cfg,path);info=b.discover();(path/'hardware.json').write_text(json.dumps(info,ensure_ascii=False,indent=2));emit('只读查询完成：'+next((x for x in info['firmware'].split('\x00') if x.startswith('S-V')),'未知固件')+'；详细参数已保存 hardware.json')
             s=b.snapshot();b.check(s,False)
+            if a.recover:
+                if 'S-V1.7-3250618' not in info['firmware']:raise ValueError('Recovery not reviewed for this firmware')
+                if np.max(np.abs(s['qd']))>.1:raise ValueError('Robot moving: recovery refused')
+                result['before']=s
+                emit('RECOVER：已明确确认机械臂蜷缩有支撑；仅发送一次恢复/重置，不使能、不发送目标。')
+                b.reset_supported();time.sleep(1.);after=b.snapshot();result['after']=after
+                if np.any(after['enabled']) or after['status'].get('arm_status')!=0 or after['status'].get('error_code')!=0 or any(after['faults']):
+                    raise RuntimeError('恢复未确认成功；不自动重试。')
+                emit('RECOVERED：六轴已失能、故障码为零。恢复命令结束；运动需要另行运行并由手柄触发。')
+                result.update(completed=True,state='RECOVERED');return
             if a.read_only:
                 samples.write(json.dumps(s,default=serializable)+'\n');result.update(completed=True,state='READ_ONLY');return
             b.preflight(info)
+            emit(f'反馈监测：速度 {cfg["feedback_speed_warning_rad_s"]:.2f} rad/s 告警，{cfg["feedback_speed_stop_rad_s"]:.2f} rad/s 持续 {cfg["feedback_speed_stop_duration_s"]:.2f} s 制动保持；严重故障仍走电子急停。')
             if a.from_current:
                 emit('FROM_CURRENT：按操作者指定使用当前姿态，只进行 J6 有界试采；不修改限位/零位/保护等级。')
             if a.from_current or a.standing:
@@ -117,13 +136,15 @@ def main():
             samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
             result.update(completed=True,state='PREFLIGHT_ONLY')
             return
-        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False
-        while ctrl.state not in ('DONE','FAULT'):
+        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False
+        while ctrl.state not in ('DONE','FAULT','HELD'):
             now=step*dt if a.sim else time.monotonic()
-            if stop_requested:ctrl.fault('SIGINT/SIGTERM: quick stop, no automatic return');break
             if viewer and not viewer.is_running():ctrl.fault('Viewer closed');break
-            if time.monotonic()-start_wall>a.max_seconds:ctrl.fault('Session timeout');break
-            action=pad.poll(time.monotonic()) if pad else None
+            action=None
+            if pad and not input_failed:
+                try:action=pad.poll(time.monotonic())
+                except OSError as e:
+                    input_failed=True;action='STOP';emit('INPUT_STOP：'+str(e))
             if a.scripted:
                 if step==10:action='PREPARE'
                 elif ctrl.state=='READY' and not scripted_started:action='START';scripted_started=True
@@ -132,6 +153,13 @@ def main():
             if action:emit('手柄指令：'+action)
             if a.sim:b.advance(dt)
             s=b.snapshot()
+            if a.scripted=='speed-stop' and ctrl.state=='TESTING' and 5.2<=now-ctrl.path_t<5.5:
+                # Simulation-only sensor injection; never changes motor position or real CAN data.
+                s['qd']=s['qd'].copy();s['qd'][cfg['joint']-1]=cfg['feedback_speed_stop_rad_s']+.05
+            if stop_requested:
+                stop_requested=False;ctrl.request_stop(s,now,'SIGINT/SIGTERM')
+            if time.monotonic()-start_wall>a.max_seconds and not timeout_handled:
+                timeout_handled=True;ctrl.request_stop(s,now,'Session timeout')
             if not a.sim and time.monotonic()-last_wall>cfg['loop_watchdog_s']:ctrl.fault('Control loop late');break
             last_wall=time.monotonic();ctrl.tick(now,s,action)
             samples.write(json.dumps({'t_control':now,'state':ctrl.state,'action':action,'q_target':ctrl.last_target,'feedback':s},default=serializable)+'\n')
@@ -144,14 +172,32 @@ def main():
                 deadline+=dt;remaining=deadline-time.monotonic()
                 if remaining>0:time.sleep(remaining)
                 else:deadline=time.monotonic()
-        result.update(completed=ctrl.state=='DONE',state=ctrl.state,aborted=ctrl.aborted,last_q=b.snapshot()['q'].tolist(),max_requested_velocity=cfg['max_velocity_rad_s'])
+        result.update(completed=ctrl.state=='DONE',state=ctrl.state,aborted=ctrl.aborted,last_q=b.snapshot()['q'].tolist(),max_requested_velocity=cfg['max_velocity_rad_s'],stop_reason=ctrl.stop_reason)
     except Exception as e:
         result['error']=str(e);emit('STOPPED：'+str(e))
         if ctrl:ctrl.fault(e)
         if b and b.active:b.quick_stop(str(e))
         result['state']='FAULT' if ctrl else 'PREFLIGHT_REJECTED'
     finally:
-        if viewer and ctrl and ctrl.state=='DONE':
+        if b and ctrl and ctrl.state=='FAULT':
+            # The stop is already latched. Observe only; do not call tick/check/command.
+            emit('FAULT_CAPTURE：继续记录停止后 3 秒反馈，不恢复、不使能、不发送目标。')
+            observation_deadline=time.monotonic()+3.
+            try:
+                if a.sim:
+                    for _ in range(300):
+                        b.advance(.01)
+                        observation=b.snapshot()
+                        samples.write(json.dumps({'t_control':observation['time'],'state':'FAULT_OBSERVATION','feedback':observation},default=serializable)+'\n')
+                        if viewer and viewer.is_running():viewer.sync();time.sleep(.01)
+                else:
+                    while time.monotonic()<observation_deadline:
+                        samples.write(json.dumps({'t_control':time.monotonic(),'state':'FAULT_OBSERVATION','feedback':b.snapshot()},default=serializable)+'\n')
+                        time.sleep(.01)
+                result['post_stop_last_q']=b.snapshot()['q'].tolist()
+            except Exception as capture_error:
+                emit('FAULT_CAPTURE_FAILED：'+str(capture_error))
+        if viewer and ctrl and ctrl.state in ('DONE','HELD'):
             emit('仿真已结束，窗口保持显示。关闭窗口即可退出。')
             view_deadline=time.monotonic()+60
             while viewer.is_running() and not stop_requested and time.monotonic()<view_deadline:
@@ -161,6 +207,6 @@ def main():
         if b:b.close()
         if lease:lease.close()
         for s,h in old_handlers.items():signal.signal(s,h)
-        samples.close();events.close();(path/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2));print('Run files:',path,flush=True)
-    if result.get('state') in ('FAULT','PREFLIGHT_REJECTED'):raise SystemExit(2)
+        samples.close();events.close();(path/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2,default=serializable));print('Run files:',path,flush=True)
+    if result.get('state') in ('FAULT','HELD','PREFLIGHT_REJECTED'):raise SystemExit(2)
 if __name__=='__main__':main()
