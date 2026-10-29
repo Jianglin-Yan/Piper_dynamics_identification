@@ -16,6 +16,8 @@ def serializable(x):
 
 def validate_config(c):
     validate_speed_limits(c)
+    c.setdefault('trajectory','pilot')
+    if c['trajectory'] not in ('pilot','multisine'):raise ValueError('Unknown trajectory')
     c.setdefault('trajectory_scale',1.)
     if not np.isfinite(c['trajectory_scale']) or not 0<c['trajectory_scale']<=1:raise ValueError('trajectory_scale must be in (0, 1]')
     c.setdefault('settle_position_window_deg',.20);c.setdefault('arming_velocity_limit_rad_s',.15)
@@ -37,6 +39,19 @@ def validate_config(c):
     if c['max_velocity_rad_s']>.2 or c['max_acceleration_rad_s2']>.3 or c['amplitude_deg']>5 or c['frequency_hz']>.3:
         raise ValueError('Outside small single-joint pilot profile')
     if not 1<=c['move_speed_percent']<=20:raise ValueError('Pilot move speed percentage must be 1..20')
+    if c['trajectory']=='multisine':
+        if c.get('current_pose_only'):raise ValueError('Six-joint multisine cannot use --from-current')
+        for key in ('test_max_velocity_rad_s','test_max_acceleration_rad_s2','braking_max_acceleration_rad_s2','test_tracking_warning_deg','test_tracking_hard_deg','multisine_base_frequency_hz','multisine_sample_dt_s'):
+            if not np.isfinite(c[key]) or c[key]<=0:raise ValueError('Invalid '+key)
+        if c['test_tracking_warning_deg']>=c['test_tracking_hard_deg']:raise ValueError('Tracking warning must be below hard threshold')
+        if type(c['multisine_harmonics']) is not int or not 1<=c['multisine_harmonics']<=5:raise ValueError('Invalid harmonic count')
+        if type(c['multisine_seed']) is not int or c['multisine_seed']<0:raise ValueError('Invalid multisine seed')
+        if not 0<c['multisine_amplitude_fraction']<=.6:raise ValueError('Invalid multisine amplitude fraction')
+        for key in ('multisine_generation_lower_deg','multisine_generation_upper_deg'):
+            if len(c[key])!=6 or not np.all(np.isfinite(c[key])):raise ValueError('Invalid '+key)
+        if np.any(np.array(c['multisine_generation_lower_deg'])>=np.array(c['multisine_generation_upper_deg'])):raise ValueError('Invalid multisine generation interval')
+        if c['multisine_sample_dt_s']!=.002:raise ValueError('Original generator uses 0.002 s interpolation knots')
+        if c.get('feedback_stop_policy')!='warn':raise ValueError('Multisine profile requires warn-only reference policy')
     if c['duration_s']>120 or c['duration_s']<2*c['ramp_s']:raise ValueError('Invalid trial duration')
 
 def main():
@@ -47,6 +62,7 @@ def main():
     ap.add_argument('--config',type=Path,default=BASE/'config.json');ap.add_argument('--pad',type=Path,default=BASE/'g8.json')
     ap.add_argument('--standing',action='store_true',help='LB+X performs boundary entry then moves to a fixed standing test pose')
     ap.add_argument('--from-current',action='store_true',help='J6-only trial anchored at actual startup pose; limited parked J2/J3 exceptions')
+    ap.add_argument('--trajectory',choices=['pilot','multisine'],help='pilot J6 sine or the original repository six-joint multisine')
     ap.add_argument('--scale',type=float,help='test displacement fraction (0,1]; preparation, return, time and frequency unchanged')
     ap.add_argument('--preflight-only',action='store_true',help='validate the hardware session without reading button actions or enabling motors')
     ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort','speed-stop'],help='simulation only; speed-stop injects speed feedback to preview a controlled stop')
@@ -73,7 +89,12 @@ def main():
             print('手柄监视已结束。',flush=True)
         finally:pad.close()
         return
-    cfg=json.loads(a.config.read_text());cfg['current_pose_only']=a.from_current;cfg['standing_start']=a.standing
+    cfg=json.loads(a.config.read_text())
+    selected=a.trajectory or cfg.get('trajectory','pilot')
+    if selected=='multisine':
+        if not a.standing or a.from_current:ap.error('Six-joint multisine uses --standing; cannot use --from-current')
+        if cfg.get('trajectory')!='multisine':cfg.update(json.loads((BASE/'multisine_profile.json').read_text()))
+    cfg['trajectory']=selected;cfg['current_pose_only']=a.from_current;cfg['standing_start']=a.standing
     if a.scale is not None:cfg['trajectory_scale']=a.scale
     if a.standing:
         from .standing import STANDING_DEG
@@ -151,11 +172,18 @@ def main():
             viewer=mujoco.viewer.launch_passive(b.model,b.data)
             viewer.cam.distance=1.3;viewer.cam.lookat[:]=[0,0,.3];viewer.cam.azimuth=135;viewer.cam.elevation=-25
         s=b.snapshot();now=0. if a.sim else time.monotonic();ctrl=Controller(b,cfg,s,now,emit)
+        if ctrl.reference_plan:
+            from .multisine import save_reference
+            save_reference(path,ctrl.test,ctrl.reference_plan)
+            limits=cfg.get('reported_motor_max_acceleration_rad_s2')
+            if limits and np.any(np.array(ctrl.reference_plan['max_acceleration_per_joint_rad_s2'])>limits):
+                emit('FIRMWARE_PLANNER_WARNING：参考加速度高于固件返回的规划配置；仅提示，固件可能平滑/限速。不会修改固件配置。')
+            emit('HARD_LINES：速度 '+str(cfg['feedback_speed_emergency_rad_s'])+' rad/s；测试跟踪 '+str(cfg['test_tracking_hard_deg'])+'°；电流 '+str((np.asarray(cfg['max_current_feedback_A'])*cfg['feedback_current_emergency_multiplier']).tolist())+' A。这些是独立工程保护线，不是厂商认证危险极限。')
         result['home_rad']=ctrl.home.tolist()
         result['return_home_rad']=ctrl.return_home.tolist()
         result['current_pose_only']=a.from_current
         result['standing_start']=a.standing
-        (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'return_home_deg':np.rad2deg(ctrl.return_home).tolist(),'return_home_delta_deg':np.rad2deg(ctrl.return_home-ctrl.home).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.lower).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint'],'shutdown':'park_then_confirm_six_axis_disabled','park_release_tolerance_deg':cfg['park_release_tolerance_deg'],'disable_confirm_s':cfg['disable_confirm_s']},ensure_ascii=False,indent=2))
+        (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'return_home_deg':np.rad2deg(ctrl.return_home).tolist(),'return_home_delta_deg':np.rad2deg(ctrl.return_home-ctrl.home).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.lower).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint'] if cfg['trajectory']=='pilot' else None,'moving_joints':[1,2,3,4,5,6] if cfg['trajectory']=='multisine' else [cfg['joint']],'shutdown':'park_then_confirm_six_axis_disabled','park_release_tolerance_deg':cfg['park_release_tolerance_deg'],'disable_confirm_s':cfg['disable_confirm_s']},ensure_ascii=False,indent=2))
         emit('启动角度（度）：'+str(np.round(np.rad2deg(ctrl.home),3).tolist()))
         if a.preflight_only:
             samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
@@ -198,7 +226,7 @@ def main():
             if log_failure:ctrl.request_stop(s,now,'Logging unavailable: '+log_failure)
             if viewer and viewer.is_running():
                 j=cfg['joint']-1
-                viewer.set_texts((None,None,'SIM ONLY | '+ctrl.state+'\nLB+X prepare | LB+Y start | LB+RB abort',f'J{j+1}: {np.rad2deg(s["q"][j]):.2f} deg\nTarget: {np.rad2deg(ctrl.last_target[j]):.2f} deg'))
+                viewer.set_texts((None,None,'SIM ONLY | '+cfg['trajectory']+' | scale '+str(cfg['trajectory_scale'])+' | '+ctrl.state+'\nLB+X prepare | LB+Y start | LB+RB abort',f'J{j+1}: {np.rad2deg(s["q"][j]):.2f} deg\nTarget: {np.rad2deg(ctrl.last_target[j]):.2f} deg'))
                 viewer.sync()
             step+=1
             if not a.scripted:
@@ -208,6 +236,7 @@ def main():
         result.update(completed=ctrl.state=='DONE',state=ctrl.state,aborted=ctrl.aborted,last_q=b.snapshot()['q'].tolist(),max_requested_velocity=cfg['max_velocity_rad_s'],stop_reason=ctrl.stop_reason)
     except Exception as e:
         result['error']=str(e);emit('STOPPED：'+str(e))
+        if hasattr(e,'reference_report'):(path/'reference_plan.json').write_text(json.dumps(e.reference_report,ensure_ascii=False,indent=2)+'\n')
         if ctrl:ctrl.fault(e)
         if b and b.active:b.quick_stop(str(e))
         result['state']='FAULT' if ctrl else 'PREFLIGHT_REJECTED'

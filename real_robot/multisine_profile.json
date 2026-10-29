@@ -1,0 +1,36 @@
+{
+  "trajectory": "multisine",
+  "duration_s": 60.0,
+  "ramp_s": 5.0,
+  "trajectory_scale": 0.5,
+  "test_max_velocity_rad_s": 3.0,
+  "test_max_acceleration_rad_s2": 20.0,
+  "multisine_base_frequency_hz": 0.2,
+  "multisine_harmonics": 5,
+  "multisine_amplitude_fraction": 0.6,
+  "multisine_seed": 0,
+  "multisine_sample_dt_s": 0.002,
+  "multisine_generation_lower_deg": [
+    -150,
+    0,
+    -170,
+    -89,
+    -70,
+    -120
+  ],
+  "multisine_generation_upper_deg": [
+    150,
+    180,
+    0,
+    89,
+    70,
+    120
+  ],
+  "braking_max_acceleration_rad_s2": 6.0,
+  "test_tracking_warning_deg": 10.0,
+  "test_tracking_hard_deg": 25.0,
+  "feedback_stop_policy": "warn",
+  "feedback_speed_warning_rad_s": 2.0,
+  "feedback_speed_stop_rad_s": 2.5,
+  "feedback_speed_emergency_rad_s": 3.0
+}

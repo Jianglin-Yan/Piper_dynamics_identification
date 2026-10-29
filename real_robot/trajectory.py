@@ -61,13 +61,20 @@ class ScaledTrajectory:
     def __init__(self,path,anchor,scale):
         if not np.isfinite(scale) or not 0<scale<=1:raise ValueError('scale must be in (0, 1]')
         self.path=path;self.anchor=np.asarray(anchor,float).copy();self.scale=float(scale)
-        self.duration=path.duration
+        self.duration=path.duration;self.supports_batch=getattr(path,'supports_batch',False)
     def at(self,t):
         q,v,a=self.path.at(t)
         return self.anchor+self.scale*(q-self.anchor),self.scale*v,self.scale*a
 
 
 def check_path(path, lower, upper, vmax, amax):
+    if getattr(path,'supports_batch',False):
+        q,v,a=path.at(np.linspace(0,path.duration,max(1001,int(path.duration/.002)+1)))
+        if not all(np.all(np.isfinite(x)) for x in (q,v,a)):raise ValueError('nonfinite trajectory')
+        if np.any(q<lower-1e-9) or np.any(q>upper+1e-9):raise ValueError('trajectory crosses joint safety bounds')
+        if np.max(np.abs(v))>vmax+1e-8:raise ValueError('trajectory exceeds velocity bound')
+        if np.max(np.abs(a))>amax+1e-8:raise ValueError('trajectory exceeds acceleration bound')
+        return
     # Preflight sampled more densely than the command period, with conservative bounds.
     for t in np.linspace(0,path.duration,max(1001,int(path.duration/.002)+1)):
         q,v,a=path.at(t)

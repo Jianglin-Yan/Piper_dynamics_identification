@@ -69,14 +69,18 @@ class Hardware:
         standing = self.c.get('standing_start',False)
         # The operator explicitly selects this bounded stationary-body wrist trial.
         # Keep workspace/protection metadata truthful; never mark unchecked facts as confirmed.
+        multisine=self.c.get('trajectory')=='multisine'
+        if multisine and (not standing or current_pose):raise ValueError('Multisine requires the standing preparation session')
         if current_pose or standing:
-            if self.c['joint']!=6 or (self.c['start_deg'] is not None and not standing) or self.c['amplitude_deg']>5 or self.c['frequency_hz']>.1:
+            if not multisine and (self.c['joint']!=6 or (self.c['start_deg'] is not None and not standing) or self.c['amplitude_deg']>5 or self.c['frequency_hz']>.1):
                 raise ValueError('Invalid current-pose J6 pilot profile')
         else:
             if self.c['workspace_checked'] is not True:
                 raise ValueError('Confirm the workspace for a trial with a separate start pose')
             if any(x==0 for x in info['collision']['collision_levels']) and self.c['collision_policy_reviewed'] is not True:
                 raise ValueError('Collision detection disabled; review protection policy for a general trial')
+        self.c['reported_motor_max_velocity_rad_s']=[info['limits'][j]['max_speed_raw']*.01 for j in range(1,7)]
+        self.c['reported_motor_max_acceleration_rad_s2']=[info['acceleration_limits'][j]['max_acc_raw']*.001 for j in range(1,7)]
         for j in range(1,7):
             lim=info['limits'][j];acc=info['acceleration_limits'][j]['max_acc_raw']
             if lim['max_deg']<=lim['min_deg'] or not 0<lim['max_speed_raw']<32767 or not 0<acc<32767:raise ValueError('Invalid hardware limits')

@@ -35,13 +35,32 @@ class Controller(Shutdown):
                 details.append(f'J{j+1}={np.rad2deg(self.home[j]):.3f}°, 配置 [{cfg["lower_deg"][j]}, {cfg["upper_deg"][j]}]°, 程序内部区间 [{np.rad2deg(self.lower[j]):.1f}, {np.rad2deg(self.upper[j]):.1f}]°（{kind}）')
             raise ValueError('启动检查器拒绝；这不等于固件已报机械超限：'+'；'.join(details)+'。保持原始读数，不自动钳位或改零位。')
         self.vmax=cfg['max_velocity_rad_s'];self.amax=cfg['max_acceleration_rad_s2']
-        self.nominal_test=Excitation(self.start,cfg['joint']-1,np.deg2rad(cfg['amplitude_deg']),cfg['frequency_hz'],cfg['duration_s'],cfg['ramp_s'])
-        self.test=ScaledTrajectory(self.nominal_test,self.start,cfg.get('trajectory_scale',1.))
-        self.emit(f'TEST_SCALE：{self.test.scale:.0%} 幅度；J{cfg["joint"]} ±{cfg["amplitude_deg"]*self.test.scale:.3f}°，频率和时长不变。')
+        self.multisine=cfg.get('trajectory','pilot')=='multisine'
+        self.test_vmax=cfg.get('test_max_velocity_rad_s',self.vmax);self.test_amax=cfg.get('test_max_acceleration_rad_s2',self.amax)
+        self.braking_amax=cfg.get('braking_max_acceleration_rad_s2',self.amax)
+        self.braking_from_test=False;self.last_tracking_warning=-np.inf;self.last_envelope_warning=-np.inf
+        self.reference_plan=None
+        if self.multisine:
+            from .multisine import RepositoryMultisine,reference_report,TrajectoryRejected
+            self.nominal_test=RepositoryMultisine(self.start,cfg)
+            self.test=ScaledTrajectory(self.nominal_test,self.start,cfg['trajectory_scale'])
+            low=np.deg2rad(cfg['lower_deg'])+np.deg2rad(cfg['margin_deg'])
+            high=np.deg2rad(cfg['upper_deg'])-np.deg2rad(cfg['margin_deg'])
+            self.reference_plan=reference_report(self.test,self.nominal_test,low,high,self.test_vmax,self.test_amax)
+            self.emit(f'MULTISINE：原库六关节多正弦，scale={self.test.scale:g}，'+
+                      f'峰值速度 {max(self.reference_plan["max_velocity_per_joint_rad_s"]):.3f} rad/s，'+
+                      f'峰值加速度 {max(self.reference_plan["max_acceleration_per_joint_rad_s2"]):.3f} rad/s²。')
+            if self.reference_plan['hard_violations']:raise TrajectoryRejected(self.reference_plan)
+            if self.reference_plan['warnings']:self.emit('REFERENCE_WARNING：'+str(self.reference_plan['warnings'])+'；规划参考告警，不作急停。')
+        else:
+            self.nominal_test=Excitation(self.start,cfg['joint']-1,np.deg2rad(cfg['amplitude_deg']),cfg['frequency_hz'],cfg['duration_s'],cfg['ramp_s'])
+            self.test=ScaledTrajectory(self.nominal_test,self.start,cfg.get('trajectory_scale',1.))
+            self.check(self.test)
+            self.emit(f'TEST_SCALE：{self.test.scale:.0%} 幅度；J{cfg["joint"]} ±{cfg["amplitude_deg"]*self.test.scale:.3f}°，频率和时长不变。')
         outbound_start=self.boundary_goal if self.standing_start else self.home
         self.outbound=transit(outbound_start,self.start,self.vmax,self.amax)
         self.inbound=transit(self.start,self.return_home,self.vmax,self.amax)
-        for p in (self.test,self.outbound,self.inbound):self.check(p)
+        for p in (self.outbound,self.inbound):self.check(p)
         self.state='WAITING';self.active=False;self.armed=False;self.aborted=False;self.last_target=self.home.copy()
         self.path=None;self.path_t=now;self.next_state=None;self.stable_since=None;self.settle_started=now
         self.speed_monitor=SpeedMonitor(cfg);self.current_monitor=CurrentMonitor(cfg);self.stop_reason=None;self.hold_goal=None
@@ -51,7 +70,10 @@ class Controller(Shutdown):
         self.init_shutdown()
         self.emit('WAITING：启动位置已保存。LB+X 准备；LB+Y 仅在 READY 后开始；LB+RB 中止。')
 
-    def check(self,path):check_path(path,self.lower,self.upper,self.vmax,self.amax)
+    def check(self,path,vmax=None,amax=None):
+        check_path(path,self.lower,self.upper,self.vmax if vmax is None else vmax,self.amax if amax is None else amax)
+    def tracking_hard_limit(self):
+        return self.c.get('test_tracking_hard_deg',self.c['tracking_error_deg']) if self.multisine and (self.state=='TESTING' or (self.state=='BRAKING' and self.braking_from_test)) else self.c['tracking_error_deg']
     def event(self,text):self.emit(text)
     def set_path(self,state,path,now):
         self.path=path;self.path_t=now;self.state=state;self.stable_since=None;self.event(state)
@@ -90,12 +112,15 @@ class Controller(Shutdown):
             self.b.check(s,True)
             if not np.all(s['enabled']):raise ValueError('incomplete motor enable')
             if s.get('status',{}).get('control_mode',1)!=1:raise ValueError('CAN position control not established')
-            if np.max(np.abs(np.rad2deg(s['q']-self.last_target)))>self.c['tracking_error_deg']:
+            if np.max(np.abs(np.rad2deg(s['q']-self.last_target)))>self.tracking_hard_limit():
                 raise ValueError('tracking too far from accepted reference')
             if np.any(s['q']<self.lower) or np.any(s['q']>self.upper):raise ValueError('measured pose outside session bounds')
             v=self.reference_velocity(now)
             if self.current_pose_only:v[:5]=0.
-            p=brake(self.last_target.copy(),v,self.vmax,self.amax);self.check(p)
+            self.braking_from_test=self.state=='TESTING'
+            stop_vmax=max(self.test_vmax,float(np.max(np.abs(v)))) if self.braking_from_test else self.vmax
+            stop_amax=self.braking_amax if self.braking_from_test else self.amax
+            p=brake(self.last_target.copy(),v,stop_vmax,stop_amax);self.check(p,stop_vmax,stop_amax)
             if self.state=='BOUNDARY_ENTRY':self.b.finish_native_move()
             self.set_path('BRAKING',p,now)
             self.event('CONTROLLED_STOP：'+self.stop_reason+'；取消轨迹，平滑制动、回位、确认静止，再失能退出。')
@@ -142,14 +167,25 @@ class Controller(Shutdown):
             if self.active:
                 if self.state!='ARMING' and not np.all(s['enabled']):raise ValueError('Joint disabled during active session')
                 errors=np.rad2deg(s['q']-self.last_target)
-                if np.max(np.abs(errors))>self.c['tracking_error_deg']:
+                if np.max(np.abs(errors))>self.tracking_hard_limit():
                     j=int(np.argmax(np.abs(errors)))
                     raise ValueError(f'tracking error exceeded: J{j+1}, target={np.rad2deg(self.last_target[j]):.3f}°, actual={np.rad2deg(s["q"][j]):.3f}°, error={errors[j]:+.3f}°')
                 if np.any(s['q']<self.lower) or np.any(s['q']>self.upper):raise ValueError('measured angle outside safety interior')
+                if self.multisine and self.state=='TESTING':
+                    if np.max(np.abs(errors))>self.c['test_tracking_warning_deg'] and now-self.last_tracking_warning>=1.:
+                        self.last_tracking_warning=now;self.event(f'TRACKING_WARNING：跟踪误差 {np.max(np.abs(errors)):.2f}°，记录告警；独立硬线 {self.tracking_hard_limit():g}°。')
+                    low=np.deg2rad(self.reference_plan['q_min_deg']);high=np.deg2rad(self.reference_plan['q_max_deg'])
+                    speed_envelope=np.array(self.reference_plan['max_velocity_per_joint_rad_s'])*1.25+.15
+                    exceeds=np.any(np.abs(s['qd'])>speed_envelope) or np.any(s['q']<low-np.deg2rad(2)) or np.any(s['q']>high+np.deg2rad(2))
+                    if exceeds and now-self.last_envelope_warning>=1.:
+                        self.last_envelope_warning=now;self.event('REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。')
                 speed=self.speed_monitor.update(now,s['qd'])
                 if speed['level']=='emergency':
                     raise ValueError(f'emergency overspeed: J{speed["joint"]}, feedback={speed["speed"]:+.3f} rad/s, threshold={self.speed_monitor.emergency:.3f} rad/s')
-                if speed['level']=='stop':
+                if speed['level']=='stop' and self.c.get('feedback_stop_policy')=='warn':
+                    if now-self.last_envelope_warning>=1.:
+                        self.last_envelope_warning=now;self.event(f'SPEED_WARNING：持续反馈速度 {speed["speed"]:+.3f} rad/s，超过告警线；尚未到独立硬线。')
+                elif speed['level']=='stop':
                     self.request_stop(s,now,f'sustained overspeed: J{speed["joint"]}, feedback={speed["speed"]:+.3f} rad/s, threshold={self.speed_monitor.stop:.3f} rad/s for {self.speed_monitor.duration:.2f} s')
                     if self.shutdown_phase:return
                 elif speed['level']=='warning':
@@ -157,7 +193,10 @@ class Controller(Shutdown):
                 if 'current_A' in s:
                     current=self.current_monitor.update(now,s['current_A'])
                     if current['level']=='emergency':raise ValueError(f'emergency current: J{current["joint"]}, feedback={current["current"]:+.3f} A')
-                    if current['level']=='stop':
+                    if current['level']=='stop' and self.c.get('feedback_stop_policy')=='warn':
+                        if now-self.last_envelope_warning>=1.:
+                            self.last_envelope_warning=now;self.event(f'CURRENT_WARNING：持续电流 {current["current"]:+.3f} A，记录告警，独立硬线保留。')
+                    elif current['level']=='stop':
                         self.request_stop(s,now,f'sustained feedback current: J{current["joint"]}, feedback={current["current"]:+.3f} A')
                         if self.shutdown_phase:return
                     elif current['level']=='warning':

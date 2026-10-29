@@ -48,7 +48,8 @@ class TestRecorder:
             self.active=True;self.start=ctrl.path_t
             self.manifest['windows'].append({'start_monotonic_s':self.start,'end_monotonic_s':None,
                 'planned_duration_s':ctrl.test.duration,'trajectory_scale':self.c.get('trajectory_scale',1.),
-                'anchor_rad':ctrl.start.tolist(),'nominal_amplitude_deg':self.c['amplitude_deg']})
+                'anchor_rad':ctrl.start.tolist(),'nominal_amplitude_deg':self.c['amplitude_deg'] if self.c.get('trajectory','pilot')=='pilot' else None,
+                'trajectory':self.c.get('trajectory','pilot'),'reference_plan':getattr(ctrl,'reference_plan',None)})
             self.save_manifest()
             return # Snapshot precedes the transition; it still belongs to READY/ARMING.
         if self.active and ctrl.state!='TESTING':

@@ -39,4 +39,12 @@ def main():
             for tt in times:ax.axvline(tt,color='r' if label=='ABORT' else 'gray',alpha=.4,linestyle='--')
     fig.suptitle(f'{result["mode"].upper()} single-joint pilot | {result.get("state")} | red line: LB+RB')
     fig.tight_layout();fig.savefig(a.run/'trial.png',dpi=140);plt.close(fig)
+    if cfg.get('trajectory')=='multisine':
+        fig,axes=plt.subplots(3,2,figsize=(12,9),sharex=True)
+        for joint,ax in enumerate(axes.flat):
+            ax.plot(t,np.rad2deg(target[:,joint]),label='Reference');ax.plot(t,np.rad2deg(q[:,joint]),label='Measured')
+            ax.set_ylabel(f'J{joint+1} (deg)');ax.grid(alpha=.2)
+        axes[0,0].legend();axes[-1,0].set_xlabel('Test time (s)');axes[-1,1].set_xlabel('Test time (s)')
+        fig.suptitle(f'{result["mode"].upper()} | six-joint multisine | scale={cfg["trajectory_scale"]}')
+        fig.tight_layout();fig.savefig(a.run/'six_joint_trial.png',dpi=150);plt.close(fig)
 if __name__=='__main__':main()
