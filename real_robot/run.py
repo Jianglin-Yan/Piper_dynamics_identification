@@ -163,7 +163,8 @@ def main():
             if a.read_only:
                 samples.write(json.dumps(s,default=serializable)+'\n');result.update(completed=True,state='READ_ONLY');return
             b.preflight(info)
-            emit(f'反馈监测：速度 {cfg["feedback_speed_warning_rad_s"]:.2f} rad/s 告警，{cfg["feedback_speed_stop_rad_s"]:.2f} rad/s 持续 {cfg["feedback_speed_stop_duration_s"]:.2f} s 制动回位并失能；严重故障仍走电子急停并监视收尾。')
+            monitor_action="仅告警、继续测试" if cfg.get("feedback_stop_policy")=="warn" else "制动回位并失能"
+            emit(f'反馈监测：速度 {cfg["feedback_speed_warning_rad_s"]:.2f} rad/s 告警，{cfg["feedback_speed_stop_rad_s"]:.2f} rad/s 持续 {cfg["feedback_speed_stop_duration_s"]:.2f} s 后{monitor_action}；独立硬线和严重故障仍走故障停止。')
             if a.from_current:
                 emit('FROM_CURRENT：按操作者指定使用当前姿态，只进行 J6 有界试采；不修改限位/零位/保护等级。')
             if a.from_current or a.standing:
