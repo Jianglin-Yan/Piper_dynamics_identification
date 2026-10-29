@@ -35,21 +35,23 @@ class TestStanding(unittest.TestCase):
             if k.state=='FAULT':break
         self.assertEqual(k.state,'FAULT');self.assertTrue(any('position control not proven' in s for s in m));self.assertEqual(len(b.stops),1)
         self.assertFalse(any(s=='TESTING' for s in m))
-    def test_trial_finishes_at_original_park_not_standing(self):
+    def test_trial_finishes_at_nearest_legal_park_not_standing(self):
         c,b,k,_=self.make();started=False;home=b.q.copy()
         for n in range(8000):
             action='PREPARE' if n==1 else None
             if k.state=='READY' and not started:action='START';started=True
             k.tick(n*.01,b.snapshot(),action)
             if k.state in ('DONE','FAULT'):break
-        self.assertTrue(started);self.assertEqual(k.state,'DONE');np.testing.assert_allclose(b.q,home,atol=1e-9)
+        self.assertTrue(started);self.assertEqual(k.state,'DONE');np.testing.assert_allclose(b.q,k.return_home,atol=1e-9)
+        np.testing.assert_allclose(k.home,home,atol=1e-9)
+        np.testing.assert_allclose(k.return_home[1:3],0,atol=1e-9)
     def test_abort_while_entering_restores_native_mode_and_returns(self):
         c,b,k,_=self.make();home=b.q.copy();k.tick(.01,b.snapshot(),'PREPARE');k.tick(.02,b.snapshot())
         self.assertEqual(k.state,'BOUNDARY_ENTRY');k.tick(.03,b.snapshot(),'ABORT');self.assertFalse(b.native_active)
         for n in range(4,1000):
             k.tick(n*.01,b.snapshot())
             if k.state in ('DONE','FAULT'):break
-        self.assertEqual(k.state,'DONE');np.testing.assert_allclose(b.q,home,atol=1e-9)
+        self.assertEqual(k.state,'DONE');np.testing.assert_allclose(b.q,k.return_home,atol=1e-9)
     def test_unknown_large_park_excursion_refused(self):
         c,b,k,_=self.make();q=k.home.copy();q[1]=np.deg2rad(-4)
         with self.assertRaises(ValueError):standing_plan(c,q)

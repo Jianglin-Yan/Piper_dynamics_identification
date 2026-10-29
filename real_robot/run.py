@@ -99,6 +99,13 @@ def main():
                 if not re.fullmatch(r'[A-Za-z0-9_-]+',cfg['channel']):raise ValueError('Invalid CAN channel name')
                 lease=open('/tmp/piper-pilot-'+cfg['channel']+'.lock','w')
                 fcntl.flock(lease,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            if a.hardware:
+                from .session_history import previous_controller_session, require_recovered
+                history=previous_controller_session([BASE.parent/'runs',a.output],cfg['channel'],exclude=path)
+                result['previous_controller_session']=history
+                if history:
+                    emit('STARTUP_HISTORY：'+history['reason']+' 记录：'+history['run'])
+                if not a.preflight_only:require_recovered(history)
             b=Hardware(cfg,path);info=b.discover();(path/'hardware.json').write_text(json.dumps(info,ensure_ascii=False,indent=2));emit('只读查询完成：'+next((x for x in info['firmware'].split('\x00') if x.startswith('S-V')),'未知固件')+'；详细参数已保存 hardware.json')
             s=b.snapshot();b.check(s,False)
             if a.recover:
@@ -128,9 +135,10 @@ def main():
             viewer.cam.distance=1.3;viewer.cam.lookat[:]=[0,0,.3];viewer.cam.azimuth=135;viewer.cam.elevation=-25
         s=b.snapshot();now=0. if a.sim else time.monotonic();ctrl=Controller(b,cfg,s,now,emit)
         result['home_rad']=ctrl.home.tolist()
+        result['return_home_rad']=ctrl.return_home.tolist()
         result['current_pose_only']=a.from_current
         result['standing_start']=a.standing
-        (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.lower).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint']},ensure_ascii=False,indent=2))
+        (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'return_home_deg':np.rad2deg(ctrl.return_home).tolist(),'return_home_delta_deg':np.rad2deg(ctrl.return_home-ctrl.home).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.lower).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint']},ensure_ascii=False,indent=2))
         emit('启动角度（度）：'+str(np.round(np.rad2deg(ctrl.home),3).tolist()))
         if a.preflight_only:
             samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
@@ -179,6 +187,7 @@ def main():
         if b and b.active:b.quick_stop(str(e))
         result['state']='FAULT' if ctrl else 'PREFLIGHT_REJECTED'
     finally:
+        if ctrl and ctrl.fault_reason:result['fault_reason']=ctrl.fault_reason
         if b and ctrl and ctrl.state=='FAULT':
             # The stop is already latched. Observe only; do not call tick/check/command.
             emit('FAULT_CAPTURE：继续记录停止后 3 秒反馈，不恢复、不使能、不发送目标。')

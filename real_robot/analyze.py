@@ -10,11 +10,12 @@ def main():
     if not rows:raise SystemExit('Only read-only snapshot available; no trajectory samples to analyze.')
     t=np.array([r['t_control'] for r in rows]);t-=t[0]
     q=np.array([r['feedback']['q'] for r in rows]);qd=np.array([r['feedback']['qd'] for r in rows]);target=np.array([r.get('q_target',[float('nan')]*6) for r in rows]);j=cfg['joint']-1
-    result=json.loads((a.run/'result.json').read_text());home=np.array(result.get('home_rad',q[0]));events={}
+    result=json.loads((a.run/'result.json').read_text());home=np.array(result.get('home_rad',q[0]));return_home=np.array(result.get('return_home_rad',home));events={}
     for r,tt in zip(rows,t):
         if r.get('action'):events.setdefault(r['action'],[]).append(float(tt))
     tracking=np.abs(q-target);valid=np.all(np.isfinite(target),axis=1)
     out={'mode':result['mode'],'state':result.get('state'),'joint':j+1,'duration_s':float(t[-1]),'events_seconds':events,'peak_to_peak_deg':np.rad2deg(np.ptp(q,axis=0)).tolist(),'max_tracking_error_deg':np.rad2deg(np.max(tracking[valid],axis=0)).tolist() if np.any(valid) else None,'post_stop_observation_samples':sum(r.get('state')=='FAULT_OBSERVATION' for r in rows),'last_home_error_deg':np.rad2deg(q[-1]-home).tolist(),'note':'Simulation/controller validation only unless mode explicitly equals hardware. Current-to-torque candidate is not calibrated. No target is invented for fault-observation samples.'}
+    out.update(return_home_deg=np.rad2deg(return_home).tolist(),return_home_delta_deg=np.rad2deg(return_home-home).tolist(),last_return_error_deg=np.rad2deg(q[-1]-return_home).tolist())
     (a.run/'analysis.json').write_text(json.dumps(out,ensure_ascii=False,indent=2));print(json.dumps(out,ensure_ascii=False,indent=2))
     import matplotlib
     matplotlib.use('Agg')

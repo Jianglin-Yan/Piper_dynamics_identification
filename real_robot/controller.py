@@ -11,12 +11,17 @@ class Controller:
         self.b=backend;self.c=cfg;self.emit=emit;self.home=snapshot['q'].copy();self.now=now
         self.current_pose_only=cfg.get('current_pose_only',False)
         self.standing_start=cfg.get('standing_start',False);self.boundary_goal=None;self.entry_stable_since=None
+        self.return_home=self.home.copy()
         self.start=self.home.copy() if cfg['start_deg'] is None else np.deg2rad(cfg['start_deg'])
         self.lower=np.deg2rad(cfg['lower_deg'])+np.deg2rad(cfg['margin_deg'])
         self.upper=np.deg2rad(cfg['upper_deg'])-np.deg2rad(cfg['margin_deg'])
         if self.standing_start:
             self.start,self.boundary_goal,self.lower,self.upper=standing_plan(cfg,self.home)
+            self.return_home=self.boundary_goal.copy()
             self.emit('STANDING：LB+X 将先进入合法边界小过渡点，再平滑移到 '+str(np.rad2deg(self.start).round(3).tolist())+'°；到位后才允许 LB+Y。')
+            difference=np.rad2deg(self.return_home-self.home)
+            if np.max(np.abs(difference))>1e-8:
+                self.emit('RETURN_HOME：原始启动值保留；实际回位到最近合法点 '+str(np.rad2deg(self.return_home).round(3).tolist())+'°；相对原始启动值差 '+str(difference.round(3).tolist())+'°。')
         if self.current_pose_only:
             self.lower,self.upper=current_pose_bounds(cfg,self.home)
             self.emit('CURRENT_POSE：已锚定启动姿态，仅 J6 运动；J1–J5 保持原目标，允许测量漂移不超过 0.5°。')
@@ -32,13 +37,14 @@ class Controller:
         self.test=Excitation(self.start,cfg['joint']-1,np.deg2rad(cfg['amplitude_deg']),cfg['frequency_hz'],cfg['duration_s'],cfg['ramp_s'])
         outbound_start=self.boundary_goal if self.standing_start else self.home
         self.outbound=transit(outbound_start,self.start,self.vmax,self.amax)
-        self.inbound=transit(self.start,self.home,self.vmax,self.amax)
+        self.inbound=transit(self.start,self.return_home,self.vmax,self.amax)
         for p in (self.test,self.outbound,self.inbound):self.check(p)
         self.state='WAITING';self.active=False;self.armed=False;self.aborted=False;self.last_target=self.home.copy()
         self.path=None;self.path_t=now;self.next_state=None;self.stable_since=None;self.settle_started=now
         self.speed_monitor=SpeedMonitor(cfg);self.current_monitor=CurrentMonitor(cfg);self.stop_reason=None;self.hold_goal=None
         self.can_stable_since=None
         self.pose_history=[];self.pose_history_state=None
+        self.fault_reason=None
         self.emit('WAITING：启动位置已保存。LB+X 准备；LB+Y 仅在 READY 后开始；LB+RB 中止。')
 
     def check(self,path):check_path(path,self.lower,self.upper,self.vmax,self.amax)
@@ -61,6 +67,7 @@ class Controller:
                 np.max(np.rad2deg(span))<=self.c.get('settle_position_window_deg',.20))
     def fault(self,reason):
         if self.state=='FAULT':return
+        self.fault_reason=str(reason)
         self.state='FAULT';self.event('FAULT：'+str(reason)+'；电子急停可能使抬起的机械臂阻尼回落，禁止自动回位/恢复。')
         if self.active:self.b.quick_stop(str(reason))
         self.active=False
@@ -105,14 +112,15 @@ class Controller:
         elif next_state=='PREPARE':self.set_path('PREPARING',self.outbound,now)
         else:self.set_path('TESTING',self.test,now)
     def finish_settle(self,now,s):
-        target=self.start if self.state=='SETTLING_READY' else self.home
+        target=self.start if self.state=='SETTLING_READY' else self.return_home
         self.command(target)
         stable=self.position_stable(s,now,target,self.c['settle_error_deg'])
         if stable:
             if self.state=='SETTLING_READY':self.state='READY';self.event('READY：已到测试起点。松开按键后 LB+Y 开始。')
             else:
                 self.state='DONE';self.active=False;self.b.finish()
-                self.event('DONE：已回到程序启动位置，试采结束；保持使能，不自动卸力。')
+                label='最近合法回位点' if np.max(np.abs(self.return_home-self.home))>1e-8 else '程序启动位置'
+                self.event('DONE：已回到'+label+'，试采结束；保持使能，不自动卸力。再次运行无需因正常结束而重置。')
         else:self.stable_since=None
         if not stable and now-self.settle_started>self.c['settle_timeout_s']:raise ValueError('Timed out settling at target')
     def command(self,q):
@@ -163,7 +171,7 @@ class Controller:
                     brake_q[:5]=self.home[:5];brake_v[:5]=0.
                 p=brake(brake_q,brake_v,self.vmax,self.amax);self.check(p)
                 self.set_path('BRAKING',p,now)
-                self.event('LB+RB：立即取消激励，受限平滑制动后回到启动位置。')
+                self.event('LB+RB：立即取消激励，受限平滑制动后回到已显示的回位点。')
             if self.state=='WAITING':
                 if action=='PREPARE':
                     if np.max(np.abs(s['q']-self.home))>np.deg2rad(self.c['settle_error_deg']):raise ValueError('Startup pose changed; restart')
@@ -218,7 +226,7 @@ class Controller:
                     if self.state=='PREPARING':self.state='SETTLING_READY';self.settle_started=now;self.stable_since=None
                     elif self.state in ('TESTING','BRAKING'):
                         if self.state=='TESTING':p=self.inbound
-                        else:p=transit(q,self.home,self.vmax,self.amax);self.check(p)
+                        else:p=transit(q,self.return_home,self.vmax,self.amax);self.check(p)
                         self.set_path('RETURNING',p,now)
                     else:self.state='SETTLING_HOME';self.settle_started=now;self.stable_since=None
             elif self.state in ('SETTLING_READY','SETTLING_HOME'):self.finish_settle(now,s)
