@@ -1,6 +1,6 @@
 """Backend-independent state machine. ABORT = controlled braking + return, not safety-rated E-stop."""
 import numpy as np
-from .trajectory import Excitation, transit, brake, check_path
+from .trajectory import Excitation, ScaledTrajectory, transit, brake, check_path
 from .current_pose import current_pose_bounds, ARM_POSE_TOLERANCE_DEG
 from .standing import standing_plan
 from .monitoring import SpeedMonitor, CurrentMonitor
@@ -35,7 +35,9 @@ class Controller(Shutdown):
                 details.append(f'J{j+1}={np.rad2deg(self.home[j]):.3f}°, 配置 [{cfg["lower_deg"][j]}, {cfg["upper_deg"][j]}]°, 程序内部区间 [{np.rad2deg(self.lower[j]):.1f}, {np.rad2deg(self.upper[j]):.1f}]°（{kind}）')
             raise ValueError('启动检查器拒绝；这不等于固件已报机械超限：'+'；'.join(details)+'。保持原始读数，不自动钳位或改零位。')
         self.vmax=cfg['max_velocity_rad_s'];self.amax=cfg['max_acceleration_rad_s2']
-        self.test=Excitation(self.start,cfg['joint']-1,np.deg2rad(cfg['amplitude_deg']),cfg['frequency_hz'],cfg['duration_s'],cfg['ramp_s'])
+        self.nominal_test=Excitation(self.start,cfg['joint']-1,np.deg2rad(cfg['amplitude_deg']),cfg['frequency_hz'],cfg['duration_s'],cfg['ramp_s'])
+        self.test=ScaledTrajectory(self.nominal_test,self.start,cfg.get('trajectory_scale',1.))
+        self.emit(f'TEST_SCALE：{self.test.scale:.0%} 幅度；J{cfg["joint"]} ±{cfg["amplitude_deg"]*self.test.scale:.3f}°，频率和时长不变。')
         outbound_start=self.boundary_goal if self.standing_start else self.home
         self.outbound=transit(outbound_start,self.start,self.vmax,self.amax)
         self.inbound=transit(self.start,self.return_home,self.vmax,self.amax)

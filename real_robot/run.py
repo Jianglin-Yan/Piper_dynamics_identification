@@ -5,6 +5,7 @@ import numpy as np
 from .controller import Controller
 from .gamepad import Gamepad, calibrate
 from .monitoring import validate_speed_limits
+from .test_data import TestRecorder, export_test_data
 
 BASE=Path(__file__).parent
 
@@ -15,6 +16,8 @@ def serializable(x):
 
 def validate_config(c):
     validate_speed_limits(c)
+    c.setdefault('trajectory_scale',1.)
+    if not np.isfinite(c['trajectory_scale']) or not 0<c['trajectory_scale']<=1:raise ValueError('trajectory_scale must be in (0, 1]')
     c.setdefault('settle_position_window_deg',.20);c.setdefault('arming_velocity_limit_rad_s',.15)
     c.setdefault('park_release_tolerance_deg',3.);c.setdefault('disable_timeout_s',2.);c.setdefault('disable_confirm_s',.15)
     for key in ('settle_position_window_deg','arming_velocity_limit_rad_s','park_release_tolerance_deg','disable_timeout_s','disable_confirm_s'):
@@ -44,6 +47,7 @@ def main():
     ap.add_argument('--config',type=Path,default=BASE/'config.json');ap.add_argument('--pad',type=Path,default=BASE/'g8.json')
     ap.add_argument('--standing',action='store_true',help='LB+X performs boundary entry then moves to a fixed standing test pose')
     ap.add_argument('--from-current',action='store_true',help='J6-only trial anchored at actual startup pose; limited parked J2/J3 exceptions')
+    ap.add_argument('--scale',type=float,help='test displacement fraction (0,1]; preparation, return, time and frequency unchanged')
     ap.add_argument('--preflight-only',action='store_true',help='validate the hardware session without reading button actions or enabling motors')
     ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort','speed-stop'],help='simulation only; speed-stop injects speed feedback to preview a controlled stop')
     ap.add_argument('--output',type=Path,default=BASE.parent/'runs');ap.add_argument('--max-seconds',type=float,default=120)
@@ -70,6 +74,7 @@ def main():
         finally:pad.close()
         return
     cfg=json.loads(a.config.read_text());cfg['current_pose_only']=a.from_current;cfg['standing_start']=a.standing
+    if a.scale is not None:cfg['trajectory_scale']=a.scale
     if a.standing:
         from .standing import STANDING_DEG
         cfg['start_deg']=cfg.get('standing_start_deg',STANDING_DEG)
@@ -81,7 +86,7 @@ def main():
             raise ValueError('--from-current requires joint=6, start_deg=null, frequency<=0.1 Hz')
     path=a.output/datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f');path.mkdir(parents=True)
     (path/'config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
-    b=None;pad=None;viewer=None;ctrl=None;lease=None;result={'mode':'sim' if a.sim else 'recovery' if a.recover else 'read-only' if a.read_only else 'hardware','completed':False}
+    b=None;pad=None;viewer=None;ctrl=None;lease=None;recorder=None;result={'mode':'sim' if a.sim else 'recovery' if a.recover else 'read-only' if a.read_only else 'hardware','completed':False}
     events=(path/'events.jsonl').open('w',buffering=1);samples=(path/'samples.jsonl').open('w',buffering=65536)
     log_failure=None
     def emit(msg):
@@ -156,6 +161,8 @@ def main():
             samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
             result.update(completed=True,state='PREFLIGHT_ONLY')
             return
+        recorder=TestRecorder(path,cfg,'sim' if a.sim else 'hardware')
+        emit('DATA：只将 TESTING 写入 test_samples.jsonl；原始测试帧和导出数据在收尾后生成。')
         dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False
         while not ctrl.finished:
             now=step*dt if a.sim else time.monotonic()
@@ -184,6 +191,8 @@ def main():
                 timeout_handled=True;ctrl.request_stop(s,now,'Session timeout')
             if not a.sim and ctrl.active and time.monotonic()-last_wall>cfg['loop_watchdog_s']:ctrl.fault('Control loop late')
             last_wall=time.monotonic();ctrl.tick(now,s,action)
+            try:recorder.update(ctrl,now,s,now if a.sim else time.monotonic(),action)
+            except OSError as e:log_failure=str(e);ctrl.request_stop(s,now,'Test data logging unavailable: '+str(e))
             tracking_target=ctrl.last_target if not ctrl.shutdown_phase else np.full(6,np.nan)
             record({'t_control':now,'state':ctrl.state,'shutdown_phase':ctrl.shutdown_phase,'action':action,'q_target':tracking_target,'feedback':s})
             if log_failure:ctrl.request_stop(s,now,'Logging unavailable: '+log_failure)
@@ -203,6 +212,9 @@ def main():
         if b and b.active:b.quick_stop(str(e))
         result['state']='FAULT' if ctrl else 'PREFLIGHT_REJECTED'
     finally:
+        if recorder:
+            try:recorder.close(b.snapshot()['time'],'loop_ended')
+            except OSError as e:log_failure=str(e)
         if ctrl and ctrl.fault_reason:result['fault_reason']=ctrl.fault_reason
         if log_failure:result['log_error']=log_failure
         if b and ctrl and not ctrl.finished and not a.preflight_only:
@@ -230,8 +242,14 @@ def main():
         if viewer:viewer.close()
         if pad:pad.close()
         if b:b.close()
+        if recorder:
+            try:
+                result['test_data']=export_test_data(path)
+                emit('DATA_SAVED：'+str(result['test_data']['sample_count'])+' 条测试快照；test_signals.csv / test_signals.npz，详见 test_quality.json。')
+            except Exception as e:
+                result['data_export_error']=str(e);result['completed']=False;emit('DATA_EXPORT_FAILED：'+str(e))
         if lease:lease.close()
         for s,h in old_handlers.items():signal.signal(s,h)
         samples.close();events.close();(path/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2,default=serializable));print('Run files:',path,flush=True)
-    if result.get('state') in ('FAULT','PREFLIGHT_REJECTED') or result.get('log_error'):raise SystemExit(2)
+    if result.get('state') in ('FAULT','PREFLIGHT_REJECTED') or result.get('log_error') or result.get('data_export_error'):raise SystemExit(2)
 if __name__=='__main__':main()

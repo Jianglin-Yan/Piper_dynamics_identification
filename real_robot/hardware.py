@@ -93,6 +93,9 @@ class Hardware:
         current=np.array([x.get('current_signed_A',float('nan')) for x in high])
         return {'time':time.monotonic(),'q':np.deg2rad(q),'qd':np.array([x.get('velocity_sdk_rad_s',float('nan')) for x in high]),'current_A':current,'tau_candidate_Nm':current*np.array([4.725]*3+[.95844]*3),
                 'q_times':np.array(qt),'drive_times':np.array([x.get('time',0) for x in high]),'low_times':np.array([x.get('time',0) for x in low]),
+                'motor_position_raw':[x.get('motor_position_raw') for x in high],
+                'driver_temp_C':[x.get('driver_temp_C') for x in low],'motor_temp_C':[x.get('motor_temp_C') for x in low],
+                'bus_current_A':[x.get('bus_current_A') for x in low],
                 'enabled':np.array([x.get('enabled',False) for x in low]),'faults':[x.get('fault_bits_excluding_enable',255) for x in low],
                 'temp_C':[max(x.get('driver_temp_C',999),x.get('motor_temp_C',999)) for x in low], 'voltage_V':[x.get('voltage_V',0) for x in low],
                 'status':latest.get(0x2a1,{}),'gripper':latest.get(0x2a8,{})}

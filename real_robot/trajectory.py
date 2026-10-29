@@ -56,6 +56,17 @@ class Excitation:
         return q,v,a
 
 
+class ScaledTrajectory:
+    """Scale displacement around a fixed anchor; retain duration and frequency."""
+    def __init__(self,path,anchor,scale):
+        if not np.isfinite(scale) or not 0<scale<=1:raise ValueError('scale must be in (0, 1]')
+        self.path=path;self.anchor=np.asarray(anchor,float).copy();self.scale=float(scale)
+        self.duration=path.duration
+    def at(self,t):
+        q,v,a=self.path.at(t)
+        return self.anchor+self.scale*(q-self.anchor),self.scale*v,self.scale*a
+
+
 def check_path(path, lower, upper, vmax, amax):
     # Preflight sampled more densely than the command period, with conservative bounds.
     for t in np.linspace(0,path.duration,max(1001,int(path.duration/.002)+1)):
