@@ -5,3 +5,6 @@ results/*.npy
 
 # Real-hardware and simulation pilot recordings
 /runs/
+
+# Python runtime caches are not source changes
+__pycache__/

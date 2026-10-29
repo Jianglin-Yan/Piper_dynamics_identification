@@ -57,14 +57,16 @@ class Excitation:
 
 
 class ScaledTrajectory:
-    """Scale displacement around a fixed anchor; retain duration and frequency."""
-    def __init__(self,path,anchor,scale):
+    """Independent displacement and playback-speed fractions around a fixed anchor."""
+    def __init__(self,path,anchor,scale,speed_scale=1.):
         if not np.isfinite(scale) or not 0<scale<=1:raise ValueError('scale must be in (0, 1]')
+        if not np.isfinite(speed_scale) or not 0<speed_scale<=1:raise ValueError('speed_scale must be in (0, 1]')
         self.path=path;self.anchor=np.asarray(anchor,float).copy();self.scale=float(scale)
-        self.duration=path.duration;self.supports_batch=getattr(path,'supports_batch',False)
+        self.speed_scale=float(speed_scale)
+        self.duration=path.duration/self.speed_scale;self.supports_batch=getattr(path,'supports_batch',False)
     def at(self,t):
-        q,v,a=self.path.at(t)
-        return self.anchor+self.scale*(q-self.anchor),self.scale*v,self.scale*a
+        q,v,a=self.path.at(np.asarray(t)*self.speed_scale)
+        return self.anchor+self.scale*(q-self.anchor),self.scale*self.speed_scale*v,self.scale*self.speed_scale**2*a
 
 
 def check_path(path, lower, upper, vmax, amax):

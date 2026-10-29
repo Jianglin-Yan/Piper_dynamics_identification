@@ -43,20 +43,20 @@ class Controller(Shutdown):
         if self.multisine:
             from .multisine import RepositoryMultisine,reference_report,TrajectoryRejected
             self.nominal_test=RepositoryMultisine(self.start,cfg)
-            self.test=ScaledTrajectory(self.nominal_test,self.start,cfg['trajectory_scale'])
+            self.test=ScaledTrajectory(self.nominal_test,self.start,cfg['trajectory_scale'],cfg.get('trajectory_speed_scale',1.))
             low=np.deg2rad(cfg['lower_deg'])+np.deg2rad(cfg['margin_deg'])
             high=np.deg2rad(cfg['upper_deg'])-np.deg2rad(cfg['margin_deg'])
             self.reference_plan=reference_report(self.test,self.nominal_test,low,high,self.test_vmax,self.test_amax)
-            self.emit(f'MULTISINE：原库六关节多正弦，scale={self.test.scale:g}，'+
+            self.emit(f'MULTISINE：原库六关节多正弦，幅度scale={self.test.scale:g}，速度scale={self.test.speed_scale:g}，时长{self.test.duration:g}秒，'+
                       f'峰值速度 {max(self.reference_plan["max_velocity_per_joint_rad_s"]):.3f} rad/s，'+
                       f'峰值加速度 {max(self.reference_plan["max_acceleration_per_joint_rad_s2"]):.3f} rad/s²。')
             if self.reference_plan['hard_violations']:raise TrajectoryRejected(self.reference_plan)
             if self.reference_plan['warnings']:self.emit('REFERENCE_WARNING：'+str(self.reference_plan['warnings'])+'；规划参考告警，不作急停。')
         else:
             self.nominal_test=Excitation(self.start,cfg['joint']-1,np.deg2rad(cfg['amplitude_deg']),cfg['frequency_hz'],cfg['duration_s'],cfg['ramp_s'])
-            self.test=ScaledTrajectory(self.nominal_test,self.start,cfg.get('trajectory_scale',1.))
+            self.test=ScaledTrajectory(self.nominal_test,self.start,cfg.get('trajectory_scale',1.),cfg.get('trajectory_speed_scale',1.))
             self.check(self.test)
-            self.emit(f'TEST_SCALE：{self.test.scale:.0%} 幅度；J{cfg["joint"]} ±{cfg["amplitude_deg"]*self.test.scale:.3f}°，频率和时长不变。')
+            self.emit(f'TEST_SCALE：{self.test.scale:.0%} 幅度；J{cfg["joint"]} ±{cfg["amplitude_deg"]*self.test.scale:.3f}°，速度比例 {self.test.speed_scale:g}，时长 {self.test.duration:g} 秒。')
         outbound_start=self.boundary_goal if self.standing_start else self.home
         self.outbound=transit(outbound_start,self.start,self.vmax,self.amax)
         self.inbound=transit(self.start,self.return_home,self.vmax,self.amax)

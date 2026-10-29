@@ -19,6 +19,8 @@ def validate_config(c):
     c.setdefault('trajectory','pilot')
     if c['trajectory'] not in ('pilot','multisine'):raise ValueError('Unknown trajectory')
     c.setdefault('trajectory_scale',1.)
+    c.setdefault('trajectory_speed_scale',1.)
+    if not np.isfinite(c['trajectory_speed_scale']) or not 0<c['trajectory_speed_scale']<=1:raise ValueError('trajectory_speed_scale must be in (0, 1]')
     if not np.isfinite(c['trajectory_scale']) or not 0<c['trajectory_scale']<=1:raise ValueError('trajectory_scale must be in (0, 1]')
     c.setdefault('settle_position_window_deg',.20);c.setdefault('arming_velocity_limit_rad_s',.15)
     c.setdefault('park_release_tolerance_deg',3.);c.setdefault('disable_timeout_s',2.);c.setdefault('disable_confirm_s',.15)
@@ -63,6 +65,7 @@ def main():
     ap.add_argument('--standing',action='store_true',help='LB+X performs boundary entry then moves to a fixed standing test pose')
     ap.add_argument('--from-current',action='store_true',help='J6-only trial anchored at actual startup pose; limited parked J2/J3 exceptions')
     ap.add_argument('--trajectory',choices=['pilot','multisine'],help='pilot J6 sine or the original repository six-joint multisine')
+    ap.add_argument('--speed-scale',type=float,help='test playback-speed fraction (0,1]; 0.5 doubles test/ramp duration, preserving motion range')
     ap.add_argument('--scale',type=float,help='test displacement fraction (0,1]; preparation, return, time and frequency unchanged')
     ap.add_argument('--preflight-only',action='store_true',help='validate the hardware session without reading button actions or enabling motors')
     ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort','speed-stop'],help='simulation only; speed-stop injects speed feedback to preview a controlled stop')
@@ -96,6 +99,7 @@ def main():
         if cfg.get('trajectory')!='multisine':cfg.update(json.loads((BASE/'multisine_profile.json').read_text()))
     cfg['trajectory']=selected;cfg['current_pose_only']=a.from_current;cfg['standing_start']=a.standing
     if a.scale is not None:cfg['trajectory_scale']=a.scale
+    if a.speed_scale is not None:cfg['trajectory_speed_scale']=a.speed_scale
     if a.standing:
         from .standing import STANDING_DEG
         cfg['start_deg']=cfg.get('standing_start_deg',STANDING_DEG)
@@ -226,7 +230,7 @@ def main():
             if log_failure:ctrl.request_stop(s,now,'Logging unavailable: '+log_failure)
             if viewer and viewer.is_running():
                 j=cfg['joint']-1
-                viewer.set_texts((None,None,'SIM ONLY | '+cfg['trajectory']+' | scale '+str(cfg['trajectory_scale'])+' | '+ctrl.state+'\nLB+X prepare | LB+Y start | LB+RB abort',f'J{j+1}: {np.rad2deg(s["q"][j]):.2f} deg\nTarget: {np.rad2deg(ctrl.last_target[j]):.2f} deg'))
+                viewer.set_texts((None,None,'SIM ONLY | '+cfg['trajectory']+' | scale '+str(cfg['trajectory_scale'])+' | speed '+str(cfg['trajectory_speed_scale'])+' | '+ctrl.state+'\nLB+X prepare | LB+Y start | LB+RB abort',f'J{j+1}: {np.rad2deg(s["q"][j]):.2f} deg\nTarget: {np.rad2deg(ctrl.last_target[j]):.2f} deg'))
                 viewer.sync()
             step+=1
             if not a.scripted:

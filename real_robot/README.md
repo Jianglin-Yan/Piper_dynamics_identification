@@ -1,5 +1,16 @@
 # G8 控制的 PiPER 动力学试采
 
+## 独立幅度与速度缩放（2026-10-29）
+
+```bash
+bash real_robot/pilot.sh sim --standing --trajectory multisine --scale 0.5 --speed-scale 0.5 --max-seconds 600
+```
+
+`--scale`为幅度比例，`--speed-scale`为播放速度比例，均允许0<S≤1；不传速度参数默认1，兼容旧行为。计算为 `q=q_anchor+amplitude_scale*(q_source(speed_scale*t)-q_anchor)`；参考速度乘 `amplitude_scale*speed_scale`，参考加速度乘 `amplitude_scale*speed_scale²`。两个参数均0.5时，相比原先50%幅度/原速：动作范围相同，速度减半，加速度降为四分之一，测试60秒变120秒，两端包络各5秒变10秒，基频0.2Hz变0.1Hz。准备、回收、制动策略和保护阈值不随速度参数缩放。
+
+相同参数已通过正常120秒及中止仿真；参考峰值约0.970rad/s、2.320rad/s²。reference_plan.json标注原始/实际时长与频率，test_manifest/test_samples/test_quality均记录速度比例；离线导出继续按实际接收时间求实测加速度。终端及仿真窗口显示两种比例。
+
+
 ## 原库六关节多正弦与50%仿真（2026-10-29）
 
 ```bash

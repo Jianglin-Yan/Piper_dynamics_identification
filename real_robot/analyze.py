@@ -23,7 +23,7 @@ def main():
     out.update(motors_disabled_confirmed=result.get('motors_disabled_confirmed'),final_enabled=result.get('final_enabled'),release_home_error_deg=None if result.get('release_q_rad') is None else np.rad2deg(np.array(result['release_q_rad'])-home).tolist())
     if test_only:
         for key in ('last_home_error_deg','last_return_error_deg','return_home_deg','return_home_delta_deg','release_home_error_deg'):out.pop(key,None)
-        out.update(scope='TESTING only',trajectory_scale=cfg.get('trajectory_scale',1.),tracking_rmse_deg=np.rad2deg(np.sqrt(np.mean((q-target)**2,axis=0))).tolist())
+        out.update(scope='TESTING only',trajectory_scale=cfg.get('trajectory_scale',1.),trajectory_speed_scale=cfg.get('trajectory_speed_scale',1.),tracking_rmse_deg=np.rad2deg(np.sqrt(np.mean((q-target)**2,axis=0))).tolist())
         if (a.run/'test_quality.json').is_file():out['test_quality']=json.loads((a.run/'test_quality.json').read_text())
     (a.run/'analysis.json').write_text(json.dumps(out,ensure_ascii=False,indent=2));print(json.dumps(out,ensure_ascii=False,indent=2))
     import matplotlib
@@ -45,6 +45,6 @@ def main():
             ax.plot(t,np.rad2deg(target[:,joint]),label='Reference');ax.plot(t,np.rad2deg(q[:,joint]),label='Measured')
             ax.set_ylabel(f'J{joint+1} (deg)');ax.grid(alpha=.2)
         axes[0,0].legend();axes[-1,0].set_xlabel('Test time (s)');axes[-1,1].set_xlabel('Test time (s)')
-        fig.suptitle(f'{result["mode"].upper()} | six-joint multisine | scale={cfg["trajectory_scale"]}')
+        fig.suptitle(f'{result["mode"].upper()} | six-joint multisine | scale={cfg["trajectory_scale"]}, speed={cfg.get("trajectory_speed_scale",1.)}')
         fig.tight_layout();fig.savefig(a.run/'six_joint_trial.png',dpi=150);plt.close(fig)
 if __name__=='__main__':main()

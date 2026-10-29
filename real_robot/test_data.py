@@ -48,6 +48,7 @@ class TestRecorder:
             self.active=True;self.start=ctrl.path_t
             self.manifest['windows'].append({'start_monotonic_s':self.start,'end_monotonic_s':None,
                 'planned_duration_s':ctrl.test.duration,'trajectory_scale':self.c.get('trajectory_scale',1.),
+                'trajectory_speed_scale':self.c.get('trajectory_speed_scale',1.),
                 'anchor_rad':ctrl.start.tolist(),'nominal_amplitude_deg':self.c['amplitude_deg'] if self.c.get('trajectory','pilot')=='pilot' else None,
                 'trajectory':self.c.get('trajectory','pilot'),'reference_plan':getattr(ctrl,'reference_plan',None)})
             self.save_manifest()
@@ -68,6 +69,7 @@ class TestRecorder:
         good=bool(finite and fresh and healthy)
         row={'state':'TESTING','t_monotonic_s':t,'t_test_s':t-self.start,
              't_command_monotonic_s':command_time,'trajectory_scale':self.c.get('trajectory_scale',1.),
+             'trajectory_speed_scale':self.c.get('trajectory_speed_scale',1.),
              'q_ref':q,'qd_ref':v,'qdd_ref':a,'q_command_sent':ctrl.last_target.copy(),
              'feedback':s,'signal_age_s':ages,'quality':{'finite':finite,'fresh_within_test':fresh,
              'healthy':healthy,'valid_measurement':good},'action':action}
@@ -157,7 +159,8 @@ def export_test_data(path):
     summary={'sample_count':len(rows),'valid_measurement_count':int(valid.sum()),'raw_test_frame_count':raw_count,'raw_frame_stats':frame_stats,
         'max_control_gap_s':manifest.get('max_control_gap_s'),'valid_measurement_ratio':float(valid.mean()) if len(valid) else None,
         'test_duration_s':sum(w['end_monotonic_s']-w['start_monotonic_s'] for w in manifest['windows'] if w['end_monotonic_s'] is not None),
-        'trajectory_scale':manifest['configuration'].get('trajectory_scale',1.),'torque_calibrated':False,
+        'trajectory_scale':manifest['configuration'].get('trajectory_scale',1.),
+        'trajectory_speed_scale':manifest['configuration'].get('trajectory_speed_scale',1.),'torque_calibrated':False,
         'qdd_est_method':'11-sample cubic Savitzky-Golay derivative of velocity interpolated by per-axis receive timestamps; preview only; edges and gaps masked',
         'qdd_est_valid_per_joint':acc_valid.sum(axis=0).tolist(),'units':manifest['units'],
         'note':'Snapshot vectors are asynchronous; receive timestamps retained. qdd_est is estimated, qdd_ref is planned. No measured inertia matrix or calibrated torque is invented.'}

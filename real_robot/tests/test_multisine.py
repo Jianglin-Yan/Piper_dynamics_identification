@@ -46,6 +46,28 @@ class TestMultisine(unittest.TestCase):
         self.assertEqual(self.source.metadata['base_frequency_hz'],.2)
         self.assertEqual(self.source.metadata['harmonics'],5)
 
+    def test_half_speed_preserves_path_and_scales_entire_envelope(self):
+        slow=ScaledTrajectory(self.source,self.anchor,.5,.5)
+        fast=ScaledTrajectory(self.source,self.anchor,.5)
+        t=np.arange(0.,120.01,.01);q,v,a=slow.at(t);q0,v0,a0=fast.at(t*.5)
+        np.testing.assert_allclose(q,q0);np.testing.assert_allclose(v,v0*.5)
+        np.testing.assert_allclose(a,a0*.25)
+        self.assertEqual(slow.duration,120.)
+
+    def test_half_speed_report_records_actual_and_source_frequencies(self):
+        slow=ScaledTrajectory(self.source,self.anchor,.5,.5)
+        low=np.deg2rad(self.cfg['lower_deg'])+np.deg2rad(self.cfg['margin_deg'])
+        high=np.deg2rad(self.cfg['upper_deg'])-np.deg2rad(self.cfg['margin_deg'])
+        report=reference_report(slow,self.source,low,high,3.,20.)
+        self.assertEqual(report['speed_scale'],.5);self.assertEqual(report['time_scale'],2.)
+        self.assertEqual(report['duration_s'],120.);self.assertEqual(report['source_duration_s'],60.)
+        self.assertEqual(report['ramp_s'],10.);self.assertEqual(report['base_frequency_hz'],.1)
+        self.assertEqual(report['source_base_frequency_hz'],.2)
+        # Slower playback samples the source phase more densely; numerical peaks
+        # need not equal the earlier, coarser report to six decimal places.
+        self.assertAlmostEqual(max(report['max_velocity_per_joint_rad_s']),.9701,places=3)
+        self.assertAlmostEqual(max(report['max_acceleration_per_joint_rad_s2']),2.3200,places=3)
+
     def make(self):
         c=multisine_config();b=Fake(c);events=[];k=Controller(b,c,b.snapshot(),0,events.append)
         b.enabled=True;b.active=True;b.q=k.start.copy();b.v[:]=0

@@ -52,7 +52,12 @@ class RepositoryMultisine:
 def reference_report(path,nominal,lower,upper,vmax,amax):
     t=np.linspace(0.,path.duration,max(1001,int(path.duration/.002)+1))
     q,v,a=path.at(t)
-    report={**nominal.metadata,'scale':path.scale,'moving_joints':[1,2,3,4,5,6],
+    report={**nominal.metadata,'scale':path.scale,
+        'speed_scale':path.speed_scale,'time_scale':1/path.speed_scale,
+        'source_duration_s':nominal.duration,'duration_s':path.duration,
+        'source_ramp_s':nominal.ramp,'ramp_s':nominal.ramp/path.speed_scale,
+        'source_base_frequency_hz':nominal.raw.base_freq,'base_frequency_hz':nominal.raw.base_freq*path.speed_scale,
+        'moving_joints':[1,2,3,4,5,6],
         'q_min_deg':np.rad2deg(q.min(0)).tolist(),'q_max_deg':np.rad2deg(q.max(0)).tolist(),
         'max_velocity_per_joint_rad_s':np.abs(v).max(0).tolist(),
         'max_acceleration_per_joint_rad_s2':np.abs(a).max(0).tolist(),

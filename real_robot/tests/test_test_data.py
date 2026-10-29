@@ -26,6 +26,25 @@ class TestScaling(unittest.TestCase):
             c=config();c['trajectory_scale']=scale
             with self.assertRaises(ValueError):validate_config(c)
 
+    def test_speed_scale_changes_time_and_derivatives_without_changing_range(self):
+        anchor=np.array([.1,.5,-1.,.2,.3,.4]);source=Excitation(anchor,5,.08,.1,20,5)
+        fast=ScaledTrajectory(source,anchor,.5)
+        slow=ScaledTrajectory(source,anchor,.5,.5)
+        self.assertEqual(slow.duration,40.)
+        for t in (0.,1.2,9.,16.,29.,40.):
+            q,v,a=fast.at(t*.5);qs,vs,aas=slow.at(t)
+            np.testing.assert_allclose(qs,q);np.testing.assert_allclose(vs,v*.5)
+            np.testing.assert_allclose(aas,a*.25)
+        for t in (0.,40.):
+            q,v,a=slow.at(t);np.testing.assert_allclose(q,anchor,atol=1e-12)
+            np.testing.assert_allclose(v,0,atol=1e-12);np.testing.assert_allclose(a,0,atol=1e-12)
+
+    def test_invalid_speed_scale_rejected_before_devices(self):
+        for scale in (0.,-.1,1.01,np.nan,np.inf):
+            c=config();c['trajectory_speed_scale']=scale
+            with self.assertRaises(ValueError):validate_config(c)
+            with self.assertRaises(ValueError):ScaledTrajectory(None,np.zeros(6),.5,scale)
+
 
 class TestDataset(unittest.TestCase):
     def setUp(self):
@@ -88,6 +107,16 @@ class TestDataset(unittest.TestCase):
         self.r.close(1.,'not_started');summary=export_test_data(self.path)
         self.assertEqual(summary['sample_count'],0)
         with np.load(self.path/'test_signals.npz') as d:self.assertEqual(d['q'].shape,(0,6))
+
+    def test_speed_scale_and_stretched_duration_are_recorded(self):
+        self.c['trajectory_speed_scale']=.5
+        self.ctrl.test=ScaledTrajectory(self.ctrl.test.path,np.zeros(6),.25,.5)
+        self.begin();self.step(.1);self.r.close(.2,'interrupted')
+        manifest=json.loads((self.path/'test_manifest.json').read_text())
+        self.assertEqual(manifest['windows'][0]['trajectory_speed_scale'],.5)
+        self.assertEqual(manifest['windows'][0]['planned_duration_s'],40.)
+        row=json.loads((self.path/'test_samples.jsonl').read_text())
+        self.assertEqual(row['trajectory_speed_scale'],.5)
 
 
 if __name__=='__main__':unittest.main()
