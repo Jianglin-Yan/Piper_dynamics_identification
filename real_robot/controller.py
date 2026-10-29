@@ -4,9 +4,10 @@ from .trajectory import Excitation, transit, brake, check_path
 from .current_pose import current_pose_bounds, ARM_POSE_TOLERANCE_DEG
 from .standing import standing_plan
 from .monitoring import SpeedMonitor, CurrentMonitor
+from .shutdown import Shutdown
 
 
-class Controller:
+class Controller(Shutdown):
     def __init__(self, backend, cfg, snapshot, now, emit=print):
         self.b=backend;self.c=cfg;self.emit=emit;self.home=snapshot['q'].copy();self.now=now
         self.current_pose_only=cfg.get('current_pose_only',False)
@@ -45,6 +46,7 @@ class Controller:
         self.can_stable_since=None
         self.pose_history=[];self.pose_history_state=None
         self.fault_reason=None
+        self.init_shutdown()
         self.emit('WAITING：启动位置已保存。LB+X 准备；LB+Y 仅在 READY 后开始；LB+RB 中止。')
 
     def check(self,path):check_path(path,self.lower,self.upper,self.vmax,self.amax)
@@ -52,7 +54,7 @@ class Controller:
     def set_path(self,state,path,now):
         self.path=path;self.path_t=now;self.state=state;self.stable_since=None;self.event(state)
     def reference_velocity(self,now):
-        if self.path is not None and self.state in ('PREPARING','TESTING','BRAKING','RETURNING','BRAKING_HOLD'):
+        if self.path is not None and self.state in ('PREPARING','TESTING','BRAKING','RETURNING'):
             return self.path.at(max(0.,now-self.path_t-1/self.c['command_hz']))[1]
         return np.zeros(6)
     def position_stable(self,s,now,target,tolerance_deg):
@@ -66,22 +68,22 @@ class Controller:
         return (np.max(np.abs(np.rad2deg(s['q']-target)))<=tolerance_deg and
                 np.max(np.rad2deg(span))<=self.c.get('settle_position_window_deg',.20))
     def fault(self,reason):
-        if self.state=='FAULT':return
+        if self.fault_reason:return
         self.fault_reason=str(reason)
-        self.state='FAULT';self.event('FAULT：'+str(reason)+'；电子急停可能使抬起的机械臂阻尼回落，禁止自动回位/恢复。')
-        if self.active:self.b.quick_stop(str(reason))
+        self.state='FAULT';self.shutdown_phase='FAULT_WAITING_PARK';self.settle_started=self.now
+        self.event('FAULT：'+str(reason)+'；故障停止，不自动恢复或强行回位。确认启动位置附近静止后失能；未确认前不退出。')
+        if self.active:
+            try:self.b.quick_stop(str(reason))
+            except Exception as e:self.event('FAULT_STOP_FAILED：'+str(e))
         self.active=False
     def request_stop(self,s,now,reason):
-        """Brake the accepted reference and retain position control when feedback is healthy.
-
-        Use reference velocity, not a noisy motor-speed sample, so the stop cannot
-        introduce an acceleration toward the reported speed transient.
-        """
-        if self.state in ('DONE','FAULT','HELD'):return
-        if self.state in ('BRAKING_HOLD','SETTLING_HOLD'):return
+        """Controlled stop: brake the accepted reference, return to park, then disable."""
+        self.now=now
+        if self.finished or self.shutdown_phase:return
+        if self.state in ('BRAKING','RETURNING','SETTLING_HOME'):return
         self.stop_reason=str(reason)
         if not self.active:
-            self.state='DONE';self.event('DONE：等待阶段已停止，没有发送运动指令。');return
+            self.park_for_shutdown(now,reason);return
         try:
             self.b.check(s,True)
             if not np.all(s['enabled']):raise ValueError('incomplete motor enable')
@@ -93,8 +95,8 @@ class Controller:
             if self.current_pose_only:v[:5]=0.
             p=brake(self.last_target.copy(),v,self.vmax,self.amax);self.check(p)
             if self.state=='BOUNDARY_ENTRY':self.b.finish_native_move()
-            self.set_path('BRAKING_HOLD',p,now)
-            self.event('CONTROLLED_STOP：'+self.stop_reason+'；取消轨迹，制动后保持位置，不回位、不发送电子急停。')
+            self.set_path('BRAKING',p,now)
+            self.event('CONTROLLED_STOP：'+self.stop_reason+'；取消轨迹，平滑制动、回位、确认静止，再失能退出。')
         except Exception as e:
             self.fault('Controlled stop unavailable: '+str(e)+'; original reason: '+self.stop_reason)
     def activate(self,s,now,next_state):
@@ -117,19 +119,22 @@ class Controller:
         stable=self.position_stable(s,now,target,self.c['settle_error_deg'])
         if stable:
             if self.state=='SETTLING_READY':self.state='READY';self.event('READY：已到测试起点。松开按键后 LB+Y 开始。')
-            else:
-                self.state='DONE';self.active=False;self.b.finish()
-                label='最近合法回位点' if np.max(np.abs(self.return_home-self.home))>1e-8 else '程序启动位置'
-                self.event('DONE：已回到'+label+'，试采结束；保持使能，不自动卸力。再次运行无需因正常结束而重置。')
-        else:self.stable_since=None
-        if not stable and now-self.settle_started>self.c['settle_timeout_s']:raise ValueError('Timed out settling at target')
+            else:self.begin_disarm(s,now)
+        elif now-self.settle_started>self.c['settle_timeout_s']:
+            if self.state=='SETTLING_HOME' and self.position_stable(s,now,target,self.c.get('park_release_tolerance_deg',3.)):
+                self.event('PARK_NEAR：精确到位超时，但已在允许的启动位置附近静止；记录实际差值后失能。')
+                self.begin_disarm(s,now)
+            else:raise ValueError('Timed out settling at target')
     def command(self,q):
         if self.current_pose_only and np.max(np.abs(np.asarray(q)[:5]-self.home[:5]))>1e-9:
             raise ValueError('Current-pose pilot cannot change a held-axis command')
         if np.any(q<self.lower-1e-9) or np.any(q>self.upper+1e-9):raise ValueError('command outside bounds')
         self.b.command(q);self.last_target=np.asarray(q).copy()
     def tick(self,now,s,action=None):
-        if self.state in ('DONE','FAULT','HELD'):return
+        self.now=now
+        if self.finished:return
+        if self.shutdown_phase:
+            self.shutdown_tick(now,s);return
         try:
             self.b.check(s,self.active)
             if self.active:
@@ -144,7 +149,7 @@ class Controller:
                     raise ValueError(f'emergency overspeed: J{speed["joint"]}, feedback={speed["speed"]:+.3f} rad/s, threshold={self.speed_monitor.emergency:.3f} rad/s')
                 if speed['level']=='stop':
                     self.request_stop(s,now,f'sustained overspeed: J{speed["joint"]}, feedback={speed["speed"]:+.3f} rad/s, threshold={self.speed_monitor.stop:.3f} rad/s for {self.speed_monitor.duration:.2f} s')
-                    if self.state=='FAULT':return
+                    if self.shutdown_phase:return
                 elif speed['level']=='warning':
                     self.event(f'SPEED_WARNING：J{speed["joint"]}={speed["speed"]:+.3f} rad/s；记录瞬时反馈，不卸力。')
                 if 'current_A' in s:
@@ -152,7 +157,7 @@ class Controller:
                     if current['level']=='emergency':raise ValueError(f'emergency current: J{current["joint"]}, feedback={current["current"]:+.3f} A')
                     if current['level']=='stop':
                         self.request_stop(s,now,f'sustained feedback current: J{current["joint"]}, feedback={current["current"]:+.3f} A')
-                        if self.state=='FAULT':return
+                        if self.shutdown_phase:return
                     elif current['level']=='warning':
                         self.event(f'CURRENT_WARNING：J{current["joint"]}={current["current"]:+.3f} A；记录短时越阈值，不卸力。')
             if action=='STOP':
@@ -161,17 +166,9 @@ class Controller:
             if action=='START' and self.state not in ('WAITING','READY'):
                 self.event('尚未到位：LB+Y 已忽略，等待 READY 后重新按下。')
             if action=='ABORT':
-                if self.state=='BOUNDARY_ENTRY':self.b.finish_native_move()
                 self.aborted=True
-                if not self.active:
-                    self.state='DONE';self.event('DONE：等待阶段已中止，没有发送运动指令。');return
-                if not np.all(s['enabled']):raise ValueError('Abort during incomplete enable: quick stop, no return')
-                brake_q=s['q'].copy();brake_v=self.reference_velocity(now)
-                if self.current_pose_only:
-                    brake_q[:5]=self.home[:5];brake_v[:5]=0.
-                p=brake(brake_q,brake_v,self.vmax,self.amax);self.check(p)
-                self.set_path('BRAKING',p,now)
-                self.event('LB+RB：立即取消激励，受限平滑制动后回到已显示的回位点。')
+                self.request_stop(s,now,'LB+RB')
+                if self.shutdown_phase:return
             if self.state=='WAITING':
                 if action=='PREPARE':
                     if np.max(np.abs(s['q']-self.home))>np.deg2rad(self.c['settle_error_deg']):raise ValueError('Startup pose changed; restart')
@@ -206,19 +203,6 @@ class Controller:
                 else:self.entry_stable_since=None
                 if self.state=='BOUNDARY_ENTRY' and now-self.path_t>8.:
                     raise ValueError('Boundary entry did not reach target in 8 s; position control not proven, no standing move or trial')
-            elif self.state=='BRAKING_HOLD':
-                elapsed=now-self.path_t;q,_,_=self.path.at(elapsed);self.command(q)
-                if elapsed>=self.path.duration:
-                    self.hold_goal=q.copy();self.state='SETTLING_HOLD';self.settle_started=now;self.stable_since=None
-            elif self.state=='SETTLING_HOLD':
-                self.command(self.hold_goal)
-                stable=self.position_stable(s,now,self.hold_goal,self.c['settle_error_deg'])
-                if stable:
-                    self.state='HELD';self.active=False;self.b.finish()
-                    self.event('HELD：制动并到位，已发送位置保持目标；保持使能退出，不自动卸力或回位。')
-                else:self.stable_since=None
-                if self.state!='HELD' and now-self.settle_started>self.c['settle_timeout_s']:
-                    raise ValueError('Could not confirm controlled hold')
             elif self.state in ('PREPARING','TESTING','BRAKING','RETURNING'):
                 if self.armed and not np.all(s['enabled']):raise ValueError('Joint disabled during motion')
                 elapsed=now-self.path_t;q,_,_=self.path.at(elapsed);self.command(q)

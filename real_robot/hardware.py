@@ -7,7 +7,7 @@ from .protocol_read import decode
 class Hardware:
     def __init__(self,cfg,run_dir):
         self.c=cfg;self.latest={};self.limits={};self.acc={};self.firmware=bytearray();self.error=None
-        self.rx_lock=threading.Lock();self.tx_lock=threading.Lock();self.stopped=False;self.active=False
+        self.rx_lock=threading.Lock();self.tx_lock=threading.Lock();self.stopped=False;self.active=False;self.motion_closed=False;self.disable_acknowledged=False;self.motion_started=False
         self.heartbeat=time.monotonic();self.done=threading.Event();self.raw=(run_dir/'raw_can.jsonl').open('w',buffering=65536)
         self.tx_log=(run_dir/'tx_can.jsonl').open('w',buffering=1)
         self.sock=socket.socket(socket.AF_CAN,socket.SOCK_RAW,socket.CAN_RAW)
@@ -107,7 +107,7 @@ class Hardware:
         if s['status'].get('arm_status',255)!=0 or s['status'].get('error_code',65535)!=0 or any(s['faults']):raise RuntimeError(f'Arm/driver fault: arm_status={s["status"].get("arm_status")}, error_code={s["status"].get("error_code")}, driver_bits={s["faults"]}; if current-pose target was rejected, no automatic retries')
         if s['status'].get('control_mode') not in (0,1):raise RuntimeError('Arm is under another control mode')
         if active and s['status'].get('control_mode')!=1 and now-self.armed_at>.3:raise RuntimeError('Lost CAN position control')
-        # Lower profile thresholds are timed by Controller and stop with position hold.
+        # Lower profile thresholds are timed by Controller and stop with braking/return/disable.
         # This independent upper bound remains an immediate fault, including during a hold.
         if np.any(np.abs(s['current_A'])>np.asarray(self.c['max_current_feedback_A'])*self.c.get('feedback_current_emergency_multiplier',2.)):
             raise RuntimeError('Emergency feedback current threshold exceeded')
@@ -119,8 +119,8 @@ class Hardware:
         for i in range(3):self._send_locked(0x155+i,list(struct.pack('>ii',*values[2*i:2*i+2])))
     def arm(self,q):
         with self.tx_lock:
-            if self.stopped:raise RuntimeError('Stop is latched')
-            self.heartbeat=time.monotonic();self.armed_at=self.heartbeat;self.active=True
+            if self.stopped or getattr(self,'motion_closed',False):raise RuntimeError('Stop/disarm is latched')
+            self.heartbeat=time.monotonic();self.armed_at=self.heartbeat;self.active=True;self.motion_started=True
             # Seed position before selecting position mode and enabling the six arm motors.
             self._pose_locked(q)
             self._send_locked(0x151,[1,1,self.c['move_speed_percent'],0,0,0,0,0])
@@ -139,7 +139,7 @@ class Hardware:
             self.stopped=True
     def command(self,q):
         with self.tx_lock:
-            if self.stopped:raise RuntimeError('Stop is latched; command suppressed')
+            if self.stopped or getattr(self,'motion_closed',False):raise RuntimeError('Stop/disarm is latched; command suppressed')
             # Match the official V2 joint-control demo: keep mode/speed alive with each target.
             speed=getattr(self,'native_speed_percent',None) or self.c['move_speed_percent']
             self._send_locked(0x151,[1,1,speed,0,0,0,0,0])
@@ -150,12 +150,29 @@ class Hardware:
             self.stopped=True;self.active=False
             try:self._send_locked(0x150,[1,0,0,0,0,0,0,0])
             except Exception as e:self.error='Quick stop could not be delivered: '+str(e)
-        # No disable, fault reset, re-enable or return after this.
+        # No position/enable/reset after this; a supported park may still be disabled.
     def _watchdog(self):
         while not self.done.wait(.01):
             if self.active and (self.error or time.monotonic()-self.heartbeat>self.c['loop_watchdog_s']):
                 self.quick_stop('loop/receiver watchdog')
-    def finish(self):self.active=False
+    def disable(self):
+        """0x471 joint 7 = all six ARM motors; gripper is a separate controller.
+
+        MOVE J has no reviewed torque ramp. Removing enable removes drive torque;
+        do not insert 0x150=01 (damping stop with a persistent stop state) here.
+        """
+        with self.tx_lock:
+            self.motion_closed=True;self.active=False
+            self._send_locked(0x471,[7,1,0,0,0,0,0,0])
+    def confirm_disabled(self):
+        # Called only after fresh six-axis feedback has remained disabled.
+        self.disable_acknowledged=True;self.active=False
+    def finish(self):
+        if getattr(self,'motion_started',False) and not getattr(self,'disable_acknowledged',False):
+            raise RuntimeError('Cannot finish: six-axis disable not confirmed')
+        self.active=False
     def close(self):
         if self.active:self.quick_stop('closing while active')
+        if getattr(self,'motion_started',False) and not getattr(self,'disable_acknowledged',False):
+            raise RuntimeError('Refusing adapter close before confirmed disable')
         self.done.set();self.reader.join(.2);self.guard.join(.2);self.sock.close();self.raw.close();self.tx_log.close()

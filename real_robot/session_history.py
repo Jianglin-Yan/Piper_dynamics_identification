@@ -37,8 +37,10 @@ def previous_controller_session(roots,channel,exclude=None):
             info.update(requires_recovery=True,reason='上次已发送电子急停，未记录到后续成功恢复。')
         elif result.get('state')=='RECOVERED' and last_stop and last_stop.get('data_hex','').startswith('02'):
             info['reason']='上次显式恢复已确认成功。'
+        elif result.get('state')=='DONE' and result.get('motors_disabled_confirmed') is True:
+            info['reason']='上次回位后已确认六轴失能，未发送电子急停；无需例行重置。'
         elif result.get('state') in ('DONE','HELD'):
-            info['reason']='上次保持位置正常交接，没有发送电子急停；不需要例行重置。'
+            info['reason']='旧版会话记录为保持交接，未发送电子急停；新版会在结束时回位失能。'
         else:
             info.update(requires_recovery=True,reason='上次控制会话没有记录完整的正常交接或成功恢复。')
         return info

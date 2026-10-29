@@ -9,7 +9,7 @@ import numpy as np
 from real_robot.controller import Controller
 from real_robot.standing import STANDING_DEG
 from real_robot.session_history import previous_controller_session,require_recovered
-from real_robot.tests.test_pilot import Fake,config
+from real_robot.tests.test_pilot import Fake,config,tick
 
 
 class ClampingArm(Fake):
@@ -34,11 +34,11 @@ class TestLegalReturnAndRestart(unittest.TestCase):
             t=n*.01;action='PREPARE' if n==1 else None
             if k.state=='READY' and not started:action='START';started=True
             if abort and k.state=='TESTING' and t-k.path_t>2 and not aborted:action='ABORT';aborted=True
-            k.tick(t,b.snapshot(),action)
+            tick(k,t,b.snapshot(),action)
             if k.state in ('RETURNING','SETTLING_HOME'):returned.append(k.last_target.copy())
             if k.state in ('DONE','FAULT','HELD'):break
         self.assertTrue(started);self.assertEqual(k.state,'DONE');self.assertEqual(b.stops,[])
-        self.assertTrue(b.enabled);self.assertFalse(b.active)
+        self.assertFalse(b.enabled);self.assertFalse(b.active);self.assertTrue(k.disarm_confirmed)
         self.assertTrue(returned)
         self.assertTrue(np.all(np.array(returned)>=b.lower-1e-9));self.assertTrue(np.all(np.array(returned)<=b.upper+1e-9))
     def test_real_clipped_return_reaches_done_without_electronic_stop(self):
@@ -46,7 +46,7 @@ class TestLegalReturnAndRestart(unittest.TestCase):
         np.testing.assert_allclose(k.home,home);np.testing.assert_allclose(b.q,k.return_home,atol=1e-8)
         np.testing.assert_allclose(np.rad2deg(k.return_home-home),[0,2.618,-2.798,0,0,0],atol=1e-8)
         self.assertTrue(any('RETURN_HOME' in x and '差' in x for x in m))
-    def test_two_sessions_reuse_enabled_arm_without_reset(self):
+    def test_two_sessions_rearm_disabled_arm_without_reset(self):
         c,b,k,m=self.make();self.run_session(b,k)
         next_session=Controller(b,c,b.snapshot(),0,m.append)
         np.testing.assert_allclose(next_session.home,k.return_home,atol=1e-8)

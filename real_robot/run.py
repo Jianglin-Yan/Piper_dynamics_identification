@@ -16,8 +16,11 @@ def serializable(x):
 def validate_config(c):
     validate_speed_limits(c)
     c.setdefault('settle_position_window_deg',.20);c.setdefault('arming_velocity_limit_rad_s',.15)
-    for key in ('settle_position_window_deg','arming_velocity_limit_rad_s'):
+    c.setdefault('park_release_tolerance_deg',3.);c.setdefault('disable_timeout_s',2.);c.setdefault('disable_confirm_s',.15)
+    for key in ('settle_position_window_deg','arming_velocity_limit_rad_s','park_release_tolerance_deg','disable_timeout_s','disable_confirm_s'):
         if not np.isfinite(c[key]) or c[key]<=0:raise ValueError('Invalid '+key)
+    if not c['settle_error_deg']<=c['park_release_tolerance_deg']<=3.:raise ValueError('Park release tolerance must be between settle tolerance and 3 degrees')
+    if c['disable_confirm_s']>=c['disable_timeout_s']:raise ValueError('Disable confirmation must fit the timeout')
     for key in ('lower_deg','upper_deg','simulation_initial_deg','max_current_feedback_A'):
         if len(c[key])!=6 or not np.all(np.isfinite(c[key])):raise ValueError('Invalid '+key)
     if np.any(np.array(c['max_current_feedback_A'])<=0):raise ValueError('Current thresholds must be positive')
@@ -80,12 +83,21 @@ def main():
     (path/'config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
     b=None;pad=None;viewer=None;ctrl=None;lease=None;result={'mode':'sim' if a.sim else 'recovery' if a.recover else 'read-only' if a.read_only else 'hardware','completed':False}
     events=(path/'events.jsonl').open('w',buffering=1);samples=(path/'samples.jsonl').open('w',buffering=65536)
+    log_failure=None
     def emit(msg):
-        print(msg,flush=True);events.write(json.dumps({'t_monotonic_s':time.monotonic(),'message':msg},ensure_ascii=False)+'\n')
+        nonlocal log_failure
+        try:print(msg,flush=True)
+        except OSError:pass
+        try:events.write(json.dumps({'t_monotonic_s':time.monotonic(),'message':msg},ensure_ascii=False)+'\n')
+        except OSError as error:log_failure=str(error)
+    def record(row):
+        nonlocal log_failure
+        try:samples.write(json.dumps(row,default=serializable)+'\n')
+        except OSError as error:log_failure=str(error)
     stop_requested=False
     def stop(signum,frame):
         nonlocal stop_requested
-        # Keyboard interrupt is not an unattended return command.
+        # Operator stop follows the same braking/park/disable sequence as LB+RB.
         stop_requested=True
     old_handlers={s:signal.signal(s,stop) for s in (signal.SIGINT,signal.SIGTERM)}
     try:
@@ -121,7 +133,7 @@ def main():
             if a.read_only:
                 samples.write(json.dumps(s,default=serializable)+'\n');result.update(completed=True,state='READ_ONLY');return
             b.preflight(info)
-            emit(f'反馈监测：速度 {cfg["feedback_speed_warning_rad_s"]:.2f} rad/s 告警，{cfg["feedback_speed_stop_rad_s"]:.2f} rad/s 持续 {cfg["feedback_speed_stop_duration_s"]:.2f} s 制动保持；严重故障仍走电子急停。')
+            emit(f'反馈监测：速度 {cfg["feedback_speed_warning_rad_s"]:.2f} rad/s 告警，{cfg["feedback_speed_stop_rad_s"]:.2f} rad/s 持续 {cfg["feedback_speed_stop_duration_s"]:.2f} s 制动回位并失能；严重故障仍走电子急停并监视收尾。')
             if a.from_current:
                 emit('FROM_CURRENT：按操作者指定使用当前姿态，只进行 J6 有界试采；不修改限位/零位/保护等级。')
             if a.from_current or a.standing:
@@ -138,16 +150,17 @@ def main():
         result['return_home_rad']=ctrl.return_home.tolist()
         result['current_pose_only']=a.from_current
         result['standing_start']=a.standing
-        (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'return_home_deg':np.rad2deg(ctrl.return_home).tolist(),'return_home_delta_deg':np.rad2deg(ctrl.return_home-ctrl.home).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.lower).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint']},ensure_ascii=False,indent=2))
+        (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'return_home_deg':np.rad2deg(ctrl.return_home).tolist(),'return_home_delta_deg':np.rad2deg(ctrl.return_home-ctrl.home).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.lower).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint'],'shutdown':'park_then_confirm_six_axis_disabled','park_release_tolerance_deg':cfg['park_release_tolerance_deg'],'disable_confirm_s':cfg['disable_confirm_s']},ensure_ascii=False,indent=2))
         emit('启动角度（度）：'+str(np.round(np.rad2deg(ctrl.home),3).tolist()))
         if a.preflight_only:
             samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
             result.update(completed=True,state='PREFLIGHT_ONLY')
             return
-        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False
-        while ctrl.state not in ('DONE','FAULT','HELD'):
+        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False
+        while not ctrl.finished:
             now=step*dt if a.sim else time.monotonic()
-            if viewer and not viewer.is_running():ctrl.fault('Viewer closed');break
+            if viewer and not viewer.is_running() and not viewer_closed:
+                viewer_closed=True;ctrl.request_stop(b.snapshot(),now,'Viewer closed')
             action=None
             if pad and not input_failed:
                 try:action=pad.poll(time.monotonic())
@@ -161,6 +174,7 @@ def main():
             if action:emit('手柄指令：'+action)
             if a.sim:b.advance(dt)
             s=b.snapshot()
+            now=s['time'] if a.sim else time.monotonic()
             if a.scripted=='speed-stop' and ctrl.state=='TESTING' and 5.2<=now-ctrl.path_t<5.5:
                 # Simulation-only sensor injection; never changes motor position or real CAN data.
                 s['qd']=s['qd'].copy();s['qd'][cfg['joint']-1]=cfg['feedback_speed_stop_rad_s']+.05
@@ -168,10 +182,12 @@ def main():
                 stop_requested=False;ctrl.request_stop(s,now,'SIGINT/SIGTERM')
             if time.monotonic()-start_wall>a.max_seconds and not timeout_handled:
                 timeout_handled=True;ctrl.request_stop(s,now,'Session timeout')
-            if not a.sim and time.monotonic()-last_wall>cfg['loop_watchdog_s']:ctrl.fault('Control loop late');break
+            if not a.sim and ctrl.active and time.monotonic()-last_wall>cfg['loop_watchdog_s']:ctrl.fault('Control loop late')
             last_wall=time.monotonic();ctrl.tick(now,s,action)
-            samples.write(json.dumps({'t_control':now,'state':ctrl.state,'action':action,'q_target':ctrl.last_target,'feedback':s},default=serializable)+'\n')
-            if viewer:
+            tracking_target=ctrl.last_target if not ctrl.shutdown_phase else np.full(6,np.nan)
+            record({'t_control':now,'state':ctrl.state,'shutdown_phase':ctrl.shutdown_phase,'action':action,'q_target':tracking_target,'feedback':s})
+            if log_failure:ctrl.request_stop(s,now,'Logging unavailable: '+log_failure)
+            if viewer and viewer.is_running():
                 j=cfg['joint']-1
                 viewer.set_texts((None,None,'SIM ONLY | '+ctrl.state+'\nLB+X prepare | LB+Y start | LB+RB abort',f'J{j+1}: {np.rad2deg(s["q"][j]):.2f} deg\nTarget: {np.rad2deg(ctrl.last_target[j]):.2f} deg'))
                 viewer.sync()
@@ -188,25 +204,25 @@ def main():
         result['state']='FAULT' if ctrl else 'PREFLIGHT_REJECTED'
     finally:
         if ctrl and ctrl.fault_reason:result['fault_reason']=ctrl.fault_reason
-        if b and ctrl and ctrl.state=='FAULT':
-            # The stop is already latched. Observe only; do not call tick/check/command.
-            emit('FAULT_CAPTURE：继续记录停止后 3 秒反馈，不恢复、不使能、不发送目标。')
-            observation_deadline=time.monotonic()+3.
-            try:
-                if a.sim:
-                    for _ in range(300):
-                        b.advance(.01)
-                        observation=b.snapshot()
-                        samples.write(json.dumps({'t_control':observation['time'],'state':'FAULT_OBSERVATION','feedback':observation},default=serializable)+'\n')
-                        if viewer and viewer.is_running():viewer.sync();time.sleep(.01)
-                else:
-                    while time.monotonic()<observation_deadline:
-                        samples.write(json.dumps({'t_control':time.monotonic(),'state':'FAULT_OBSERVATION','feedback':b.snapshot()},default=serializable)+'\n')
-                        time.sleep(.01)
-                result['post_stop_last_q']=b.snapshot()['q'].tolist()
-            except Exception as capture_error:
-                emit('FAULT_CAPTURE_FAILED：'+str(capture_error))
-        if viewer and ctrl and ctrl.state in ('DONE','HELD'):
+        if log_failure:result['log_error']=log_failure
+        if b and ctrl and not ctrl.finished and not a.preflight_only:
+            # Exceptions must not bypass the same no-powered-exit contract.
+            if not ctrl.fault_reason:ctrl.fault('Unexpected loop termination')
+            emit('SHUTDOWN_MONITOR：等待安全停放及六轴失能确认后，才关闭通信。')
+            while not ctrl.finished:
+                if a.sim:b.advance(.01)
+                observation=b.snapshot();shutdown_now=observation['time'] if a.sim else time.monotonic()
+                ctrl.tick(shutdown_now,observation)
+                record({'t_control':shutdown_now,'state':ctrl.state,'shutdown_phase':ctrl.shutdown_phase,'feedback':observation})
+                time.sleep(.01)
+        if ctrl and not a.preflight_only:
+            result.update(state=ctrl.state,completed=ctrl.state=='DONE' and ctrl.disarm_confirmed and not log_failure,
+                          motors_disabled_confirmed=ctrl.disarm_confirmed,shutdown_phase=ctrl.shutdown_phase,
+                          release_q_rad=None if ctrl.release_q is None else ctrl.release_q.tolist(),
+                          final_enabled=b.snapshot()['enabled'].tolist(),last_q=b.snapshot()['q'].tolist())
+            if ctrl.fault_reason:result['fault_reason']=ctrl.fault_reason
+            if log_failure:result['log_error']=log_failure
+        if viewer and ctrl and ctrl.finished:
             emit('仿真已结束，窗口保持显示。关闭窗口即可退出。')
             view_deadline=time.monotonic()+60
             while viewer.is_running() and not stop_requested and time.monotonic()<view_deadline:
@@ -217,5 +233,5 @@ def main():
         if lease:lease.close()
         for s,h in old_handlers.items():signal.signal(s,h)
         samples.close();events.close();(path/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2,default=serializable));print('Run files:',path,flush=True)
-    if result.get('state') in ('FAULT','HELD','PREFLIGHT_REJECTED'):raise SystemExit(2)
+    if result.get('state') in ('FAULT','PREFLIGHT_REJECTED') or result.get('log_error'):raise SystemExit(2)
 if __name__=='__main__':main()

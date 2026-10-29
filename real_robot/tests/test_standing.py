@@ -1,7 +1,7 @@
 import unittest,numpy as np
 from real_robot.controller import Controller
 from real_robot.standing import standing_plan,STANDING_DEG
-from test_pilot import Fake,config
+from test_pilot import Fake,config,tick
 from test_current_pose import PARK
 
 class NativeFake(Fake):
@@ -22,7 +22,7 @@ class TestStanding(unittest.TestCase):
     def test_prepare_reaches_fixed_pose_before_ready(self):
         c,b,k,_=self.make();self.assertFalse(b.active);self.assertEqual(b.commands,[])
         for n in range(3000):
-            k.tick(n*.01,b.snapshot(),'PREPARE' if n==1 else None)
+            tick(k,n*.01,b.snapshot(),'PREPARE' if n==1 else None)
             if k.state in ('READY','FAULT'):break
         self.assertEqual(k.state,'READY');self.assertEqual(len(b.native_calls),1)
         np.testing.assert_allclose(np.rad2deg(b.q),STANDING_DEG,atol=1e-9)
@@ -31,7 +31,7 @@ class TestStanding(unittest.TestCase):
     def test_stuck_arm_cannot_get_ready_or_start_test(self):
         c,b,k,m=self.make(move=False)
         for n in range(1100):
-            k.tick(n*.01,b.snapshot(),'PREPARE' if n==1 else 'START' if n==500 else None)
+            tick(k,n*.01,b.snapshot(),'PREPARE' if n==1 else 'START' if n==500 else None)
             if k.state=='FAULT':break
         self.assertEqual(k.state,'FAULT');self.assertTrue(any('position control not proven' in s for s in m));self.assertEqual(len(b.stops),1)
         self.assertFalse(any(s=='TESTING' for s in m))
@@ -40,16 +40,16 @@ class TestStanding(unittest.TestCase):
         for n in range(8000):
             action='PREPARE' if n==1 else None
             if k.state=='READY' and not started:action='START';started=True
-            k.tick(n*.01,b.snapshot(),action)
+            tick(k,n*.01,b.snapshot(),action)
             if k.state in ('DONE','FAULT'):break
         self.assertTrue(started);self.assertEqual(k.state,'DONE');np.testing.assert_allclose(b.q,k.return_home,atol=1e-9)
         np.testing.assert_allclose(k.home,home,atol=1e-9)
         np.testing.assert_allclose(k.return_home[1:3],0,atol=1e-9)
     def test_abort_while_entering_restores_native_mode_and_returns(self):
-        c,b,k,_=self.make();home=b.q.copy();k.tick(.01,b.snapshot(),'PREPARE');k.tick(.02,b.snapshot())
-        self.assertEqual(k.state,'BOUNDARY_ENTRY');k.tick(.03,b.snapshot(),'ABORT');self.assertFalse(b.native_active)
+        c,b,k,_=self.make();home=b.q.copy();tick(k,.01,b.snapshot(),'PREPARE');tick(k,.02,b.snapshot())
+        self.assertEqual(k.state,'BOUNDARY_ENTRY');tick(k,.03,b.snapshot(),'ABORT');self.assertFalse(b.native_active)
         for n in range(4,1000):
-            k.tick(n*.01,b.snapshot())
+            tick(k,n*.01,b.snapshot())
             if k.state in ('DONE','FAULT'):break
         self.assertEqual(k.state,'DONE');np.testing.assert_allclose(b.q,k.return_home,atol=1e-9)
     def test_unknown_large_park_excursion_refused(self):

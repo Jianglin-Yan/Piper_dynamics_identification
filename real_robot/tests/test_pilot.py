@@ -8,10 +8,15 @@ from real_robot.run import validate_config
 
 BASE=Path(__file__).resolve().parents[1]
 
+def tick(k,now,s,action=None):
+    # Fake transport publishes fresh frames at the explicitly supplied control time.
+    s.setdefault('q_times',np.full(6,now));s.setdefault('low_times',np.full(6,now))
+    k.tick(now,s,action)
+
 def config():return json.loads((BASE/'config.json').read_text())
 class Fake:
     def __init__(self,c):
-        self.q=np.deg2rad(c['simulation_initial_deg']);self.v=np.zeros(6);self.enabled=False;self.active=False;self.commands=[];self.stops=[];self.bad=False
+        self.q=np.deg2rad(c['simulation_initial_deg']);self.v=np.zeros(6);self.enabled=False;self.active=False;self.commands=[];self.stops=[];self.disables=0;self.bad=False
     def snapshot(self):return {'q':self.q.copy(),'qd':self.v.copy(),'enabled':np.full(6,self.enabled)}
     def check(self,s,active):
         if self.bad:raise RuntimeError('injected feedback failure')
@@ -19,6 +24,8 @@ class Fake:
     def command(self,q):
         self.commands.append(np.array(q));self.v=(q-self.q)/.01;self.q=np.array(q)
     def quick_stop(self,r):self.stops.append(r);self.active=False
+    def disable(self):self.enabled=False;self.active=False;self.disables+=1
+    def confirm_disabled(self):self.active=False
     def finish(self):self.active=False
 
 class TestChords(unittest.TestCase):
@@ -65,7 +72,7 @@ class TestTrajectories(unittest.TestCase):
 class TestController(unittest.TestCase):
     def make(self,c=None):
         c=c or config();b=Fake(c);ctrl=Controller(b,c,b.snapshot(),0,lambda x:None);return c,b,ctrl
-    def step(self,b,k,t,action=None):k.tick(t,b.snapshot(),action)
+    def step(self,b,k,t,action=None):tick(k,t,b.snapshot(),action)
     def test_no_motion_before_prepare_and_start(self):
         c,b,k=self.make();self.step(b,k,.1,'START');self.assertEqual(b.commands,[]);self.assertFalse(b.active)
         self.step(b,k,.2,'PREPARE');self.assertEqual(k.state,'READY');self.assertEqual(b.commands,[])
@@ -74,7 +81,9 @@ class TestController(unittest.TestCase):
         with self.assertRaises(ValueError):Controller(b,c,b.snapshot(),0)
         self.assertFalse(b.active);self.assertEqual(b.commands,[])
     def test_abort_before_arm_has_no_motion(self):
-        c,b,k=self.make();self.step(b,k,.1,'ABORT');self.assertEqual(k.state,'DONE');self.assertEqual(b.commands,[])
+        c,b,k=self.make();self.step(b,k,.1,'ABORT');
+        for n in range(11,40):self.step(b,k,n*.01)
+        self.assertEqual(k.state,'DONE');self.assertEqual(b.commands,[])
     def test_normal_returns_to_captured_home(self):
         c,b,k=self.make();home=b.q.copy()
         for n in range(4000):
@@ -106,7 +115,7 @@ class TestController(unittest.TestCase):
         self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
     def test_repeated_abort_in_return_is_honored(self):
         c,b,k=self.make();self.step(b,k,.01,'PREPARE');self.step(b,k,.03,'START');self.step(b,k,.04)
-        k.aborted=True;k.state='RETURNING';self.step(b,k,.05,'ABORT');self.assertEqual(k.state,'BRAKING')
+        k.aborted=True;k.state='RETURNING';self.step(b,k,.05,'ABORT');self.assertEqual(k.state,'RETURNING')
     def test_large_config_refused(self):
         c=config();c['amplitude_deg']=60
         with self.assertRaises(ValueError):validate_config(c)
