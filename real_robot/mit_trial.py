@@ -13,12 +13,13 @@ from .trajectory import transit,smooth
 from .validation_trials import Waypoints
 
 
-# Protocol PD gains per joint, shared by prepare/test/return. J2/J3/J5 carry twice
-# the 10/0.8 baseline: at baseline the folded-to-standing prepare sags 6.3-6.5 deg
-# on those axes, and 20/1.6 brings the simulated static error to about 3.1-3.2 deg.
-# Kept well below the 40/60 J2/J3 values that produced audible motor whine.
-MIT_KP=[10.,20.,20.,10.,20.,10.]
-MIT_KD=[.8,1.6,1.6,.8,1.6,.8]
+# Protocol PD gains per joint, shared by prepare/test/return. J2/J3/J5 carry half
+# again over the 10/0.8 baseline: at baseline the folded-to-standing prepare sags
+# 6.3-6.5 deg on those axes, 15/1.2 brings the simulated static error to about
+# 4.2-4.3 deg. 20/1.6 and the rejected 40/60 pair both produced audible motor
+# whine on hardware, so this step is deliberately half of the previous increase.
+MIT_KP=[10.,15.,15.,10.,15.,10.]
+MIT_KD=[.8,1.2,1.2,.8,1.2,.8]
 
 
 def configure(c,ff_scale=0.,gain_scale=1.,model='nominal',fit='sg21_LS'):
@@ -33,9 +34,9 @@ def configure(c,ff_scale=0.,gain_scale=1.,model='nominal',fit='sg21_LS'):
         mit_return_kp=[float(x*gain_scale) for x in MIT_KP],mit_return_kd=[float(x*gain_scale) for x in MIT_KD],
         mit_ff_ramp_s=3.,mit_joint_torque_estimate_caps_Nm=[16.,16.,14.,3.,3.,2.],
         max_velocity_rad_s=.08,max_acceleration_rad_s2=.08,settle_error_deg=2.8,mit_prepare_tolerance_deg=5.0,
-        # Pure PD leaves ~3.1-3.2 deg static sag at the park pose, so the MOVE J 3 deg
+        # Pure PD leaves ~4.2-4.3 deg static sag at the park pose, so the MOVE J 3 deg
         # release window would always time out. This MIT-only window is used instead.
-        mit_park_tolerance_deg=4.,park_release_tolerance_deg=3.,settle_timeout_s=20.,
+        mit_park_tolerance_deg=5.,park_release_tolerance_deg=3.,settle_timeout_s=20.,
         feedback_stop_policy='stop',passive_wrist=False,hold_start_wrist=False,release_gripper=False,
         torque_candidate_coefficients_Nm_per_A=NM_PER_A.tolist(),
         torque_candidate_profile='official standard PiPER k*b*c; not individually calibrated')
