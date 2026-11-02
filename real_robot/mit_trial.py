@@ -33,7 +33,12 @@ def configure(c,ff_scale=0.,gain_scale=1.,model='nominal',fit='sg21_LS'):
         mit_prepare_kp=[float(x*gain_scale) for x in MIT_KP],mit_prepare_kd=[float(x*gain_scale) for x in MIT_KD],
         mit_return_kp=[float(x*gain_scale) for x in MIT_KP],mit_return_kd=[float(x*gain_scale) for x in MIT_KD],
         mit_ff_ramp_s=3.,mit_joint_torque_estimate_caps_Nm=[16.,16.,14.,3.,3.,2.],
-        max_velocity_rad_s=.08,max_acceleration_rad_s2=.08,settle_error_deg=2.8,mit_prepare_tolerance_deg=5.0,
+        # Prepare/return keep the slow 0.08 rad/s; only the TESTING path uses 0.15 so
+        # the arm visibly swings while gravity still dominates the torque.
+        max_velocity_rad_s=.08,max_acceleration_rad_s2=.08,
+        test_max_velocity_rad_s=.15,test_max_acceleration_rad_s2=.15,
+        mit_test_offset_deg=[10.,15.,15.,8.,10.,12.],
+        settle_error_deg=2.8,mit_prepare_tolerance_deg=5.0,
         # Pure PD leaves ~4.2-4.3 deg static sag at the park pose, so the MOVE J 3 deg
         # release window would always time out. This MIT-only window is used instead.
         mit_park_tolerance_deg=5.,park_release_tolerance_deg=3.,settle_timeout_s=20.,
@@ -120,9 +125,9 @@ class MitController(Controller):
         self.gravity=GravityModel(c) if c['mit_ff_scale']>0 else None
         super().__init__(b,c,s,now,emit)
         self.outbound=transit(self.home,self.start,self.vmax,self.amax);self.check(self.outbound)
-        delta=np.deg2rad([6.,4.,-4.,4.,3.,6.]);poses=np.array([self.start,self.start+delta,self.start-delta,self.start])
-        self.test=Waypoints(poses,self.vmax,self.amax);self.nominal_test=self.test;self.check(self.test)
-        self.reference_plan={'trajectory_type':'mit','all_stages':'MIT only, including prepare/return','poses_deg':np.rad2deg(poses).tolist(),'duration_s':self.test.duration,'ff_scale':c['mit_ff_scale'],'ff_ramp_s':c['mit_ff_ramp_s'],'prepare_kp_protocol':c['mit_prepare_kp'],'prepare_kd_protocol':c['mit_prepare_kd'],'kp_protocol':c['mit_kp'],'kd_protocol':c['mit_kd'],'return_kp_protocol':c['mit_return_kp'],'return_kd_protocol':c['mit_return_kd'],'gravity_model':None if self.gravity is None else self.gravity.provenance,'simulation_gain_assumption':'PD protocol torque scaled to joint by b*c; not hardware gain calibration','zero_ff_note':'requested FF exactly 0; old 8-bit encoding has finite zero residue'}
+        delta=np.deg2rad(c['mit_test_offset_deg']);poses=np.array([self.start,self.start+delta,self.start-delta,self.start])
+        self.test=Waypoints(poses,self.test_vmax,self.test_amax);self.nominal_test=self.test;self.check(self.test,self.test_vmax,self.test_amax)
+        self.reference_plan={'trajectory_type':'mit','all_stages':'MIT only, including prepare/return','poses_deg':np.rad2deg(poses).tolist(),'offset_deg':list(c['mit_test_offset_deg']),'duration_s':self.test.duration,'test_max_velocity_rad_s':self.test_vmax,'test_max_acceleration_rad_s2':self.test_amax,'ff_scale':c['mit_ff_scale'],'ff_ramp_s':c['mit_ff_ramp_s'],'prepare_kp_protocol':c['mit_prepare_kp'],'prepare_kd_protocol':c['mit_prepare_kd'],'kp_protocol':c['mit_kp'],'kd_protocol':c['mit_kd'],'return_kp_protocol':c['mit_return_kp'],'return_kd_protocol':c['mit_return_kd'],'gravity_model':None if self.gravity is None else self.gravity.provenance,'simulation_gain_assumption':'PD protocol torque scaled to joint by b*c; not hardware gain calibration','zero_ff_note':'requested FF exactly 0; old 8-bit encoding has finite zero residue'}
         self.event('MIT_ONLY：准备／固定轨迹／回收全程MIT；前馈比例 '+str(c['mit_ff_scale'])+'；无MOVE J回退。协议Kp='+str(c['mit_kp'])+'，Kd='+str(c['mit_kd'])+'。')
         self.event('PD_SETTLE：纯PD允许重力静差，到位容差5°，实际误差持续记录；不把静差判成编码失败。')
     def motors_ready(self,s):return super().motors_ready(s) and s.get('status',{}).get('motion_mode',4)==4
