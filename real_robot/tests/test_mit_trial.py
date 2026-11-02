@@ -105,4 +105,10 @@ class MitTorqueBudget(unittest.TestCase):
   with self.assertRaisesRegex(ValueError,r'J2 \+\d+\.\d\d Nm vs 16\.0 Nm for 0\.10 s'):
    for _ in range(k.budget_limit):k.command(q)
 
+ def test_test_path_covers_all_joints_and_is_long_enough(self):
+  c=profile();b=MitSimulation(c);k=MitController(b,c,b.snapshot(),0,lambda m:None)
+  t=np.linspace(0,k.test.duration,400);q=np.array([k.test.at(x)[0] for x in t]);rng=np.rad2deg(np.ptp(q,axis=0))
+  self.assertGreaterEqual(k.test.duration,15.)
+  self.assertTrue(np.all(rng>8.),rng)
+
 if __name__=='__main__':unittest.main()

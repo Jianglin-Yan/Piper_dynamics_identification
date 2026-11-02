@@ -33,10 +33,10 @@ def configure(cfg):
 class Waypoints:
     def check_limits(self,lower,upper,vmax,amax):
         for segment in self.parts:check_path(segment,lower,upper,vmax,amax)
-    def __init__(self,poses,vmax,amax):
+    def __init__(self,poses,vmax,amax,minimum=6.):
         self.parts=[];self.ends=[];self.duration=0.
         for a,b in zip(poses[:-1],poses[1:]):
-            p=transit(a,b,vmax,amax,minimum=6.)
+            p=transit(a,b,vmax,amax,minimum=minimum)
             self.parts.append(p);self.duration+=p.duration;self.ends.append(self.duration)
     def at(self,t):
         t=float(np.clip(t,0,self.duration));i=min(int(np.searchsorted(self.ends,t,side='right')),len(self.parts)-1)
