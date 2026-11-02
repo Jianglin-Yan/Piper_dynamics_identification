@@ -88,4 +88,21 @@ class MitLifecycle(unittest.TestCase):
   for t in np.linspace(0,paths[0].duration,31):
    for a,b in zip(paths[0].at(t),paths[1].at(t)):np.testing.assert_array_equal(a,b)
 
+class MitTorqueBudget(unittest.TestCase):
+ def make(self):
+  c=profile();b=MitSimulation(c);k=MitController(b,c,b.snapshot(),0,lambda m:None)
+  k.mit_kp=np.array(c['mit_kp']);k.mit_kd=np.array(c['mit_kd']);k.mit_ff_ratio=0.;return c,k
+ def test_velocity_spike_is_clamped_out_of_the_estimate(self):
+  c,k=self.make();q=k.start.copy();k.mit_sample={'q':q.copy(),'qd':np.zeros(6)}
+  k.mit_sample['qd'][1]=-3.0;k.command(q)
+  self.assertEqual(k.budget_cycles,0)
+ def test_single_cycle_exceedance_does_not_fault(self):
+  c,k=self.make();q=k.start.copy();q[1]+=np.deg2rad(20.);k.mit_sample={'q':k.start.copy(),'qd':np.zeros(6)}
+  k.command(q);self.assertEqual(k.budget_cycles,1)
+  k.command(k.start.copy());self.assertEqual(k.budget_cycles,0)
+ def test_sustained_exceedance_reports_joint_and_value(self):
+  c,k=self.make();q=k.start.copy();q[1]+=np.deg2rad(20.);k.mit_sample={'q':k.start.copy(),'qd':np.zeros(6)}
+  with self.assertRaisesRegex(ValueError,r'J2 \+\d+\.\d\d Nm vs 16\.0 Nm for 0\.10 s'):
+   for _ in range(k.budget_limit):k.command(q)
+
 if __name__=='__main__':unittest.main()

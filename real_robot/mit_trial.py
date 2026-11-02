@@ -33,6 +33,9 @@ def configure(c,ff_scale=0.,gain_scale=1.,model='nominal',fit='sg21_LS'):
         mit_prepare_kp=[float(x*gain_scale) for x in MIT_KP],mit_prepare_kd=[float(x*gain_scale) for x in MIT_KD],
         mit_return_kp=[float(x*gain_scale) for x in MIT_KP],mit_return_kd=[float(x*gain_scale) for x in MIT_KD],
         mit_ff_ramp_s=3.,mit_joint_torque_estimate_caps_Nm=[16.,16.,14.,3.,3.,2.],
+        # A one-cycle velocity spike must not abort the run: the estimate only faults
+        # after a sustained exceedance, and its D term uses a clamped velocity.
+        mit_budget_exceed_duration_s=.10,mit_estimate_velocity_limit_rad_s=.6,
         # Prepare/return keep the slow 0.08 rad/s; only the TESTING path uses 0.15 so
         # the arm visibly swings while gravity still dominates the torque.
         max_velocity_rad_s=.08,max_acceleration_rad_s2=.08,
@@ -122,6 +125,7 @@ class MitSimulation(Simulation):
 class MitController(Controller):
     def __init__(self,b,c,s,now,emit=print):
         self.mit_sample=s;self.mit_time=now;self.mit_kp=np.array(c['mit_prepare_kp']);self.mit_kd=np.array(c['mit_prepare_kd']);self.mit_ff_ratio=0.;self.mit_telemetry=None;self.returning_mit=False;self.ff_print_t=-np.inf
+        self.budget_cycles=0;self.budget_limit=max(1,int(round(c['mit_budget_exceed_duration_s']*c['command_hz'])))
         self.gravity=GravityModel(c) if c['mit_ff_scale']>0 else None
         super().__init__(b,c,s,now,emit)
         self.outbound=transit(self.home,self.start,self.vmax,self.amax);self.check(self.outbound)
@@ -145,10 +149,23 @@ class MitController(Controller):
         if q.shape!=(6,) or np.any(q<self.lower-1e-9) or np.any(q>self.upper+1e-9):raise ValueError('MIT reference outside command bounds')
         g=np.zeros(6) if self.gravity is None or self.mit_ff_ratio==0 else self.gravity(s['q'])
         ff=self.mit_ff_ratio*g
-        pd=(self.mit_kp*(q-s['q'])+self.mit_kd*(v-s['qd']))*WIRE_TO_JOINT
+        # The estimate is a proxy for the drive-side PD torque, not the command itself.
+        # Clamp the measured velocity so one bad sample cannot inflate the D term; the
+        # real runaway cases are handled by the speed monitor.
+        vlim=float(self.c['mit_estimate_velocity_limit_rad_s'])
+        qd=np.clip(s['qd'],-vlim,vlim)
+        pd=(self.mit_kp*(q-s['q'])+self.mit_kd*(v-qd))*WIRE_TO_JOINT
         est=pd+ff
-        if np.any(abs(est)>np.array(self.c['mit_joint_torque_estimate_caps_Nm'])):
-            raise ValueError('MIT combined PD+FF estimate exceeds command budget')
+        caps=np.asarray(self.c['mit_joint_torque_estimate_caps_Nm'],float)
+        over=np.abs(est)>caps
+        if np.any(over):
+            self.budget_cycles+=1
+            j=int(np.argmax(np.abs(est)/caps))
+            if self.budget_cycles==1:
+                self.event(f'BUDGET_WARNING：J{j+1} 力矩估计 {est[j]:+.2f} Nm 超过 {caps[j]:.1f} Nm；连续 {self.c["mit_budget_exceed_duration_s"]:.2f} s 才故障。')
+            if self.budget_cycles>=self.budget_limit:
+                raise ValueError(f'MIT PD+FF estimate over budget: J{j+1} {est[j]:+.2f} Nm vs {caps[j]:.1f} Nm for {self.c["mit_budget_exceed_duration_s"]:.2f} s')
+        else:self.budget_cycles=0
         self.b.command_pd(q,v,self.mit_kp,self.mit_kd,ff);self.last_target=q.copy()
         self.mit_telemetry={'phase':self.state,'ff_ratio':self.mit_ff_ratio,'q_ref':q.copy(),'v_ref':v.copy(),'kp_protocol':self.mit_kp.copy(),'kd_protocol':self.mit_kd.copy(),'g_Nm':g,'ff_requested_Nm':ff,'wire_t_ref':ff/WIRE_TO_JOINT,'quantized_ff_Nm':np.array([encode_mit(j+1,float(q[j]),float(ff[j]),float(v[j]),float(self.mit_kp[j]),float(self.mit_kd[j]))[2] for j in range(6)]),'pd_estimate_Nm':pd,'total_estimate_Nm':est}
     def ff_progress(self,now,tag,target_pct):
