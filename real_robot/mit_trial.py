@@ -13,19 +13,29 @@ from .trajectory import transit,smooth
 from .validation_trials import Waypoints
 
 
+# Protocol PD gains per joint, shared by prepare/test/return. J2/J3/J5 carry twice
+# the 10/0.8 baseline: at baseline the folded-to-standing prepare sags 6.3-6.5 deg
+# on those axes, and 20/1.6 brings the simulated static error to about 3.1-3.2 deg.
+# Kept well below the 40/60 J2/J3 values that produced audible motor whine.
+MIT_KP=[10.,20.,20.,10.,20.,10.]
+MIT_KD=[.8,1.6,1.6,.8,1.6,.8]
+
+
 def configure(c,ff_scale=0.,gain_scale=1.,model='nominal',fit='sg21_LS'):
     if not np.isfinite(ff_scale) or not 0<=ff_scale<=1:raise ValueError('ff-scale must be in [0,1]')
     if not np.isfinite(gain_scale) or not .5<=gain_scale<=1:raise ValueError('mit-gain-scale must be in [0.5,1]')
     if not c.get('standing_start') or c.get('current_pose_only'):raise ValueError('MIT trial requires --standing')
     if model not in ('nominal','identified'):raise ValueError('Unknown gravity model')
     c.update(mit_ff_scale=float(ff_scale),mit_gain_scale=float(gain_scale),gravity_model=model,gravity_fit=fit,
-        # Official protocol reference gains, shared by every PD-controlled stage.
-        mit_kp=[10.*gain_scale]*6,mit_kd=[.8*gain_scale]*6,
-        mit_prepare_kp=[10.*gain_scale]*6,mit_prepare_kd=[.8*gain_scale]*6,
-        mit_return_kp=[10.*gain_scale]*6,mit_return_kd=[.8*gain_scale]*6,
+        # Every PD-controlled stage uses the same vector; no stage may fall back to a lower gain.
+        mit_kp=[float(x*gain_scale) for x in MIT_KP],mit_kd=[float(x*gain_scale) for x in MIT_KD],
+        mit_prepare_kp=[float(x*gain_scale) for x in MIT_KP],mit_prepare_kd=[float(x*gain_scale) for x in MIT_KD],
+        mit_return_kp=[float(x*gain_scale) for x in MIT_KP],mit_return_kd=[float(x*gain_scale) for x in MIT_KD],
         mit_ff_ramp_s=3.,mit_joint_torque_estimate_caps_Nm=[16.,16.,14.,3.,3.,2.],
         max_velocity_rad_s=.08,max_acceleration_rad_s2=.08,settle_error_deg=2.8,mit_prepare_tolerance_deg=5.0,
-        park_release_tolerance_deg=3.,settle_timeout_s=20.,
+        # Pure PD leaves ~3.1-3.2 deg static sag at the park pose, so the MOVE J 3 deg
+        # release window would always time out. This MIT-only window is used instead.
+        mit_park_tolerance_deg=4.,park_release_tolerance_deg=3.,settle_timeout_s=20.,
         feedback_stop_policy='stop',passive_wrist=False,hold_start_wrist=False,release_gripper=False,
         torque_candidate_coefficients_Nm_per_A=NM_PER_A.tolist(),
         torque_candidate_profile='official standard PiPER k*b*c; not individually calibrated')
@@ -136,6 +146,12 @@ class MitController(Controller):
         self.b.command_pd(q,v,self.mit_kp,self.mit_kd,ff);self.last_target=q.copy()
         self.mit_telemetry={'phase':self.state,'ff_ratio':self.mit_ff_ratio,'q_ref':q.copy(),'v_ref':v.copy(),'kp_protocol':self.mit_kp.copy(),'kd_protocol':self.mit_kd.copy(),'g_Nm':g,'ff_requested_Nm':ff,'wire_t_ref':ff/WIRE_TO_JOINT,'quantized_ff_Nm':np.array([encode_mit(j+1,float(q[j]),float(ff[j]),float(v[j]),float(self.mit_kp[j]),float(self.mit_kd[j]))[2] for j in range(6)]),'pd_estimate_Nm':pd,'total_estimate_Nm':est}
     def finish_settle(self,now,s):
+        if self.state=='SETTLING_HOME':
+            # MIT return holds the park pose with pure PD, which has a repeatable static
+            # sag; accept the MIT-only window rather than the 3 deg MOVE J release value.
+            if self.position_stable(s,now,self.return_home,self.c['mit_park_tolerance_deg']):self.begin_disarm(s,now)
+            elif now-self.settle_started>self.c['settle_timeout_s']:raise ValueError('Timed out settling at target')
+            return
         if self.state!='SETTLING_READY':return super().finish_settle(now,s)
         self.command(self.start)
         if self.position_stable(s,now,self.start,self.c['mit_prepare_tolerance_deg']):
