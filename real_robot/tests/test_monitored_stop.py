@@ -32,9 +32,24 @@ class TestMonitors(unittest.TestCase):
         v[:]=0;v[1]=.65
         self.assertNotEqual(monitor.update(.3,v)['level'],'stop')
 
-    def test_extreme_speed_still_faults_immediately(self):
-        v=np.zeros(6);v[4]=1.3
-        self.assertEqual(SpeedMonitor(config()).update(0,v)['level'],'emergency')
+    def test_single_extreme_sample_is_not_an_emergency(self):
+        monitor=SpeedMonitor(config());v=np.zeros(6);v[4]=1.3
+        self.assertNotEqual(monitor.update(0,v)['level'],'emergency')
+        v[4]=0
+        self.assertIsNone(monitor.update(.01,v)['level'])
+
+    def test_extreme_speed_requires_sustained_feedback(self):
+        c=config();monitor=SpeedMonitor(c);v=np.zeros(6);v[4]=1.3
+        duration=c['feedback_speed_emergency_duration_s']
+        self.assertNotEqual(monitor.update(0,v)['level'],'emergency')
+        self.assertNotEqual(monitor.update(duration-.01,v)['level'],'emergency')
+        self.assertEqual(monitor.update(duration,v)['level'],'emergency')
+
+    def test_extreme_speed_that_drops_below_threshold_never_faults(self):
+        c=config();monitor=SpeedMonitor(c);v=np.zeros(6);v[4]=1.3
+        for n in range(5):monitor.update(n*.01,v)
+        v[4]=.4;monitor.update(.05,v);v[4]=1.3
+        self.assertNotEqual(monitor.update(.06,v)['level'],'emergency')
 
     def test_current_transient_sustained_and_emergency(self):
         m=CurrentMonitor(config());v=np.zeros(6);v[4]=1.6
@@ -123,8 +138,15 @@ class TestControlledStop(unittest.TestCase):
         self.assertEqual(k.state,'SETTLING_HOME');self.assertEqual(b.stops,[])
 
     def test_extreme_speed_keeps_fault_stop(self):
-        c,b,k,events=self.make();s=b.snapshot();s['qd'][4]=1.3;tick(k,.1,s)
+        c,b,k,events=self.make()
+        for n in range(12):
+            s=b.snapshot();s['qd'][4]=1.3;tick(k,1+n*.01,s)
         self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
+
+    def test_single_extreme_speed_sample_does_not_fault(self):
+        c,b,k,events=self.make();s=b.snapshot();s['qd'][4]=1.3;tick(k,1,s)
+        s=b.snapshot();tick(k,1.01,s)
+        self.assertEqual(k.state,'TESTING');self.assertEqual(len(b.stops),0)
 
 
 class TestExplicitRecovery(unittest.TestCase):

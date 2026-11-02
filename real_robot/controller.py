@@ -250,7 +250,7 @@ class Controller(Shutdown):
                         self.last_envelope_warning=now;self.event('REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。')
                 speed=self.speed_monitor.update(now,np.where(self.controlled_axes,s['qd'],0.))
                 if speed['level']=='emergency':
-                    raise ValueError(f'emergency overspeed: J{speed["joint"]}, feedback={speed["speed"]:+.3f} rad/s, threshold={self.speed_monitor.emergency:.3f} rad/s')
+                    raise ValueError(f'emergency overspeed: J{speed["joint"]}, feedback={speed["speed"]:+.3f} rad/s, threshold={self.speed_monitor.emergency:.3f} rad/s for {self.speed_monitor.emergency_duration:.2f} s')
                 if speed['level']=='stop' and self.c.get('feedback_stop_policy')=='warn':
                     if now-self.last_envelope_warning>=1.:
                         self.last_envelope_warning=now;self.event(f'SPEED_WARNING：持续反馈速度 {speed["speed"]:+.3f} rad/s，超过告警线；尚未到独立硬线。')

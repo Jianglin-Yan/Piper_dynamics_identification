@@ -92,11 +92,13 @@ class TestMultisine(unittest.TestCase):
         tick(k,.01,s);self.assertEqual(k.state,'TESTING');self.assertEqual(b.stops,[])
 
     def test_independent_absolute_speed_and_tracking_lines_still_fault(self):
-        for kind in ('speed','tracking'):
-            c,b,k,e=self.make();s=b.snapshot()
-            if kind=='speed':s['qd'][0]=3.1
-            else:s['q'][5]+=np.deg2rad(26.)
-            tick(k,.01,s);self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
+        # The absolute speed line is a sustained-feedback line; one sample is not a runaway.
+        c,b,k,e=self.make()
+        for n in range(12):
+            s=b.snapshot();s['q']=k.last_target.copy();s['qd'][0]=3.1;tick(k,n*.01,s)
+        self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
+        c,b,k,e=self.make();s=b.snapshot();s['q'][5]+=np.deg2rad(26.)
+        tick(k,.01,s);self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
 
     def test_real_feedback_failure_not_downgraded_to_warning(self):
         c,b,k,e=self.make();b.bad=True;tick(k,.01,b.snapshot())

@@ -274,7 +274,7 @@ def main():
             limits=cfg.get('reported_motor_max_acceleration_rad_s2')
             if limits and np.any(np.array(ctrl.reference_plan['max_acceleration_per_joint_rad_s2'])>limits):
                 emit('FIRMWARE_PLANNER_WARNING：参考加速度高于固件返回的规划配置；仅提示，固件可能平滑/限速。不会修改固件配置。')
-            emit('HARD_LINES：速度 '+str(cfg['feedback_speed_emergency_rad_s'])+' rad/s；测试跟踪 '+str(cfg['test_tracking_hard_deg'])+'°；电流 '+str((np.asarray(cfg['max_current_feedback_A'])*cfg['feedback_current_emergency_multiplier']).tolist())+' A。这些是独立工程保护线，不是厂商认证危险极限。')
+            emit('HARD_LINES：速度 '+str(cfg['feedback_speed_emergency_rad_s'])+' rad/s 连续 '+str(cfg['feedback_speed_emergency_duration_s'])+' s；测试跟踪 '+str(cfg['test_tracking_hard_deg'])+'°；电流 '+str((np.asarray(cfg['max_current_feedback_A'])*cfg['feedback_current_emergency_multiplier']).tolist())+' A。这些是独立工程保护线，不是厂商认证危险极限。')
         if ctrl.trial:ctrl.trial.save(path)
         result['home_rad']=ctrl.home.tolist()
         result['return_home_rad']=ctrl.return_home.tolist()

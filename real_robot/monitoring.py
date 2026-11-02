@@ -6,6 +6,7 @@ SPEED_DEFAULTS={
     'feedback_speed_stop_rad_s': .60,
     'feedback_speed_stop_duration_s': .15,
     'feedback_speed_emergency_rad_s': 1.20,
+    'feedback_speed_emergency_duration_s': .10,
 }
 CURRENT_DEFAULTS={'feedback_current_stop_duration_s':.20,'feedback_current_emergency_multiplier':2.0}
 
@@ -32,7 +33,8 @@ class SpeedMonitor:
         self.stop=cfg['feedback_speed_stop_rad_s']
         self.duration=cfg['feedback_speed_stop_duration_s']
         self.emergency=cfg['feedback_speed_emergency_rad_s']
-        self.since=[None]*6;self.last_warning=-np.inf
+        self.emergency_duration=cfg['feedback_speed_emergency_duration_s']
+        self.since=[None]*6;self.since_emergency=[None]*6;self.last_warning=-np.inf
 
     def update(self,now,qd):
         qd=np.asarray(qd,float)
@@ -43,9 +45,16 @@ class SpeedMonitor:
             if value>self.stop:
                 if self.since[axis] is None:self.since[axis]=now
             else:self.since[axis]=None
+            # A single-sample spike is not a runaway; require the extreme level to persist.
+            if value>self.emergency:
+                if self.since_emergency[axis] is None:self.since_emergency[axis]=now
+            else:self.since_emergency[axis]=None
         sustained=[axis for axis,since in enumerate(self.since)
                    if since is not None and now-since>=self.duration-1e-9]
-        if peak>self.emergency:level='emergency'
+        emergency=[axis for axis,since in enumerate(self.since_emergency)
+                   if since is not None and now-since>=self.emergency_duration-1e-9]
+        if emergency:
+            j=max(emergency,key=lambda axis:abs(qd[axis]));level='emergency'
         elif sustained:
             j=max(sustained,key=lambda axis:abs(qd[axis]));level='stop'
         elif peak>self.warning and now-self.last_warning>=1.:
