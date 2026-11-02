@@ -75,6 +75,13 @@ class TestHistory(unittest.TestCase):
         for state in ('DONE','HELD'):
             self.session(state,[('0x471','0102000000000000'),('0x157','0000000000000000')])
             self.assertFalse(self.history()['requires_recovery'])
+    def test_confirmed_disabled_fault_needs_no_reset_unless_electronic_stop_was_sent(self):
+        for stopped in (False,True):
+            frames=[('0x471','0101000000000000')]
+            if stopped:frames.insert(0,('0x150','0100000000000000'))
+            p=self.session('FAULT',frames)
+            (p/'result.json').write_text(json.dumps({'mode':'hardware','state':'FAULT','motors_disabled_confirmed':True}))
+            self.assertEqual(self.history()['requires_recovery'],stopped)
     def test_readonly_preflight_and_other_channel_cannot_hide_stop(self):
         p=self.session('FAULT',[('0x150','0100000000000000')]);self.session('PREFLIGHT_ONLY',[('0x472','0101000000000000')]);self.session('DONE',[('0x157','0000000000000000')],channel='can1')
         self.assertEqual(self.history()['run'],str(p));self.assertTrue(self.history()['requires_recovery'])

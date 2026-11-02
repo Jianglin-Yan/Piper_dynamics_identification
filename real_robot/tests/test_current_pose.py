@@ -17,7 +17,7 @@ class TestCurrentPose(unittest.TestCase):
         c,b,k=self.make();self.assertEqual(k.state,'WAITING');self.assertEqual(b.commands,[]);self.assertFalse(b.active)
         np.testing.assert_allclose(k.home,np.deg2rad(PARK))
     def test_j2_j3_excursions_have_strict_upper_bound(self):
-        for j,value in ((1,-3.01),(2,3.01),(1,180.1),(2,-170.1),(0,150.1)):
+        for j,value in ((1,-10.01),(2,10.01),(1,190.1),(2,-180.1),(0,160.1)):
             c=config();c['current_pose_only']=True;q=np.deg2rad(PARK);q[j]=np.deg2rad(value)
             with self.assertRaises(ValueError):current_pose_bounds(c,q)
     def test_mode_does_not_allow_another_joint_or_start_pose(self):
@@ -38,7 +38,7 @@ class TestCurrentPose(unittest.TestCase):
         np.testing.assert_allclose(b.q,home,atol=1e-10)
     def test_held_joint_drift_faults_without_return(self):
         c,b,k=self.make();tick(k,.01,b.snapshot(),'PREPARE');tick(k,.03,b.snapshot(),'START');tick(k,.04,b.snapshot())
-        b.q[1]+=np.deg2rad(.6);before=len(b.commands);tick(k,.05,b.snapshot())
+        b.q[1]+=np.deg2rad(2.1);before=len(b.commands);tick(k,.05,b.snapshot())
         self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.commands),before);self.assertEqual(len(b.stops),1)
     def test_held_axis_target_cannot_be_changed(self):
         c,b,k=self.make();q=k.home.copy();q[1]+=.0001

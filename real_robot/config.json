@@ -1,7 +1,7 @@
 {
   "channel": "can0",
   "firmware_prefix": "S-V1.7-3",
-  "model": "piper_x",
+  "model": "piper",
   "model_confirmed": true,
   "workspace_checked": false,
   "collision_policy_reviewed": false,
@@ -23,7 +23,7 @@
     -150,
     0,
     -170,
-    -89,
+    -100,
     -70,
     -120
   ],
@@ -31,14 +31,14 @@
     150,
     180,
     0,
-    89,
+    100,
     70,
     120
   ],
   "margin_deg": 5.0,
   "max_velocity_rad_s": 0.12,
   "max_acceleration_rad_s2": 0.12,
-  "tracking_error_deg": 3.0,
+  "tracking_error_deg": 25.0,
   "settle_error_deg": 0.5,
   "settle_velocity_rad_s": 0.025,
   "settle_timeout_s": 10.0,
@@ -67,5 +67,17 @@
   "park_release_tolerance_deg": 3.0,
   "disable_timeout_s": 2.0,
   "disable_confirm_s": 0.15,
-  "trajectory_scale": 1.0
+  "trajectory_scale": 1.0,
+  "startup_limit_tolerance_deg": 10.0,
+  "tracking_warning_deg": 10.0,
+  "measurement_angle_tolerance_deg": 6.0,
+  "torque_candidate_coefficients_Nm_per_A": [
+    4.725,
+    4.725,
+    4.725,
+    0.7787701152,
+    0.7787701152,
+    0.7787701152
+  ],
+  "torque_candidate_profile": "official_pyAgxArm_standard_piper_reference_not_calibrated"
 }

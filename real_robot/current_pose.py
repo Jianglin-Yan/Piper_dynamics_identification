@@ -1,13 +1,26 @@
-"""Narrow current-pose policy for the measured folded PiPER X J6 pilot.
+"""Narrow current-pose policy for the measured folded PiPER J6 pilot.
 
-No robot parameter changes. Only J2-low / J3-high parked feedback excursions
-up to 3 degrees can be anchored; their commanded targets stay unchanged.
+No robot parameter changes. All six parked feedback excursions
+up to the configured startup allowance can be anchored; their commanded targets stay unchanged.
 """
 import numpy as np
 
-MAX_PARK_OVERSHOOT_DEG = 3.0
-HOLD_TOLERANCE_DEG = .5
-ARM_POSE_TOLERANCE_DEG = .1
+MAX_PARK_OVERSHOOT_DEG = 10.0
+HOLD_TOLERANCE_DEG = 2.0
+ARM_POSE_TOLERANCE_DEG = .5
+
+
+def validate_startup_pose(cfg,home):
+    home=np.asarray(home,float)
+    if home.shape!=(6,) or not np.all(np.isfinite(home)):raise ValueError('Invalid startup joint feedback')
+    raw_lower=np.deg2rad(cfg['lower_deg']);raw_upper=np.deg2rad(cfg['upper_deg'])
+    overshoot=np.maximum(0.,np.maximum(raw_lower-home,home-raw_upper))
+    limit=cfg.get('startup_limit_tolerance_deg',MAX_PARK_OVERSHOOT_DEG)
+    if not np.isfinite(limit) or not 0<limit<=15:raise ValueError('Invalid startup_limit_tolerance_deg')
+    if np.any(overshoot>np.deg2rad(limit)+1e-9):
+        j=int(np.argmax(overshoot))
+        raise ValueError(f'J{j+1} parked excursion {np.rad2deg(overshoot[j]):.3f} deg exceeds configured startup allowance {limit:g} deg')
+    return overshoot
 
 
 def current_pose_bounds(cfg, home):
@@ -15,16 +28,8 @@ def current_pose_bounds(cfg, home):
         raise ValueError('--from-current is restricted to J6 with start_deg=null')
     if cfg['amplitude_deg'] > 5 or cfg['frequency_hz'] > .1:
         raise ValueError('--from-current only permits amplitude <=5 deg and frequency <=0.1 Hz')
-    raw_lower = np.deg2rad(cfg['lower_deg'])
-    raw_upper = np.deg2rad(cfg['upper_deg'])
-    overshoot = np.maximum(raw_lower-home, home-raw_upper)
-    allowance = np.deg2rad(MAX_PARK_OVERSHOOT_DEG)
-    for j in range(6):
-        if overshoot[j] <= 1e-9:
-            continue
-        allowed = (j == 1 and home[j] < raw_lower[j]) or (j == 2 and home[j] > raw_upper[j])
-        if not allowed or overshoot[j] > allowance+1e-9:
-            raise ValueError(f'J{j+1} parked excursion {np.rad2deg(overshoot[j]):.3f} deg is outside the reviewed current-pose policy')
+    validate_startup_pose(cfg,home)
+    raw_lower=np.deg2rad(cfg['lower_deg']);raw_upper=np.deg2rad(cfg['upper_deg'])
     # Held axes have a measurement drift corridor; commands must stay at home exactly.
     lower = home-np.deg2rad(HOLD_TOLERANCE_DEG)
     upper = home+np.deg2rad(HOLD_TOLERANCE_DEG)

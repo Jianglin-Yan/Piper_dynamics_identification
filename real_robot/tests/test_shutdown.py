@@ -104,7 +104,7 @@ class TestShutdown(unittest.TestCase):
     def test_disable_is_all_arm_motors_and_latches_motion_without_reset(self):
         h=Hardware.__new__(Hardware);h.tx_lock=threading.Lock();h.stopped=False;h.active=True
         frames=[];h._send_locked=lambda cid,data:frames.append((cid,bytes(data)))
-        h.disable();self.assertEqual(frames,[(0x471,bytes([7,1,0,0,0,0,0,0]))])
+        h.disable();self.assertEqual(frames,[(0x471,bytes([j,1,0,0,0,0,0,0])) for j in range(1,7)])
         for fn in (h.command,h.arm):
             with self.assertRaises(RuntimeError):fn(np.zeros(6))
         h.stopped=True;h.disable() # Fault latch cannot block a subsequent supported disable.

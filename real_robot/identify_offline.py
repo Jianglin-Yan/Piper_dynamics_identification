@@ -34,11 +34,11 @@ def original_modules():
             import_module(name + '.identify'), root)
 
 
-def inertial_model():
-    """Use X URDF kinematics, with preview-only compensation/passive terms off."""
+def inertial_model(model_name="piper"):
+    """Use selected URDF kinematics, with preview-only compensation/passive terms off."""
     import mujoco
     from real_robot.simulation import model_xml
-    model = mujoco.MjModel.from_xml_string(model_xml())
+    model = mujoco.MjModel.from_xml_string(model_xml(model_name))
     model.body_gravcomp[:] = 0
     model.dof_damping[:] = 0
     model.dof_armature[:] = 0
@@ -88,8 +88,8 @@ def load_measurements(run, dt=.01, window=21):
             else:
                 dstreams[data['joint']-1].append(
                     (ts-start, data['velocity_sdk_rad_s'], data['current_signed_A']))
-    if window < 5 or window % 2 != 1:
-        raise ValueError('SG window must be odd and at least 5')
+    if window != 1 and (window < 5 or window % 2 != 1):
+        raise ValueError('Use window=1 for no filtering, or an odd SG window >=5')
     t = np.arange(dt, end-start-dt, dt)
     if len(t) <= window:
         raise ValueError('TESTING window is too short for filtering')
@@ -109,12 +109,13 @@ def load_measurements(run, dt=.01, window=21):
     within_snapshots = (ix >= 0) & (ix < len(snapshots['t_test_s']))
     ix = np.clip(ix,0,len(snapshots['t_test_s'])-1)
     complete &= within_snapshots & snapshots['valid_measurement'][ix]
-    valid = np.convolve(complete.astype(int), np.ones(window,int), mode='same') == window
-    filtered = {k:savgol_filter(a,window,3,axis=0) for k,a in
+    support = 3 if window == 1 else window
+    valid = np.convolve(complete.astype(int), np.ones(support,int), mode='same') == support
+    filtered = {k:(a.copy() if window == 1 else savgol_filter(a,window,3,axis=0)) for k,a in
                 [('q',q),('qd',qd),('current_A',current)]}
     filtered.update(t=t, valid=valid,
-        qdd=savgol_filter(qd,window,3,deriv=1,delta=dt,axis=0),
-        qd_from_position=savgol_filter(q,window,3,deriv=1,delta=dt,axis=0),
+        qdd=np.gradient(qd,dt,axis=0,edge_order=2) if window == 1 else savgol_filter(qd,window,3,deriv=1,delta=dt,axis=0),
+        qd_from_position=np.gradient(q,dt,axis=0,edge_order=2) if window == 1 else savgol_filter(q,window,3,deriv=1,delta=dt,axis=0),
         q_unfiltered=q, qd_unfiltered=qd, current_unfiltered_A=current)
     return filtered, manifest
 
@@ -144,10 +145,14 @@ def metrics(pred, target):
 
 def fit_original(solver, Y, tau, train, validation):
     A = Y[train].reshape(-1,Y.shape[-1])
-    sol = solver(A,tau[train].reshape(-1),ridge=0.,use_qr=True)
-    pred = np.einsum('nij,j->ni',Y,sol['theta'])
     norms = np.linalg.norm(A,axis=0)
-    sv = np.linalg.svd(A/np.maximum(norms,1e-30),compute_uv=False)
+    active = np.flatnonzero(norms > norms.max()*1e-10)
+    if not len(active):raise ValueError('No nonzero regression columns')
+    sol = solver(A[:,active],tau[train].reshape(-1),ridge=0.,use_qr=True)
+    reduced_theta=sol['theta'];theta=np.zeros(A.shape[1]);theta[active]=reduced_theta
+    sol['theta']=theta;sol['base_idx']=active[sol['base_idx']]
+    pred = np.einsum('nij,j->ni',Y,sol['theta'])
+    sv = np.linalg.svd(A[:,active]/norms[active],compute_uv=False)
     rank = sol['rank']
     return sol, pred, dict(rank=rank, n_parameters=Y.shape[-1],
         train_samples=int(train.sum()), validation_samples=int(validation.sum()),
@@ -194,8 +199,7 @@ def run_analysis(run, output, window=21, fit_hz=20., torque_coefficients=None):
     cycle = np.floor((ts+1e-6)/period).astype(int)
     train = cycle % 2 == 0
     validation = ~train
-    matrices = {'rigid_only_original_LS':Y,
-                'rigid_plus_friction_offset_LS':np.concatenate([Y,friction_matrix(vs)],axis=2)}
+    matrices = {'rigid_plus_friction_offset_LS':np.concatenate([Y,friction_matrix(vs)],axis=2)}
     fits, predictions, params = {}, {}, {}
     for name, matrix in matrices.items():
         sol, pred, report = fit_original(identification.solve_parameters,matrix,target,train,validation)
@@ -258,9 +262,9 @@ def run_analysis(run, output, window=21, fit_hz=20., torque_coefficients=None):
         suitable_for_control=False, status='exploratory_pipeline_validation_only',
         torque_coefficients_Nm_per_A=coeff.tolist(),recorded_candidate_coefficients_Nm_per_A=recorded_factors.tolist(),
         preprocessing=dict(source='test_raw_can.jsonl; separate per-joint CAN receive timestamps',
-            grid_hz=100.,SG_window_samples=window,SG_polynomial_order=3,
-            SG_support_s=(window-1)*.01,phase='offline centered zero phase',
-            qdd_source='derivative of measured CAN velocity, not qdd_ref',
+            grid_hz=100.,SG_window_samples=window,SG_polynomial_order=None if window==1 else 3,
+            SG_support_s=(window-1)*.01,phase='none' if window==1 else 'offline centered zero phase',
+            qdd_source='central finite difference of unfiltered measured velocity' if window==1 else 'derivative of measured CAN velocity, not qdd_ref',
             max_interpolation_gap_s=.03,missing_support_masked=True,
             fit_hz=100/stride,selected_time_min_s=float(ts.min()),selected_time_max_s=float(ts.max()),
             cycle_boundary_guard_s=guard,
@@ -269,8 +273,8 @@ def run_analysis(run, output, window=21, fit_hz=20., torque_coefficients=None):
         source_hashes={name:hashlib.sha256((run/name).read_bytes()).hexdigest() for name in
             ('test_manifest.json','test_raw_can.jsonl','test_signals.npz')},
         original_code_hashes={name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in
-            ('regressor.py','identify.py','real_robot/identify_offline.py','real_robot/assets/piper_x.urdf','real_robot/assets/nominal_x.json')},
-        model='PiPER X bundled URDF transforms, rigid gripper lumped link6; preview gravcomp/damping/armature/limits disabled',
+            ('regressor.py','identify.py','real_robot/identify_offline.py','real_robot/assets/piper.urdf','real_robot/assets/nominal_piper.json')},
+        model='Standard PiPER bundled URDF transforms, rigid gripper lumped link6; preview gravcomp/damping/armature/limits disabled',
         regressor_self_check_max_error_Nm=self_check_max,
         velocity_check=dict(correlation=[float(np.corrcoef(qder[:,j],vel[:,j])[0,1]) for j in range(6)],
             feedback_over_position_derivative_gain=(np.sum(qder*vel,axis=0)/np.sum(qder*qder,axis=0)).tolist()),
@@ -280,7 +284,7 @@ def run_analysis(run, output, window=21, fit_hz=20., torque_coefficients=None):
             caveat='Manual support timestamp and base pose/acceleration unmeasured; comparison cannot isolate or prove absence of base motion.'),
         limitations=['Base visibly moved; fixed-base assumption violated; cannot correct without base motion measurement.',
             'Current-to-output-torque coefficients, signs, offsets, gearbox efficiency and rotor inertia are not calibrated for this exact unit/firmware.',
-            'Original rigid-only LS has no joint friction; augmented LS is a diagnostic extension, not physical calibration.',
+            'Rigid-body plus friction and offset is the minimum baseline; this is not physical calibration.',
             'QR leaves unobservable parameter directions at zero; raw per-link mass/COM cannot be interpreted as physical estimates.',
             'Held-out cycles are from one repeated trajectory, not independent-trajectory validation.',
             'Nominal X wrist gravity allocation and measured current distribution disagree; exact geometry, joint mapping and current conventions require verification.',

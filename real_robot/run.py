@@ -17,11 +17,15 @@ def serializable(x):
 def validate_config(c):
     validate_speed_limits(c)
     c.setdefault('trajectory','pilot')
-    if c['trajectory'] not in ('pilot','multisine'):raise ValueError('Unknown trajectory')
+    if c['trajectory'] not in ('pilot','multisine','static','reciprocal','payload','gravity','mit'):raise ValueError('Unknown trajectory')
     c.setdefault('trajectory_scale',1.)
     c.setdefault('trajectory_speed_scale',1.)
     if not np.isfinite(c['trajectory_speed_scale']) or not 0<c['trajectory_speed_scale']<=1:raise ValueError('trajectory_speed_scale must be in (0, 1]')
     if not np.isfinite(c['trajectory_scale']) or not 0<c['trajectory_scale']<=1:raise ValueError('trajectory_scale must be in (0, 1]')
+    c.setdefault('startup_limit_tolerance_deg',10.);c.setdefault('tracking_warning_deg',10.);c.setdefault('measurement_angle_tolerance_deg',6.)
+    if not np.isfinite(c['startup_limit_tolerance_deg']) or not 0<c['startup_limit_tolerance_deg']<=15:raise ValueError('Invalid startup allowance')
+    if not np.isfinite(c['measurement_angle_tolerance_deg']) or not 0<=c['measurement_angle_tolerance_deg']<=15:raise ValueError('Invalid measurement angle tolerance')
+    if not np.isfinite(c['tracking_warning_deg']) or not 0<c['tracking_warning_deg']<c['tracking_error_deg']:raise ValueError('Tracking warning must be below hard threshold')
     c.setdefault('settle_position_window_deg',.20);c.setdefault('arming_velocity_limit_rad_s',.15)
     c.setdefault('park_release_tolerance_deg',3.);c.setdefault('disable_timeout_s',2.);c.setdefault('disable_confirm_s',.15)
     for key in ('settle_position_window_deg','arming_velocity_limit_rad_s','park_release_tolerance_deg','disable_timeout_s','disable_confirm_s'):
@@ -36,7 +40,9 @@ def validate_config(c):
     for key in ('amplitude_deg','frequency_hz','duration_s','ramp_s','margin_deg','max_velocity_rad_s','max_acceleration_rad_s2','tracking_error_deg','settle_error_deg','settle_velocity_rad_s','settle_timeout_s','feedback_timeout_s','status_timeout_s','loop_watchdog_s','max_temperature_C','command_hz'):
         if not np.isfinite(c[key]) or c[key]<=0:raise ValueError('Invalid '+key)
     if type(c['joint']) is not int or c['joint'] not in range(1,7):raise ValueError('joint must be 1..6')
-    if c['model']!='piper_x':raise ValueError('Only nominal piper_x preview bundled; confirm actual model first')
+    if c['model']!='piper':raise ValueError('Current real-robot profile is confirmed standard PiPER; legacy X is offline reproduction only')
+    coeff=np.asarray(c.get('torque_candidate_coefficients_Nm_per_A',[]),float)
+    if coeff.shape!=(6,) or not np.all(np.isfinite(coeff)) or np.any(coeff==0):raise ValueError('Six finite nonzero candidate torque coefficients required')
     if c['command_hz']!=100:raise ValueError('First pilot profile uses 100 Hz commands')
     if c['max_velocity_rad_s']>.2 or c['max_acceleration_rad_s2']>.3 or c['amplitude_deg']>5 or c['frequency_hz']>.3:
         raise ValueError('Outside small single-joint pilot profile')
@@ -54,6 +60,24 @@ def validate_config(c):
         if np.any(np.array(c['multisine_generation_lower_deg'])>=np.array(c['multisine_generation_upper_deg'])):raise ValueError('Invalid multisine generation interval')
         if c['multisine_sample_dt_s']!=.002:raise ValueError('Original generator uses 0.002 s interpolation knots')
         if c.get('feedback_stop_policy')!='warn':raise ValueError('Multisine profile requires warn-only reference policy')
+    if c['trajectory'] in ('static','reciprocal','payload'):
+        if not c.get('standing_start') or c.get('current_pose_only'):raise ValueError('Validation trials require --standing')
+        payload=c['trajectory']=='payload'
+        if c.get('passive_wrist') or bool(c.get('release_gripper'))!=payload or bool(c.get('hold_start_wrist'))!=payload:raise ValueError('Validation uses six enabled joints; only payload holds startup J6 and releases gripper')
+        speeds=c['reciprocal_speeds_rad_s']
+        if not speeds or any(not np.isfinite(v) or not .01<=v<=.12 for v in speeds):raise ValueError('Reciprocal speeds must be within 0.01..0.12 rad/s')
+        if c['trajectory_scale']!=1 or c['trajectory_speed_scale']!=1:raise ValueError('Validation protocols use fixed slow paths; do not apply multisine scales')
+        for key in ('validation_move_velocity_rad_s','validation_move_acceleration_rad_s2','validation_settle_s','validation_capture_s','validation_settle_timeout_s'):
+            if not np.isfinite(c[key]) or c[key]<=0:raise ValueError('Invalid '+key)
+        if c['validation_move_velocity_rad_s']>.12 or c['validation_move_acceleration_rad_s2']>.12:raise ValueError('Validation paths exceed slow profile')
+        if not 1<=c['validation_settle_s']<=30 or not 2<=c['validation_capture_s']<=60:raise ValueError('Invalid diagnostic dwell')
+    if c['trajectory']=='mit':
+        if not c.get('standing_start') or c.get('current_pose_only') or c['trajectory_scale']!=1 or c['trajectory_speed_scale']!=1:raise ValueError('MIT uses its fixed standing path without multisine scaling')
+        if not np.isfinite(c['mit_ff_scale']) or not 0<=c['mit_ff_scale']<=1 or c['mit_ff_ramp_s']!=3.:raise ValueError('MIT FF fraction/ramp invalid')
+        for key in ('mit_kp','mit_kd','mit_prepare_kp','mit_prepare_kd','mit_return_kp','mit_return_kd'):
+            values=np.asarray(c[key],float)
+            if values.shape!=(6,) or not np.isfinite(values).all() or np.any(values<=0):raise ValueError('Invalid '+key)
+        if np.any(np.array(c['mit_return_kp'])<c['mit_kp']) or np.any(np.array(c['mit_return_kd'])<c['mit_kd']):raise ValueError('MIT return gains must not be lower than test gains')
     if c['duration_s']>120 or c['duration_s']<2*c['ramp_s']:raise ValueError('Invalid trial duration')
 
 def main():
@@ -64,13 +88,30 @@ def main():
     ap.add_argument('--config',type=Path,default=BASE/'config.json');ap.add_argument('--pad',type=Path,default=BASE/'g8.json')
     ap.add_argument('--standing',action='store_true',help='LB+X performs boundary entry then moves to a fixed standing test pose')
     ap.add_argument('--from-current',action='store_true',help='J6-only trial anchored at actual startup pose; limited parked J2/J3 exceptions')
-    ap.add_argument('--trajectory',choices=['pilot','multisine'],help='pilot J6 sine or the original repository six-joint multisine')
+    ap.add_argument('--trajectory',choices=['pilot','multisine','static','reciprocal','payload','gravity','mit'],help='pilot/multisine diagnostics or unified MIT PD/FF trial')
+    ap.add_argument('--ff-scale',type=float,help='MIT-only trial: gravity feedforward fraction 0..1, default0')
+    ap.add_argument('--mit-gain-scale',type=float,help='MIT-only trial: protocol PD gain fraction 0.5..1, default1')
+    ap.add_argument('--gravity-model',choices=['nominal','identified'],help='gravity/MIT: official nominal or corrected balanced-v2 identification')
+    ap.add_argument('--gravity-fit',choices=['raw_LS','sg21_LS','sg41_LS','sg21_NNLS','sg21_Stribeck_NLS','sg21_Stribeck_GA'],help='gravity only: frozen balanced-v2 fit; default sg21_LS')
+    ap.add_argument('--gravity-seconds',type=float,help='gravity only: test duration 10..120s, default30')
+    ap.add_argument('--gravity-stiffness',type=float,help='gravity only: final weak position gain fraction 0..1; 0 gives gravity+damping')
+    ap.add_argument('--reciprocal-speeds',type=float,nargs='+',help='reciprocal only: paired speed caps in rad/s; default 0.04 0.12')
+    ap.add_argument('--capture-seconds',type=float,help='validation only: stationary recording duration, default 6')
+    ap.add_argument('--settle-seconds',type=float,help='validation only: extra stable time before recording, default 2')
+    ap.add_argument('--payload-point-m',type=float,nargs=3,help='optional hanging point xyz in link6 coordinates, metres; do not guess')
+    ap.add_argument('--seed',type=int,help='reproducible multisine trajectory seed; original experiment used 0')
+    ap.add_argument('--candidate',help='frozen optimized multisine candidate, e.g. smooth-v1')
+    ap.add_argument('--candidate-bank',type=Path,default=BASE.parent.parent/'identification/trajectories/candidates-v1.json')
     ap.add_argument('--speed-scale',type=float,help='test playback-speed fraction (0,1]; 0.5 doubles test/ramp duration, preserving motion range')
     ap.add_argument('--scale',type=float,help='test displacement fraction (0,1]; preparation, return, time and frequency unchanged')
     ap.add_argument('--preflight-only',action='store_true',help='validate the hardware session without reading button actions or enabling motors')
+    ap.add_argument('--headless',action='store_true',help='simulation only: skip the preview window for automated checks')
     ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort','speed-stop'],help='simulation only; speed-stop injects speed feedback to preview a controlled stop')
     ap.add_argument('--output',type=Path,default=BASE.parent/'runs');ap.add_argument('--max-seconds',type=float,default=120)
     a=ap.parse_args()
+    if a.headless:
+        if not a.sim:ap.error('--headless is simulation-only')
+        a.viewer=False
     if a.scripted and not a.sim:ap.error('--scripted is simulation-only')
     if not np.isfinite(a.max_seconds) or a.max_seconds<=0:ap.error('--max-seconds must be positive and finite')
     if a.viewer and not a.sim:ap.error('--viewer is simulation-only')
@@ -98,11 +139,43 @@ def main():
         if not a.standing or a.from_current:ap.error('Six-joint multisine uses --standing; cannot use --from-current')
         if cfg.get('trajectory')!='multisine':cfg.update(json.loads((BASE/'multisine_profile.json').read_text()))
     cfg['trajectory']=selected;cfg['current_pose_only']=a.from_current;cfg['standing_start']=a.standing
+    if selected=='mit':
+        if not (a.sim or a.hardware):ap.error('MIT trial is sim/hardware only')
+        if a.gravity_seconds is not None or a.gravity_stiffness is not None:ap.error('MIT fixed-path trial uses --ff-scale and --mit-gain-scale, not gravity hold options')
+        from .mit_trial import configure
+        configure(cfg,0. if a.ff_scale is None else a.ff_scale,1. if a.mit_gain_scale is None else a.mit_gain_scale,a.gravity_model or 'nominal',a.gravity_fit or 'sg21_LS')
+    elif a.ff_scale is not None or a.mit_gain_scale is not None:ap.error('--ff-scale/--mit-gain-scale require --trajectory mit')
+    if selected=='gravity':
+        if a.hardware:ap.error('Legacy MOVE J-to-MIT hardware trial retired. Use bash real_robot/test_mit.sh hardware --ff-scale 0 or 0.25')
+        from .gravity import configure
+        configure(cfg,a.gravity_model or 'identified',a.gravity_fit or 'sg21_LS',30. if a.gravity_seconds is None else a.gravity_seconds,1. if a.gravity_stiffness is None else a.gravity_stiffness)
+    elif selected!='mit' and any(x is not None for x in (a.gravity_model,a.gravity_fit,a.gravity_seconds,a.gravity_stiffness)):ap.error('Gravity options require --trajectory gravity/mit')
+    if selected in ('static','reciprocal','payload'):
+        from .validation_trials import configure
+        configure(cfg)
+        if a.reciprocal_speeds is not None:
+            if selected!='reciprocal':ap.error('--reciprocal-speeds requires the reciprocal test')
+            cfg['reciprocal_speeds_rad_s']=a.reciprocal_speeds
+        if a.capture_seconds is not None:cfg['validation_capture_s']=a.capture_seconds
+        if a.settle_seconds is not None:cfg['validation_settle_s']=a.settle_seconds
+        if a.payload_point_m is not None:
+            if not np.all(np.isfinite(a.payload_point_m)):ap.error('Invalid hanging point')
+            cfg['payload_point_link6_m']=a.payload_point_m
+    elif any(x is not None for x in (a.capture_seconds,a.settle_seconds,a.payload_point_m,a.reciprocal_speeds)):ap.error('Diagnostic options require static, reciprocal or payload')
     if a.scale is not None:cfg['trajectory_scale']=a.scale
     if a.speed_scale is not None:cfg['trajectory_speed_scale']=a.speed_scale
+    if a.seed is not None:
+        if selected!='multisine':ap.error('--seed requires --trajectory multisine')
+        cfg['multisine_seed']=a.seed
     if a.standing:
         from .standing import STANDING_DEG
         cfg['start_deg']=cfg.get('standing_start_deg',STANDING_DEG)
+    if a.candidate:
+        if selected!='multisine' or a.seed is not None:
+            ap.error('--candidate requires --trajectory multisine; cannot combine with --seed')
+        from .designed_trajectory import load_candidate
+        candidate=load_candidate(cfg,a.candidate,a.candidate_bank)
+        print('CANDIDATE：'+a.candidate+f'；冻结幅度/速度={cfg["trajectory_scale"]:g}/{cfg["trajectory_speed_scale"]:g}；'+candidate['description_zh'],flush=True)
     validate_config(cfg)
     if a.from_current:
         from .current_pose import current_pose_bounds
@@ -122,20 +195,30 @@ def main():
         except OSError as error:log_failure=str(error)
     def record(row):
         nonlocal log_failure
+        if ctrl is not None and getattr(ctrl,'mit_telemetry',None) is not None:row['mit']=ctrl.mit_telemetry
         try:samples.write(json.dumps(row,default=serializable)+'\n')
         except OSError as error:log_failure=str(error)
-    stop_requested=False
-    def stop(signum,frame):
-        nonlocal stop_requested
-        # Operator stop follows the same braking/park/disable sequence as LB+RB.
-        stop_requested=True
-    old_handlers={s:signal.signal(s,stop) for s in (signal.SIGINT,signal.SIGTERM)}
+    from .operator_exit import OperatorExit
+    operator_exit=OperatorExit(emit)
+    old_handlers={s:signal.signal(s,operator_exit.signal) for s in (signal.SIGINT,signal.SIGTERM)}
     try:
         if a.sim:
-            from .simulation import Simulation
-            b=Simulation(cfg);emit('SIMULATION：名义 X 模型，简化几何；未连接机械臂。仿真增益不是实机建议值。')
+            if cfg.get('passive_wrist',False):
+                from .validation_simulation import ValidationSimulation as Simulation
+            elif selected=='mit':
+                from .mit_trial import MitSimulation as Simulation
+            elif selected=='gravity':
+                from .gravity import GravitySimulation as Simulation
+            else:
+                from .simulation import Simulation
+            b=Simulation(cfg);emit('SIMULATION：全程MIT PD，重力开启，无隐藏补偿；PD输出缩放为b*c仿真假设，未实机整定。' if selected=='mit' else 'SIMULATION：普通PiPER模型，简化几何；未连接机械臂。重力测试关闭隐藏重力补偿，并模拟旧固件MIT量化。' if selected=='gravity' else 'SIMULATION：普通PiPER模型，简化几何；未连接机械臂。仿真增益不是实机建议值。')
         else:
-            from .hardware import Hardware
+            if selected=='mit':
+                from .mit_trial import MitHardware as Hardware
+            elif selected=='gravity':
+                from .gravity import GravityHardware as Hardware
+            else:
+                from .hardware import Hardware
             if a.hardware or a.recover:
                 import fcntl, re
                 if not re.fullmatch(r'[A-Za-z0-9_-]+',cfg['channel']):raise ValueError('Invalid CAN channel name')
@@ -176,19 +259,32 @@ def main():
             import mujoco.viewer
             viewer=mujoco.viewer.launch_passive(b.model,b.data)
             viewer.cam.distance=1.3;viewer.cam.lookat[:]=[0,0,.3];viewer.cam.azimuth=135;viewer.cam.elevation=-25
-        s=b.snapshot();now=0. if a.sim else time.monotonic();ctrl=Controller(b,cfg,s,now,emit)
-        if ctrl.reference_plan:
+        s=b.snapshot();now=0. if a.sim else time.monotonic();ctrl_type=Controller
+        if selected=='mit':
+            from .mit_trial import MitController
+            ctrl_type=MitController
+        elif selected=='gravity':
+            from .gravity import GravityController
+            ctrl_type=GravityController
+        ctrl=ctrl_type(b,cfg,s,now,emit)
+        if selected in ('gravity','mit'):(path/'reference_plan.json').write_text(json.dumps(ctrl.reference_plan,ensure_ascii=False,indent=2))
+        if ctrl.reference_plan and ctrl.multisine:
             from .multisine import save_reference
             save_reference(path,ctrl.test,ctrl.reference_plan)
             limits=cfg.get('reported_motor_max_acceleration_rad_s2')
             if limits and np.any(np.array(ctrl.reference_plan['max_acceleration_per_joint_rad_s2'])>limits):
                 emit('FIRMWARE_PLANNER_WARNING：参考加速度高于固件返回的规划配置；仅提示，固件可能平滑/限速。不会修改固件配置。')
             emit('HARD_LINES：速度 '+str(cfg['feedback_speed_emergency_rad_s'])+' rad/s；测试跟踪 '+str(cfg['test_tracking_hard_deg'])+'°；电流 '+str((np.asarray(cfg['max_current_feedback_A'])*cfg['feedback_current_emergency_multiplier']).tolist())+' A。这些是独立工程保护线，不是厂商认证危险极限。')
+        if ctrl.trial:ctrl.trial.save(path)
         result['home_rad']=ctrl.home.tolist()
         result['return_home_rad']=ctrl.return_home.tolist()
         result['current_pose_only']=a.from_current
         result['standing_start']=a.standing
-        (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'return_home_deg':np.rad2deg(ctrl.return_home).tolist(),'return_home_delta_deg':np.rad2deg(ctrl.return_home-ctrl.home).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.lower).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint'] if cfg['trajectory']=='pilot' else None,'moving_joints':[1,2,3,4,5,6] if cfg['trajectory']=='multisine' else [cfg['joint']],'shutdown':'park_then_confirm_six_axis_disabled','park_release_tolerance_deg':cfg['park_release_tolerance_deg'],'disable_confirm_s':cfg['disable_confirm_s']},ensure_ascii=False,indent=2))
+        (path/'session_policy.json').write_text(json.dumps({'current_pose_only':a.from_current,'home_deg':np.rad2deg(ctrl.home).tolist(),'return_home_deg':np.rad2deg(ctrl.return_home).tolist(),'return_home_delta_deg':np.rad2deg(ctrl.return_home-ctrl.home).tolist(),'measurement_bounds_reference':'firmware/config intersection expanded outward; preparation/return also accept startup corridor','measurement_angle_tolerance_deg':cfg['measurement_angle_tolerance_deg'],'test_measurement_lower_deg':(np.asarray(cfg['lower_deg'])-cfg['measurement_angle_tolerance_deg']).tolist(),'test_measurement_upper_deg':(np.asarray(cfg['upper_deg'])+cfg['measurement_angle_tolerance_deg']).tolist(),'measurement_lower_deg':np.rad2deg(ctrl.measurement_bounds()[0]).tolist(),'measurement_upper_deg':np.rad2deg(ctrl.measurement_bounds()[1]).tolist(),'command_lower_deg':np.rad2deg(ctrl.lower).tolist(),'command_upper_deg':np.rad2deg(ctrl.upper).tolist(),'held_command_joints':[1,2,3,4,5] if a.from_current else [],'moving_joint':cfg['joint'] if cfg['trajectory']=='pilot' else None,'moving_joints':[1,2,3,4,5,6] if cfg['trajectory'] in ('multisine','mit','gravity') else [cfg['joint']],'shutdown':'park_then_confirm_six_axis_disabled','park_release_tolerance_deg':cfg['park_release_tolerance_deg'],'disable_confirm_s':cfg['disable_confirm_s']},ensure_ascii=False,indent=2))
+        if ctrl.trial:
+            policy=json.loads((path/'session_policy.json').read_text())
+            policy.update(controlled_joints=ctrl.trial.active_joints,passive_joints=ctrl.trial.passive_joints,moving_joints=[1,2,3,4,5] if cfg.get('hold_start_wrist') else ctrl.trial.active_joints,gripper_control=ctrl.trial.plan['gripper_policy'],fixed_at_startup_joints=[6] if cfg.get('hold_start_wrist') else [],return_pose_policy='J1–J5 park; J6 holds startup angle' if cfg.get('hold_start_wrist') else 'all six joints park')
+            (path/'session_policy.json').write_text(json.dumps(policy,ensure_ascii=False,indent=2))
         emit('启动角度（度）：'+str(np.round(np.rad2deg(ctrl.home),3).tolist()))
         if a.preflight_only:
             samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
@@ -196,7 +292,7 @@ def main():
             return
         recorder=TestRecorder(path,cfg,'sim' if a.sim else 'hardware')
         emit('DATA：只将 TESTING 写入 test_samples.jsonl；原始测试帧和导出数据在收尾后生成。')
-        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False
+        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False;last_rx_dropped=0;last_tick_duration=0.;last_tick_state=ctrl.state
         while not ctrl.finished:
             now=step*dt if a.sim else time.monotonic()
             if viewer and not viewer.is_running() and not viewer_closed:
@@ -209,32 +305,46 @@ def main():
             if a.scripted:
                 if step==10:action='PREPARE'
                 elif ctrl.state=='READY' and not scripted_started:action='START';scripted_started=True
+                elif a.scripted=='normal' and ctrl.trial and ctrl.state=='TESTING':action=ctrl.trial.scripted_action()
                 elif a.scripted=='abort' and ctrl.state=='TESTING' and now-ctrl.path_t>=5.2 and not scripted_aborted:
                     action='ABORT';scripted_aborted=True
+            if ctrl.shutdown_phase and action in ('PREPARE','START'):action=None
             if action:emit('手柄指令：'+action)
             if a.sim:b.advance(dt)
             s=b.snapshot()
+            dropped=s.get('can_rx_dropped_total',0)
+            if dropped!=last_rx_dropped:
+                emit(f'CAN_RX_WARNING：接收累计丢帧{dropped}；记录数据缺口，接收继续。最新反馈超时仍会停止。')
+                last_rx_dropped=dropped
             now=s['time'] if a.sim else time.monotonic()
             if a.scripted=='speed-stop' and ctrl.state=='TESTING' and 5.2<=now-ctrl.path_t<5.5:
                 # Simulation-only sensor injection; never changes motor position or real CAN data.
                 s['qd']=s['qd'].copy();s['qd'][cfg['joint']-1]=cfg['feedback_speed_stop_rad_s']+.05
-            if stop_requested:
-                stop_requested=False;ctrl.request_stop(s,now,'SIGINT/SIGTERM')
+            operator_exit.update(ctrl,s,now)
             if time.monotonic()-start_wall>a.max_seconds and not timeout_handled:
                 timeout_handled=True;ctrl.request_stop(s,now,'Session timeout')
-            if not a.sim and ctrl.active and time.monotonic()-last_wall>cfg['loop_watchdog_s']:ctrl.fault('Control loop late')
-            last_wall=time.monotonic();ctrl.tick(now,s,action)
+            loop_gap=time.monotonic()-last_wall
+            if not a.sim and ctrl.active and loop_gap>cfg['loop_watchdog_s']:
+                ctrl.fault(f'Control loop late: gap={loop_gap*1000:.1f} ms, threshold={cfg["loop_watchdog_s"]*1000:.1f} ms, previous_state={last_tick_state}, previous_tick={last_tick_duration*1000:.1f} ms')
+            last_wall=time.monotonic();tick_started=last_wall;last_tick_state=ctrl.state
+            ctrl.tick(now,s,action);last_tick_duration=time.monotonic()-tick_started
             try:recorder.update(ctrl,now,s,now if a.sim else time.monotonic(),action)
             except OSError as e:log_failure=str(e);ctrl.request_stop(s,now,'Test data logging unavailable: '+str(e))
             tracking_target=ctrl.last_target if not ctrl.shutdown_phase else np.full(6,np.nan)
-            record({'t_control':now,'state':ctrl.state,'shutdown_phase':ctrl.shutdown_phase,'action':action,'q_target':tracking_target,'feedback':s})
+            record({'t_control':now,'control_tick_wall_s':last_tick_duration,'control_loop_gap_s':loop_gap,'state':ctrl.state,'shutdown_phase':ctrl.shutdown_phase,'action':action,'q_target':tracking_target,'feedback':s})
             if log_failure:ctrl.request_stop(s,now,'Logging unavailable: '+log_failure)
             if viewer and viewer.is_running():
                 j=cfg['joint']-1
-                viewer.set_texts((None,None,'SIM ONLY | '+cfg['trajectory']+' | scale '+str(cfg['trajectory_scale'])+' | speed '+str(cfg['trajectory_speed_scale'])+' | '+ctrl.state+'\nLB+X prepare | LB+Y start | LB+RB abort',f'J{j+1}: {np.rad2deg(s["q"][j]):.2f} deg\nTarget: {np.rad2deg(ctrl.last_target[j]):.2f} deg'))
+                if ctrl.trial:
+                    tag=ctrl.trial.metadata(s,now);mass='-' if tag['mass_kg'] is None else f"{tag['mass_kg']:.3f} kg"
+                    viewer.set_texts((None,None,f"SIM ONLY | {cfg['trajectory']} | {ctrl.state} | {tag['phase']}\nPose {tag['pose_id']} | load {mass} | {('J6 passive' if cfg['passive_wrist'] else '6-axis control')}\nLB+X prepare | LB+Y start/next pose | LB+RB abort",f"J2: {np.rad2deg(s['q'][1]):.2f} deg\nJ3: {np.rad2deg(s['q'][2]):.2f} deg"))
+                else:
+                    viewer.set_texts((None,None,'SIM ONLY | '+cfg['trajectory']+' | scale '+str(cfg['trajectory_scale'])+' | speed '+str(cfg['trajectory_speed_scale'])+' | '+ctrl.state+'\nLB+X prepare | LB+Y start | LB+RB abort',f'J{j+1}: {np.rad2deg(s["q"][j]):.2f} deg\nTarget: {np.rad2deg(ctrl.last_target[j]):.2f} deg'))
                 viewer.sync()
             step+=1
-            if not a.scripted:
+            # Automatic GUI previews must retain real playback speed. Headless
+            # scripted runs stay accelerated for controller regression checks.
+            if not a.scripted or a.viewer:
                 deadline+=dt;remaining=deadline-time.monotonic()
                 if remaining>0:time.sleep(remaining)
                 else:deadline=time.monotonic()
@@ -258,12 +368,14 @@ def main():
             while not ctrl.finished:
                 if a.sim:b.advance(.01)
                 observation=b.snapshot();shutdown_now=observation['time'] if a.sim else time.monotonic()
+                operator_exit.update(ctrl,observation,shutdown_now)
                 ctrl.tick(shutdown_now,observation)
                 record({'t_control':shutdown_now,'state':ctrl.state,'shutdown_phase':ctrl.shutdown_phase,'feedback':observation})
                 time.sleep(.01)
         if ctrl and not a.preflight_only:
             result.update(state=ctrl.state,completed=ctrl.state=='DONE' and ctrl.disarm_confirmed and not log_failure,
                           motors_disabled_confirmed=ctrl.disarm_confirmed,shutdown_phase=ctrl.shutdown_phase,
+                          operator_supported_disarm=ctrl.operator_supported_disarm,operator_power_off_confirmed=ctrl.operator_power_off_confirmed,
                           release_q_rad=None if ctrl.release_q is None else ctrl.release_q.tolist(),
                           final_enabled=b.snapshot()['enabled'].tolist(),last_q=b.snapshot()['q'].tolist())
             if ctrl.fault_reason:result['fault_reason']=ctrl.fault_reason
@@ -271,14 +383,24 @@ def main():
         if viewer and ctrl and ctrl.finished:
             emit('仿真已结束，窗口保持显示。关闭窗口即可退出。')
             view_deadline=time.monotonic()+60
-            while viewer.is_running() and not stop_requested and time.monotonic()<view_deadline:
+            while viewer.is_running() and not operator_exit.requested and time.monotonic()<view_deadline:
                 viewer.sync();time.sleep(.02)
         if viewer:viewer.close()
         if pad:pad.close()
-        if b:b.close()
+        if b:
+            if not a.sim and ctrl and ctrl.operator_power_off_confirmed:b.close(allow_unconfirmed_power_off=True)
+            else:b.close()
+            if not a.sim:
+                result.update(can_rx_dropped_total=b.rx_dropped,can_raw_log_dropped_total=b.raw_log_dropped,can_receive_buffer_bytes=b.receive_buffer_bytes)
+                if b.error and 'logging' in b.error:log_failure=b.error;result.update(completed=False,log_error=log_failure)
         if recorder:
             try:
                 result['test_data']=export_test_data(path)
+                if ctrl and ctrl.trial:
+                    from .validation_trials import summarize
+                    report=summarize(path)
+                    result['validation_protocol']={'kind':ctrl.trial.kind,'automatic_sequence_completed':ctrl.trial.phase=='complete','complete_captures':sum(x['complete'] for x in report['captures']),'partial_captures':sum(not x['complete'] for x in report['captures']),'passive_joints':ctrl.trial.passive_joints,'torque_calibrated':False}
+                    emit('VALIDATION_SAVED：'+str(sum(x['complete'] for x in report['captures']))+'段完整静态采集（另含'+str(sum(not x['complete'] for x in report['captures']))+'段中断记录）；标签／姿态／温度和夹爪信息已保存，详见validation_summary.json。')
                 emit('DATA_SAVED：'+str(result['test_data']['sample_count'])+' 条测试快照；test_signals.csv / test_signals.npz，详见 test_quality.json。')
             except Exception as e:
                 result['data_export_error']=str(e);result['completed']=False;emit('DATA_EXPORT_FAILED：'+str(e))

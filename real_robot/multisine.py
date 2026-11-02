@@ -20,6 +20,13 @@ class RepositoryMultisine:
         raw=swevers_trajectory(lo,hi,duration=self.duration,dt=cfg['multisine_sample_dt_s'],
             base_freq=cfg['multisine_base_frequency_hz'],harmonics=cfg['multisine_harmonics'],
             amplitude_frac=cfg['multisine_amplitude_fraction'],seed=cfg['multisine_seed'])
+        if 'multisine_coefficients' in cfg:
+            from .designed_trajectory import fourier
+            ab=np.asarray(cfg['multisine_coefficients'],float)
+            if ab.shape!=(2,6,cfg['multisine_harmonics']) or not np.all(np.isfinite(ab)):
+                raise ValueError('Invalid frozen Fourier coefficients')
+            delta,v,a,_=fourier(raw.t,ab,raw.base_freq)
+            raw.q=raw.q0+delta;raw.qd=v;raw.qdd=a
         self.raw=raw;self.braking_amax=cfg['braking_max_acceleration_rad_s2']
         # Quintic Hermite interpolation preserves source position/velocity/acceleration
         # at every original 500 Hz knot; BPoly control points are built in one batch.
@@ -37,6 +44,13 @@ class RepositoryMultisine:
             'source_center_rad':raw.q0.tolist(),'execution_anchor_rad':self.anchor.tolist(),
             'adaptation':'q_anchor + scale * C2_envelope * (q_source - q_source_center)',
             'duration_s':self.duration,'ramp_s':self.ramp,'time_scale':1.}
+        if 'trajectory_candidate' in cfg:
+            self.metadata['legacy_formula_source_sha256']=self.metadata.pop('source_sha256')
+            self.metadata['source']='designed_trajectory.py:fourier / frozen candidate coefficients'
+            self.metadata['source_sha256']=hashlib.sha256((Path(__file__).parent/'designed_trajectory.py').read_bytes()).hexdigest()
+            self.metadata['seed']=None
+            self.metadata['candidate']=cfg['trajectory_candidate']
+            self.metadata['coefficients_source_rad']=cfg['multisine_coefficients']
 
     def at(self,t):
         t=np.clip(np.asarray(t,float),0.,self.duration);r=self.ramp

@@ -1,0 +1,25 @@
+{
+  "commit": "d90e234ba8e408cfa964b38aa9120b3131fc9f85",
+  "files": {
+    "driver.py": {
+      "url": "https://raw.githubusercontent.com/agilexrobotics/pyAgxArm/d90e234ba8e408cfa964b38aa9120b3131fc9f85/pyAgxArm/protocols/can_protocol/drivers/piper/default/driver.py",
+      "sha256": "0724cd21d5640be71b9f473c00530ccae46689a4a46d097e29cd5a4bdacc4829"
+    },
+    "parser.py": {
+      "url": "https://raw.githubusercontent.com/agilexrobotics/pyAgxArm/d90e234ba8e408cfa964b38aa9120b3131fc9f85/pyAgxArm/protocols/can_protocol/drivers/piper/default/parser.py",
+      "sha256": "b1262c12c15aeb8d2e43cfb4685fc57403a22472bfe846a422fba29628521df0"
+    },
+    "constants.py": {
+      "url": "https://raw.githubusercontent.com/agilexrobotics/pyAgxArm/d90e234ba8e408cfa964b38aa9120b3131fc9f85/pyAgxArm/api/constants.py",
+      "sha256": "f2ab8c10696d82ce23a279ca6ad2fcaf2c60848beca423c192cddeac4360c1aa"
+    },
+    "mode.py": {
+      "url": "https://raw.githubusercontent.com/agilexrobotics/pyAgxArm/d90e234ba8e408cfa964b38aa9120b3131fc9f85/pyAgxArm/protocols/can_protocol/msgs/piper/default/transmit/arm_mode_ctrl.py",
+      "sha256": "e17dec42d47fde42bd72c8fed55b20f4ce955d98b8a2429bd43b3fe1acd5d7a0"
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/agilexrobotics/pyAgxArm/d90e234ba8e408cfa964b38aa9120b3131fc9f85/LICENSE",
+      "sha256": "ea8af5e789cb2d4e9b10bce3874982ade163b749b6bfbdb32e2df21c4d106de1"
+    }
+  }
+}

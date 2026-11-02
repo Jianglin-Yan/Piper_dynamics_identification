@@ -7,6 +7,7 @@ class Shutdown:
         self.shutdown_phase=None;self.shutdown_complete=False;self.disarm_confirmed=False
         self.disarm_started=None;self.disable_sent=None;self.disable_last_attempt=None
         self.disable_stable_since=None;self.shutdown_warning=None;self.release_q=None
+        self.operator_supported_disarm=False;self.operator_power_off_confirmed=False
 
     @property
     def finished(self):
@@ -37,9 +38,23 @@ class Shutdown:
         self.disarm_started=now;self.disable_last_attempt=None;self.disable_sent=None
         self.disable_stable_since=None
         delta=np.rad2deg(self.release_q-self.home).round(3).tolist()
-        self.event('DISABLING：回位结束，实际位置相对原始启动值差 '+str(delta)+
+        self.event('DISABLING：当前位置相对原始启动值差 '+str(delta)+
                    '°；失能即撤去驱动力矩，等待六轴新反馈确认。')
         self.poll_disarm(s,now)
+
+    def supported_disarm(self,s,now):
+        """Explicit operator confirmation: supported arm may be disabled at its current pose."""
+        if self.finished:return
+        self.operator_supported_disarm=True;self.stop_reason='Operator confirmed physical support; disable at current pose'
+        self.event('SUPPORTED_DISARM：已由操作者确认有支撑；立即逐轴失能，不回位、不复位、不使能。')
+        self.begin_disarm(s,now)
+
+    def confirm_physical_power_off(self):
+        if self.shutdown_phase!='DISABLE_UNCONFIRMED':raise RuntimeError('Power-cut confirmation is only allowed after disable feedback timeout')
+        self.operator_power_off_confirmed=True;self.shutdown_complete=True;self.active=False
+        self.state='FAULT';self.shutdown_phase='OPERATOR_POWER_OFF'
+        if not self.fault_reason:self.fault_reason='Disable unconfirmed; operator explicitly confirmed physical power cut'
+        self.event('OPERATOR_POWER_OFF：操作者确认已切断机械臂电源；保存记录并退出。未通过CAN确认失能，不标记为正常完成。')
 
     def poll_disarm(self,s,now):
         # Keep receiving while disabling. No position, re-enable, reset, or electronic-stop command here.
@@ -64,7 +79,7 @@ class Shutdown:
                     self.shutdown_warning=str(e);self.event('DISABLE_SEND_FAILED：'+str(e)+'；保持监视，不退出。')
         if now-self.disarm_started>self.c.get('disable_timeout_s',2.) and self.shutdown_phase!='DISABLE_UNCONFIRMED':
             self.shutdown_phase='DISABLE_UNCONFIRMED'
-            self.event('DISABLE_UNCONFIRMED：尚未收到六轴完整失能反馈；继续失能请求及记录，不退出。请现场确认通信/电源并支撑机械臂。')
+            self.event('DISABLE_UNCONFIRMED：尚未收到六轴完整失能反馈；继续失能请求。若通信已中断，先支撑并切断机械臂电源；确认已失电后输入 POWER_OFF 回车退出（失能反馈仍记为未确认）。')
 
     def shutdown_tick(self,now,s):
         if self.shutdown_complete:return
@@ -82,4 +97,4 @@ class Shutdown:
             self.begin_disarm(s,now);return
         if now-self.settle_started>self.c['settle_timeout_s'] and self.shutdown_warning!='park':
             self.shutdown_warning='park'
-            self.event('PARK_UNCONFIRMED：无法确认已回到启动位置附近；禁止自动卸力和退出。请现场支撑并移回启动位置附近，程序只监视，不恢复或使能。')
+            self.event('PARK_UNCONFIRMED：无法确认已回到启动位置附近；禁止自动卸力和退出。可支撑后按 Ctrl+C，再按提示确认立即失能退出；不必移回起点，不复位或使能。')

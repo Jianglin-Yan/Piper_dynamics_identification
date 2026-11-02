@@ -1,4 +1,4 @@
-"""Nominal PiPER X MuJoCo preview. Simplified visual geometry, not a collision certificate."""
+"""Nominal PiPER MuJoCo preview (legacy X available explicitly). Simplified visual geometry, not a collision certificate."""
 import json, xml.etree.ElementTree as ET
 from pathlib import Path
 import numpy as np
@@ -7,10 +7,13 @@ from scipy.spatial.transform import Rotation
 ASSETS=Path(__file__).parent/'assets'
 
 def numbers(v):return ' '.join(str(float(x)) for x in v)
-def model_xml():
-    nominal=json.loads((ASSETS/'nominal_x.json').read_text());urdf=ET.parse(ASSETS/'piper_x.urdf').getroot()
+def model_xml(model_name="piper"):
+    
+    if model_name not in ('piper','piper_x'):raise ValueError('Unsupported model')
+    meta,description=('nominal_piper.json','piper.urdf') if model_name=='piper' else ('nominal_x.json','piper_x.urdf')
+    nominal=json.loads((ASSETS/meta).read_text());urdf=ET.parse(ASSETS/description).getroot()
     joints=[urdf.find("joint[@name='joint%d']"%i) for i in range(1,7)]
-    root=ET.Element('mujoco',model='PiPER X nominal simplified preview')
+    root=ET.Element('mujoco',model=model_name+' nominal simplified preview')
     ET.SubElement(root,'compiler',angle='radian',inertiafromgeom='false')
     ET.SubElement(root,'option',timestep='0.005',gravity='0 0 -9.81',integrator='implicitfast')
     visual=ET.SubElement(root,'visual');ET.SubElement(visual,'global',offwidth='960',offheight='720')
@@ -45,7 +48,7 @@ def model_xml():
 class Simulation:
     def __init__(self,cfg):
         import mujoco
-        self.mj=mujoco;self.c=cfg;self.model=mujoco.MjModel.from_xml_string(model_xml());self.data=mujoco.MjData(self.model)
+        self.mj=mujoco;self.c=cfg;self.model=mujoco.MjModel.from_xml_string(model_xml(cfg.get("model","piper")));self.data=mujoco.MjData(self.model)
         self.data.qpos[:]=np.deg2rad(cfg['simulation_initial_deg']);self.data.ctrl[:]=self.data.qpos
         if cfg.get('standing_start',False):
             from .standing import standing_plan

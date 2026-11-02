@@ -17,8 +17,35 @@ class Segment:
         a0 = np.zeros_like(q0) if a0 is None else np.asarray(a0, float)
         T = self.duration
         c0, c1, c2 = q0, v0*T, a0*T*T/2
-        c3, c4, c5 = np.linalg.solve(np.array([[1,1,1],[3,4,5],[6,12,20]],float), np.array([q1-c0-c1-c2, -c1-2*c2, -2*c2]))
+        delta=q1-c0
+        c3,c4,c5=10*delta-6*c1-3*c2,-15*delta+8*c1+3*c2,6*delta-3*c1-c2
         self.c = np.array([c0,c1,c2,c3,c4,c5])
+        if self.c.shape!=(6,6) or not np.all(np.isfinite(self.c)):raise ValueError('invalid segment coefficients')
+        self.c.setflags(write=False)
+        if not np.any(v0) and not np.any(a0):
+            # Exact extrema of the rest-to-rest quintic, independent of duration/sample count.
+            self._limits=(np.minimum(q0,q1),np.maximum(q0,q1),1.875*np.abs(delta)/T,(10*np.sqrt(3)/3)*np.abs(delta)/T**2)
+        else:
+            self._limits=self._polynomial_limits()
+
+    def _polynomial_limits(self):
+        def extrema(coeff):
+            deriv=np.arange(1,len(coeff))*coeff[1:]
+            roots=np.polynomial.polynomial.polyroots(deriv) if np.any(deriv) else []
+            inside=[float(np.clip(z.real,0.,1.)) for z in roots if abs(z.imag)<1e-7 and -1e-9<=z.real<=1+1e-9]
+            return np.polynomial.polynomial.polyval(np.array([0.,1.,*inside]),coeff)
+        lo=[];hi=[];vmax=[];amax=[]
+        for j in range(6):
+            q=self.c[:,j];v=np.arange(1,6)*q[1:]/self.duration;a=np.arange(1,5)*v[1:]/self.duration
+            values=extrema(q);lo.append(np.min(values));hi.append(np.max(values))
+            vmax.append(np.max(np.abs(extrema(v))));amax.append(np.max(np.abs(extrema(a))))
+        return tuple(np.array(x) for x in (lo,hi,vmax,amax))
+
+    def check_limits(self,lower,upper,vmax,amax):
+        lo,hi,v,a=self._limits
+        if np.any(lo<lower-1e-9) or np.any(hi>upper+1e-9):raise ValueError('trajectory crosses joint safety bounds')
+        if np.max(v)>vmax+1e-8:raise ValueError('trajectory exceeds velocity bound')
+        if np.max(a)>amax+1e-8:raise ValueError('trajectory exceeds acceleration bound')
 
     def at(self, t):
         x = np.clip(t/self.duration, 0, 1)
@@ -70,6 +97,10 @@ class ScaledTrajectory:
 
 
 def check_path(path, lower, upper, vmax, amax):
+    # Polynomial/composite paths prove bounds without dense sampling in the control loop.
+    if hasattr(path,'check_limits'):
+        path.check_limits(np.asarray(lower),np.asarray(upper),vmax,amax)
+        return
     if getattr(path,'supports_batch',False):
         q,v,a=path.at(np.linspace(0,path.duration,max(1001,int(path.duration/.002)+1)))
         if not all(np.all(np.isfinite(x)) for x in (q,v,a)):raise ValueError('nonfinite trajectory')

@@ -81,6 +81,20 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(summary['raw_test_frame_count'],2)
         selected=[json.loads(x)['t_monotonic_s'] for x in (self.path/'test_raw_can.jsonl').read_text().splitlines()]
         self.assertEqual(selected,[0.,.15])
+    def test_can_loss_invalidates_affected_snapshot_and_marks_capture_quality(self):
+        self.ctrl.state='TESTING'
+        for t,count in [(0.,5),(.01,5),(.02,7),(.03,7)]:
+            snapshot=self.snapshot(t);snapshot['can_rx_dropped_total']=count
+            self.r.update(self.ctrl,t,snapshot,t+.001)
+        self.ctrl.state='RETURNING';self.step(.04);self.r.close(.05,'done')
+        rows=[json.loads(x) for x in (self.path/'test_samples.jsonl').read_text().splitlines()]
+        self.assertEqual([r['quality']['valid_measurement'] for r in rows],[True,False,True])
+        frames=[{'t_monotonic_s':t,'can_id':'0x251','data_hex':'00'*8,'rx_dropped_delta':count} for t,count in [(-1.,5),(.02,2),(.05,3)]]
+        (self.path/'raw_can.jsonl').write_text(''.join(json.dumps(x)+'\n' for x in frames))
+        summary=export_test_data(self.path)
+        self.assertTrue(summary['can_loss_detected'])
+        self.assertEqual(summary['can_rx_dropped_frames_detected_during_test'],2)
+        self.assertEqual(summary['can_loss_affected_snapshot_count'],1)
     def test_acceleration_estimate_uses_measured_velocity_not_reference(self):
         self.begin()
         for n in range(1,61):self.step(n*.01)

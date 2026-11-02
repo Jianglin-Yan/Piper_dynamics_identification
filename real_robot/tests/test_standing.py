@@ -52,8 +52,23 @@ class TestStanding(unittest.TestCase):
             tick(k,n*.01,b.snapshot())
             if k.state in ('DONE','FAULT'):break
         self.assertEqual(k.state,'DONE');np.testing.assert_allclose(b.q,k.return_home,atol=1e-9)
+    def test_requested_4_628_degree_start_and_all_six_axis_allowances(self):
+        c,b,k,_=self.make()
+        for j in range(6):
+            for side in ('lower_deg','upper_deg'):
+                q=k.home.copy();q[j]=np.deg2rad(c[side][j]+(-4.628 if side=='lower_deg' else 4.628))
+                target,boundary,lo,hi=standing_plan(c,q)
+                self.assertTrue(np.all(boundary>=np.deg2rad(c['lower_deg'])))
+                self.assertTrue(np.all(boundary<=np.deg2rad(c['upper_deg'])))
+                np.testing.assert_array_equal(target,np.deg2rad(STANDING_DEG))
+                self.assertTrue(np.all(q>=lo));self.assertTrue(np.all(q<=hi))
+    def test_passive_payload_wrist_keeps_the_allowed_startup_angle(self):
+        c,b,k,_=self.make();c.update(trajectory='payload',passive_wrist=True,release_gripper=True)
+        q=k.home.copy();q[5]=np.deg2rad(c['upper_deg'][5]+4.628)
+        target,boundary,lo,hi=standing_plan(c,q)
+        self.assertAlmostEqual(target[5],q[5]);self.assertGreaterEqual(hi[5],q[5])
     def test_unknown_large_park_excursion_refused(self):
-        c,b,k,_=self.make();q=k.home.copy();q[1]=np.deg2rad(-4)
+        c,b,k,_=self.make();q=k.home.copy();q[1]=np.deg2rad(-10.1)
         with self.assertRaises(ValueError):standing_plan(c,q)
 
 if __name__=='__main__':unittest.main()

@@ -1,5 +1,5 @@
 """SocketCAN adapter for the observed V1.7-3 position interface. Never writes calibration or protection settings."""
-import copy, json, socket, struct, threading, time
+import copy, json, queue, socket, struct, threading, time
 import numpy as np
 from .protocol_read import decode
 
@@ -9,34 +9,64 @@ class Hardware:
         self.c=cfg;self.latest={};self.limits={};self.acc={};self.firmware=bytearray();self.error=None
         self.rx_lock=threading.Lock();self.tx_lock=threading.Lock();self.stopped=False;self.active=False;self.motion_closed=False;self.disable_acknowledged=False;self.motion_started=False
         self.heartbeat=time.monotonic();self.done=threading.Event();self.raw=(run_dir/'raw_can.jsonl').open('w',buffering=65536)
+        self.rx_dropped=0;self.raw_log_dropped=0;self.log_done=threading.Event();self.raw_queue=queue.Queue(maxsize=32768)
         self.tx_log=(run_dir/'tx_can.jsonl').open('w',buffering=1)
         self.sock=socket.socket(socket.AF_CAN,socket.SOCK_RAW,socket.CAN_RAW)
         try:
-            self.sock.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,1024*1024)
+            self.sock.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,4*1024*1024)
             self.sock.setsockopt(socket.SOL_SOCKET,40,1) # SO_RXQ_OVFL
             self.sock.bind((cfg['channel'],));self.sock.settimeout(.02)
+            self.receive_buffer_bytes=self.sock.getsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF)
+            self.writer=threading.Thread(target=self._write_raw,daemon=True);self.writer.start()
             self.reader=threading.Thread(target=self._receive,daemon=True);self.reader.start()
             self.guard=threading.Thread(target=self._watchdog,daemon=True);self.guard.start()
-        except Exception:self.sock.close();self.raw.close();self.tx_log.close();raise
+        except Exception:
+            self.done.set()
+            if hasattr(self,'reader'):self.reader.join()
+            self.log_done.set()
+            if hasattr(self,'writer'):self.writer.join()
+            self.sock.close();self.raw.close();self.tx_log.close();raise
+    def _write_raw(self):
+        # Disk/JSON work must not block the receiver that also confirms shutdown.
+        while not self.log_done.is_set() or not self.raw_queue.empty():
+            try:row=self.raw_queue.get(timeout=.02)
+            except queue.Empty:continue
+            try:self.raw.write(json.dumps(row)+'\n')
+            except Exception as e:
+                self.raw_log_dropped+=1;self.error='CAN raw logging failed: '+str(e)
+            finally:self.raw_queue.task_done()
+
     def _receive(self):
         try:
             while not self.done.is_set():
                 try: raw,anc,flags,addr=self.sock.recvmsg(16,128)
                 except socket.timeout:continue
                 if len(raw)!=16:continue
-                cid,n,data=struct.unpack('=IB3x8s',raw);data=data[:n];now=time.monotonic()
+                cid,n,data=struct.unpack('=IB3x8s',raw);data=data[:n];now=time.monotonic();dropped=0
+                # SO_RXQ_OVFL is a cumulative uint32 counter, not a fatal socket error.
                 for level,kind,value in anc:
-                    if level==socket.SOL_SOCKET and kind==40 and struct.unpack('I',value[:4])[0]:raise RuntimeError('CAN receive buffer dropped frames')
-                if cid&0x20000000:raise RuntimeError('CAN error frame')
-                self.raw.write(json.dumps({'t_monotonic_s':now,'t_host_unix_ns':time.time_ns(),'can_id':hex(cid),'data_hex':data.hex()})+'\n')
-                decoded=decode(cid,data)
+                    if level==socket.SOL_SOCKET and kind==40 and len(value)>=4:
+                        total=struct.unpack('=I',value[:4])[0]
+                        dropped=(total-self.rx_dropped)&0xffffffff;self.rx_dropped=total
+                row={'t_monotonic_s':now,'t_host_unix_ns':time.time_ns(),'can_id':hex(cid),'data_hex':data.hex(),
+                     'rx_dropped_total':self.rx_dropped,'rx_dropped_delta':dropped}
+                if cid&0x20000000:
+                    self.error='CAN error frame';decoded={}
+                else:
+                    try:decoded=decode(cid,data)
+                    except Exception as e:
+                        self.error='CAN decode failed: '+str(e);decoded={}
                 with self.rx_lock:
                     if decoded:self.latest[cid]={'time':now,**decoded}
                     if cid==0x473 and decoded:self.limits[data[0]]={'time':now,**decoded}
                     if cid==0x47c and decoded:self.acc[data[0]]={'time':now,**decoded}
                     if cid==0x4af:self.firmware.extend(data)
+                try:self.raw_queue.put_nowait(row)
+                except queue.Full:
+                    self.raw_log_dropped+=1;self.error='CAN raw logging queue full'
+                    # Preserve live feedback for stop/disarm, even when data recording fails.
         except Exception as e:
-            if not self.done.is_set():self.error=str(e)
+            if not self.done.is_set():self.error='CAN receiver failed: '+str(e)
     def _send_locked(self,cid,data):
         if len(data)!=8:raise ValueError('CAN payload must be 8 bytes')
         self.sock.send(struct.pack('=IB3x8s',cid,8,bytes(data)))
@@ -64,7 +94,7 @@ class Hardware:
         if self.c['firmware_prefix']!='S-V1.7-3' or 'S-V1.7-3250618' not in info['firmware']:
             raise ValueError('Firmware not the reviewed S-V1.7-3250618 profile; no guessed torque scaling')
         if self.c['model_confirmed'] is not True:
-            raise ValueError('Confirm the actual PiPER X model before motion')
+            raise ValueError('Confirm the actual PiPER model before motion')
         current_pose = self.c.get('current_pose_only',False)
         standing = self.c.get('standing_start',False)
         # The operator explicitly selects this bounded stationary-body wrist trial.
@@ -95,14 +125,15 @@ class Hardware:
             x=latest.get(cid,{});q.extend(x.get('position_deg',[float('nan')]*2));qt.extend([x.get('time',0)]*2)
         high=[latest.get(0x251+j,{}) for j in range(6)];low=[latest.get(0x261+j,{}) for j in range(6)]
         current=np.array([x.get('current_signed_A',float('nan')) for x in high])
-        return {'time':time.monotonic(),'q':np.deg2rad(q),'qd':np.array([x.get('velocity_sdk_rad_s',float('nan')) for x in high]),'current_A':current,'tau_candidate_Nm':current*np.array([4.725]*3+[.95844]*3),
+        return {'time':time.monotonic(),'q':np.deg2rad(q),'qd':np.array([x.get('velocity_sdk_rad_s',float('nan')) for x in high]),'current_A':current,'tau_candidate_Nm':current*np.asarray(self.c['torque_candidate_coefficients_Nm_per_A'],float),
                 'q_times':np.array(qt),'drive_times':np.array([x.get('time',0) for x in high]),'low_times':np.array([x.get('time',0) for x in low]),
                 'motor_position_raw':[x.get('motor_position_raw') for x in high],
                 'driver_temp_C':[x.get('driver_temp_C') for x in low],'motor_temp_C':[x.get('motor_temp_C') for x in low],
                 'bus_current_A':[x.get('bus_current_A') for x in low],
                 'enabled':np.array([x.get('enabled',False) for x in low]),'faults':[x.get('fault_bits_excluding_enable',255) for x in low],
                 'temp_C':[max(x.get('driver_temp_C',999),x.get('motor_temp_C',999)) for x in low], 'voltage_V':[x.get('voltage_V',0) for x in low],
-                'status':latest.get(0x2a1,{}),'gripper':latest.get(0x2a8,{})}
+                'status':latest.get(0x2a1,{}),'gripper':latest.get(0x2a8,{}),
+                'can_rx_dropped_total':self.rx_dropped,'can_raw_log_dropped_total':self.raw_log_dropped}
     def check(self,s,active):
         if self.error:raise RuntimeError(self.error)
         if self.stopped:raise RuntimeError('Quick-stop latch is set')
@@ -128,11 +159,17 @@ class Hardware:
         with self.tx_lock:
             if self.stopped or getattr(self,'motion_closed',False):raise RuntimeError('Stop/disarm is latched')
             self.heartbeat=time.monotonic();self.armed_at=self.heartbeat;self.active=True;self.motion_started=True
+            if self.c.get('passive_wrist',False):
+                self._send_locked(0x471,[6,1,0,0,0,0,0,0])
+            if self.c.get('release_gripper',False):
+                with self.rx_lock:g=self.latest.get(0x2a8,{}).get('gripper_position_raw',0)
+                self._send_locked(0x159,list(struct.pack('>iHBB',g,0,0,0))) # gripper disable only
+            # Passive wrist is released before any position target can reach it.
             # Seed position before selecting position mode and enabling the six arm motors.
             self._pose_locked(q)
             self._send_locked(0x151,[1,1,self.c['move_speed_percent'],0,0,0,0,0])
             self._pose_locked(q)
-            for j in range(1,7):self._send_locked(0x471,[j,2,0,0,0,0,0,0])
+            for j in range(1,6 if self.c.get('passive_wrist',False) else 7):self._send_locked(0x471,[j,2,0,0,0,0,0,0])
     def begin_native_move(self,q):
         self.native_speed_percent=2
         self.command(q)
@@ -163,14 +200,14 @@ class Hardware:
             if self.active and (self.error or time.monotonic()-self.heartbeat>self.c['loop_watchdog_s']):
                 self.quick_stop('loop/receiver watchdog')
     def disable(self):
-        """0x471 joint 7 = all six ARM motors; gripper is a separate controller.
+        """Explicitly disable arm joints 1..6; no gripper/enable/reset command.
 
         MOVE J has no reviewed torque ramp. Removing enable removes drive torque;
         do not insert 0x150=01 (damping stop with a persistent stop state) here.
         """
         with self.tx_lock:
             self.motion_closed=True;self.active=False
-            self._send_locked(0x471,[7,1,0,0,0,0,0,0])
+            for j in range(1,7):self._send_locked(0x471,[j,1,0,0,0,0,0,0])
     def confirm_disabled(self):
         # Called only after fresh six-axis feedback has remained disabled.
         self.disable_acknowledged=True;self.active=False
@@ -178,8 +215,8 @@ class Hardware:
         if getattr(self,'motion_started',False) and not getattr(self,'disable_acknowledged',False):
             raise RuntimeError('Cannot finish: six-axis disable not confirmed')
         self.active=False
-    def close(self):
+    def close(self,allow_unconfirmed_power_off=False):
         if self.active:self.quick_stop('closing while active')
-        if getattr(self,'motion_started',False) and not getattr(self,'disable_acknowledged',False):
+        if getattr(self,'motion_started',False) and not getattr(self,'disable_acknowledged',False) and not allow_unconfirmed_power_off:
             raise RuntimeError('Refusing adapter close before confirmed disable')
-        self.done.set();self.reader.join(.2);self.guard.join(.2);self.sock.close();self.raw.close();self.tx_log.close()
+        self.done.set();self.reader.join();self.guard.join();self.log_done.set();self.writer.join();self.sock.close();self.raw.close();self.tx_log.close()
