@@ -181,7 +181,7 @@ class MitController(Controller):
         else:self.budget_cycles=0
         self.b.command_pd(q,v,self.mit_kp,self.mit_kd,ff);self.last_target=q.copy()
         self.mit_telemetry={'phase':self.state,'ff_ratio':self.mit_ff_ratio,'q_ref':q.copy(),'v_ref':v.copy(),'kp_protocol':self.mit_kp.copy(),'kd_protocol':self.mit_kd.copy(),'g_Nm':g,'ff_requested_Nm':ff,'wire_t_ref':ff/WIRE_TO_JOINT,'quantized_ff_Nm':np.array([encode_mit(j+1,float(q[j]),float(ff[j]),float(v[j]),float(self.mit_kp[j]),float(self.mit_kd[j]))[2] for j in range(6)]),'pd_estimate_Nm':pd,'total_estimate_Nm':est}
-    def ff_progress(self,now,tag,target_pct):
+    def ff_progress(self,now,tag,target_pct,target):
         # The ramp stages hold the arm still, so the operator needs a running
         # explanation of why nothing is moving and when the next step starts.
         if now-self.ff_print_t<1.-1e-9:return
@@ -189,7 +189,9 @@ class MitController(Controller):
         if float(self.c['mit_ff_scale'])<=0:
             self.event(tag+'：前馈比例为0（纯PD），无重力前馈；机械臂保持静止。');return
         ff=np.zeros(6) if self.mit_telemetry is None else np.asarray(self.mit_telemetry['ff_requested_Nm'])
-        self.event(f'{tag}：前馈比例 {100*self.mit_ff_ratio:.0f}%（目标 {target_pct:.0f}%），请求 '+str(np.round(ff,2).tolist())+' Nm；机械臂保持静止，PD继续维持姿态。')
+        err=float(np.max(np.rad2deg(np.abs(self.mit_sample['q']-target))))
+        hint='正常应随前馈增大而减小；若变大或反向漂移，请按LB+RB' if tag=='FF_RAMP_IN' else '撤出时应缓慢回到纯PD静差；若明显跳动，请按LB+RB'
+        self.event(f'{tag}：前馈比例 {100*self.mit_ff_ratio:.0f}%（目标 {target_pct:.0f}%），请求 '+str(np.round(ff,2).tolist())+f' Nm；最大到位误差 {err:.2f}°。{hint}。')
     def finish_settle(self,now,s):
         if self.state=='SETTLING_HOME':
             # MIT return holds the park pose with pure PD, which has a repeatable static
@@ -252,11 +254,11 @@ class MitController(Controller):
                     self.mit_ff_ratio=self.c['mit_ff_scale'];self.state='READY'
                     if float(self.c['mit_ff_scale'])>0:self.event(f'FF_RAMP_IN_DONE：前馈已达{100*self.mit_ff_ratio:.0f}%，机械臂仍静止；READY，LB+Y执行固定轨迹。')
                     else:self.event('READY：MIT准备和前馈渐入完成；LB+Y执行固定轨迹。')
-                else:self.ff_progress(now,'FF_RAMP_IN',100*float(self.c['mit_ff_scale']))
+                else:self.ff_progress(now,'FF_RAMP_IN',100*float(self.c['mit_ff_scale']),self.start)
             elif self.state=='FF_RAMP_OUT':
                 self.command(self.last_target)
                 if now-self.ff_phase_t>=self.c['mit_ff_ramp_s']:
                     if float(self.c['mit_ff_scale'])>0:self.event('FF_RAMP_OUT_DONE：前馈已归零，PD增益不变；开始MIT回位。')
                     self.mit_ff_ratio=0.;self.returning_mit=True;super().request_stop(s,now,self.stop_reason)
-                else:self.ff_progress(now,'FF_RAMP_OUT',0.)
+                else:self.ff_progress(now,'FF_RAMP_OUT',0.,self.last_target)
         except Exception as e:self.fault(e)
