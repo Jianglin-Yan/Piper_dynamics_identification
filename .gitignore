@@ -2,3 +2,10 @@
 # reproducible from the excitation seed, so they are not tracked.
 results/raw_data*.npz
 results/*.npy
+
+__pycache__/
+*.py[cod]
+.venv/
+outputs/
+# This repository publishes algorithms and selected reference results.
+EXP-20261029-001/data/

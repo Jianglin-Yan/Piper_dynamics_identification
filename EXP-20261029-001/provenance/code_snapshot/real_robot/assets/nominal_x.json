@@ -1,0 +1,566 @@
+{
+  "date": "2026-10-28",
+  "status": "official nominal CAD/URDF values, NOT measured identification ground truth; user robot tentatively Piper X",
+  "source_repo": "https://github.com/agilexrobotics/agx_arm_urdf",
+  "source_commit": "680fa925cd00db7e2628563d2edc5540963045de",
+  "sources": [
+    "https://github.com/agilexrobotics/agx_arm_urdf/blob/680fa925cd00db7e2628563d2edc5540963045de/piper_x/urdf/piper_x_description.urdf",
+    "https://github.com/agilexrobotics/agx_arm_urdf/blob/680fa925cd00db7e2628563d2edc5540963045de/piper_x/urdf/piper_x_with_gripper_description.xacro"
+  ],
+  "links": {
+    "base_link": {
+      "mass_kg": 1.02,
+      "com_m_in_link_frame": [
+        -0.00473641164191482,
+        2.56829134630247e-05,
+        0.041451518036016
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          0.00267433,
+          -7.3e-07,
+          -0.00017389
+        ],
+        [
+          -7.3e-07,
+          0.00282612,
+          4e-07
+        ],
+        [
+          -0.00017389,
+          4e-07,
+          0.00089624
+        ]
+      ]
+    },
+    "link1": {
+      "mass_kg": 0.71,
+      "com_m_in_link_frame": [
+        0.00053,
+        -0.00039,
+        -0.00315
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          0.00050027,
+          7.8e-07,
+          6.26e-06
+        ],
+        [
+          7.8e-07,
+          0.00040879,
+          4.62e-06
+        ],
+        [
+          6.26e-06,
+          4.62e-06,
+          0.00045802
+        ]
+      ]
+    },
+    "link2": {
+      "mass_kg": 1.16,
+      "com_m_in_link_frame": [
+        0.21856,
+        -0.00859,
+        0.00227
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          0.00111915,
+          0.00182916,
+          0.00019233
+        ],
+        [
+          0.00182916,
+          0.06763251,
+          7.67e-06
+        ],
+        [
+          0.00019233,
+          7.67e-06,
+          0.067559
+        ]
+      ]
+    },
+    "link3": {
+      "mass_kg": 0.67,
+      "com_m_in_link_frame": [
+        0.2014,
+        -0.00418,
+        -0.00141
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          0.00033471,
+          0.00026891,
+          0.00013918
+        ],
+        [
+          0.00026891,
+          0.03360411,
+          5.2e-07
+        ],
+        [
+          0.00013918,
+          5.2e-07,
+          0.03356941
+        ]
+      ]
+    },
+    "link4": {
+      "mass_kg": 0.39,
+      "com_m_in_link_frame": [
+        0.059,
+        -0.05831,
+        0.002
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          0.00120173,
+          0.00138165,
+          1.187e-05
+        ],
+        [
+          0.00138165,
+          0.00209324,
+          2.17e-06
+        ],
+        [
+          1.187e-05,
+          2.17e-06,
+          0.00307814
+        ]
+      ]
+    },
+    "link5": {
+      "mass_kg": 0.35,
+      "com_m_in_link_frame": [
+        5e-05,
+        -0.01282,
+        -0.00429
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          0.0002266,
+          1.9e-07,
+          5e-08
+        ],
+        [
+          1.9e-07,
+          0.0001774,
+          8.5e-07
+        ],
+        [
+          5e-08,
+          8.5e-07,
+          0.00019425
+        ]
+      ]
+    },
+    "link6": {
+      "mass_kg": 0.01655408133,
+      "com_m_in_link_frame": [
+        0.00134940815,
+        0.0,
+        -0.00344975303
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          1.52476803967e-06,
+          0.0,
+          1.0017156778e-07
+        ],
+        [
+          0.0,
+          1.51721319881e-06,
+          0.0
+        ],
+        [
+          1.0017156778e-07,
+          0.0,
+          2.84541364481e-06
+        ]
+      ]
+    },
+    "flange_link": {
+      "mass_kg": 0.04,
+      "com_m_in_link_frame": [
+        0.001151691,
+        0.000782428,
+        0.004798051
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          9.935389e-06,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0508003e-05,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.9652873e-05
+        ]
+      ]
+    },
+    "gripper_base": {
+      "mass_kg": 0.45,
+      "com_m_in_link_frame": [
+        -0.000183807162235591,
+        8.05033155577911e-05,
+        0.0321436689908876
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          0.000466573035886,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.000208671755285,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.000443517627645
+        ]
+      ]
+    },
+    "gripper_link1": {
+      "mass_kg": 0.025,
+      "com_m_in_link_frame": [
+        0.00065123185041968,
+        -0.0491929869131989,
+        0.00972258769184025
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          1.0831334372e-05,
+          3.32108655243e-07,
+          -5.17776964242e-08
+        ],
+        [
+          3.32108655243e-07,
+          5.43941050918e-06,
+          1.75746071559e-06
+        ],
+        [
+          -5.17776964242e-08,
+          1.75746071559e-06,
+          1.41828415054e-05
+        ]
+      ]
+    },
+    "gripper_link2": {
+      "mass_kg": 0.025,
+      "com_m_in_link_frame": [
+        0.00065123185041968,
+        -0.0491929869131989,
+        0.00972258769184025
+      ],
+      "inertia_com_kg_m2_in_link_axes": [
+        [
+          1.0831334372e-05,
+          3.32108655243e-07,
+          -5.17776964242e-08
+        ],
+        [
+          3.32108655243e-07,
+          5.43941050918e-06,
+          1.75746071559e-06
+        ],
+        [
+          -5.17776964242e-08,
+          1.75746071559e-06,
+          1.41828415054e-05
+        ]
+      ]
+    }
+  },
+  "joints": [
+    {
+      "name": "world_to_base_link",
+      "type": "fixed",
+      "parent": "world",
+      "child": "base_link",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "urdf_limits_not_hardware_safety_limits": null
+    },
+    {
+      "name": "joint1",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "link1",
+      "xyz": [
+        0.0,
+        0.0,
+        0.123
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        3.1415926
+      ],
+      "urdf_limits_not_hardware_safety_limits": {
+        "lower": -2.6179938,
+        "upper": 2.6179938,
+        "effort": 100.0,
+        "velocity": 5.0
+      }
+    },
+    {
+      "name": "joint2",
+      "type": "revolute",
+      "parent": "link1",
+      "child": "link2",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        -1.5707963,
+        -3.005806,
+        -3.1415926
+      ],
+      "urdf_limits_not_hardware_safety_limits": {
+        "lower": 0.0,
+        "upper": 3.1415926,
+        "effort": 100.0,
+        "velocity": 5.0
+      }
+    },
+    {
+      "name": "joint3",
+      "type": "revolute",
+      "parent": "link2",
+      "child": "link3",
+      "xyz": [
+        0.28503,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        2.8380798
+      ],
+      "urdf_limits_not_hardware_safety_limits": {
+        "lower": -2.9670597,
+        "upper": 0.0,
+        "effort": 100.0,
+        "velocity": 5.0
+      }
+    },
+    {
+      "name": "joint4",
+      "type": "revolute",
+      "parent": "link3",
+      "child": "link4",
+      "xyz": [
+        0.27364,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0806342
+      ],
+      "urdf_limits_not_hardware_safety_limits": {
+        "lower": -1.553343,
+        "upper": 1.553343,
+        "effort": 100.0,
+        "velocity": 5.0
+      }
+    },
+    {
+      "name": "joint5",
+      "type": "revolute",
+      "parent": "link4",
+      "child": "link5",
+      "xyz": [
+        0.07466,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        -1.5707963,
+        1.5707963,
+        0.0
+      ],
+      "urdf_limits_not_hardware_safety_limits": {
+        "lower": -1.553343,
+        "upper": 1.553343,
+        "effort": 100.0,
+        "velocity": 5.0
+      }
+    },
+    {
+      "name": "joint6",
+      "type": "revolute",
+      "parent": "link5",
+      "child": "link6",
+      "xyz": [
+        0.0,
+        -0.035,
+        0.0
+      ],
+      "rpy": [
+        1.5707963,
+        0.0,
+        0.0
+      ],
+      "urdf_limits_not_hardware_safety_limits": {
+        "lower": -2.9670597,
+        "upper": 2.9670597,
+        "effort": 100.0,
+        "velocity": 5.0
+      }
+    },
+    {
+      "name": "flange_joint",
+      "type": "fixed",
+      "parent": "link6",
+      "child": "flange_link",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "urdf_limits_not_hardware_safety_limits": null
+    },
+    {
+      "name": "gripper_base_joint",
+      "type": "fixed",
+      "parent": "flange_link",
+      "child": "gripper_base",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0045
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        1.5707963
+      ],
+      "urdf_limits_not_hardware_safety_limits": null
+    },
+    {
+      "name": "gripper",
+      "type": "prismatic",
+      "parent": "gripper_base",
+      "child": "gripper_link",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "urdf_limits_not_hardware_safety_limits": {
+        "lower": 0.0,
+        "upper": 0.1,
+        "effort": 10.0,
+        "velocity": 3.0
+      }
+    },
+    {
+      "name": "gripper_joint1",
+      "type": "prismatic",
+      "parent": "gripper_base",
+      "child": "gripper_link1",
+      "xyz": [
+        0.0,
+        0.0,
+        0.138
+      ],
+      "rpy": [
+        1.5707963,
+        0.0,
+        0.0
+      ],
+      "urdf_limits_not_hardware_safety_limits": {
+        "lower": 0.0,
+        "upper": 0.05,
+        "effort": 10.0,
+        "velocity": 3.0
+      }
+    },
+    {
+      "name": "gripper_joint2",
+      "type": "prismatic",
+      "parent": "gripper_base",
+      "child": "gripper_link2",
+      "xyz": [
+        0.0,
+        0.0,
+        0.138
+      ],
+      "rpy": [
+        1.5707963,
+        0.0,
+        -3.1415926
+      ],
+      "urdf_limits_not_hardware_safety_limits": {
+        "lower": -0.05,
+        "upper": 0.0,
+        "effort": 10.0,
+        "velocity": 3.0
+      }
+    }
+  ],
+  "link6_plus_fixed_gripper": {
+    "mass_kg": 0.5565540813300001,
+    "com_m_in_link6_frame": [
+      5.781892541467295e-05,
+      -9.238296292473471e-05,
+      0.03825291553008083
+    ],
+    "inertia_com_kg_m2_in_link6_axes": [
+      [
+        0.0004748253084325089,
+        -4.6580760677267935e-07,
+        2.5146238947243335e-06
+      ],
+      [
+        -4.6580760677267935e-07,
+        0.0007313431795976775,
+        9.139355664168633e-07
+      ],
+      [
+        2.5146238947243335e-06,
+        9.139355664168633e-07,
+        0.0004817615733770975
+      ]
+    ],
+    "condition": "URDF gripper_joint1=gripper_joint2=0; nominal model only; change opening requires recomputation"
+  },
+  "moving_mass_kg": 3.83655408133,
+  "total_mass_with_base_kg": 4.85655408133
+}

@@ -1,14 +1,23 @@
-# 机械臂动力学参数辨识（Piper / MuJoCo）
+# PiPER 机械臂动力学参数辨识（仿真流程与真机实验）
 
-对 `agx_piper_grasp_sim` 里 6 自由度 Piper 机械臂做**刚体动力学参数辨识**：
-不用真机、不用标定板，只靠仿真器输出的关节量测，恢复每个连杆的
-**质量、质心位置、惯性张量**，并给出独立的验证结果。
+本目录包含两类数据来源不同的辨识内容，请勿混为一谈：
 
-> **依赖说明：本项目不是独立仿真器，必须配合仿真器项目运行。**
-> 本辨识代码依赖 `/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim`
-> 中的 `agx_piper_sim` Python 包、MuJoCo 场景 `assets/scene.xml` 和该项目的 Python 环境。
-> 请将本仓库的文件放在该仿真器目录的 `dynamics_identification/` 子目录中；不要把它当作
-> 单独的仓库根目录执行。若仿真器路径不同，需要同步修改脚本中的导入/场景路径。
+- **目录根下的原有代码**：基于 MuJoCo 仿真数据的辨识流程，用于验证回归器、参数求解与仿真模型写回；其中的 `oracle` / `servo` 结果不是真机采集结果。
+- **`EXP-20261029-001/` 实验**：本次新增的 PiPER X **真机数据**辨识记录。原始 CAN/关节记录来自真实机械臂，离线使用真机对应的 PiPER X URDF、最小参数基和物理约束进行分析；没有在仿真中生成这批数据。
+
+真机实验记录了 120 秒、100 Hz 数据，筛选后有 11,956 个有效样本。最小参数基 OLS 的训练/留出周期力矩残差分别为 7.06% / 7.08%；由于模型结构存在冗余，逐连杆质量、COM 和惯量尚不能由本次力矩数据唯一确定。物理约束结果是可行候选，不应当作真机称重或惯量测试的真值。
+
+- [真机辨识结果报告（Markdown）](EXP-20261029-001/辨识结果报告.md)
+- [离线算法、模型资源与运行说明](EXP-20261029-001/train_test/README.md)
+- [实验文件状态索引](EXP-20261029-001/STATUS_ANALYSIS.md)
+
+以下快速开始、参数化、回归器和旧结果章节介绍的是**仿真辨识流程**；本次真机数据及其专用脚本位于 `EXP-20261029-001/`。
+
+> **仿真代码依赖说明：本目录根下的仿真流程不是独立仿真器，必须配合仿真器项目运行。**
+> 本独立仓库发布了离线算法、模型资源和汇总结果；原始真机 CAN 记录不在此仓库中。
+> 仿真辨识代码依赖 `agx_piper_grasp_sim` 中的 `agx_piper_sim` Python 包、
+> MuJoCo 场景 `assets/scene.xml` 和该项目的 Python 环境。将本仓库放在仿真器目录的
+> `dynamics_identification/` 子目录后运行以下仿真命令。
 
 ```
 excitation.py  →  data_collector.py  →  regressor.py  →  identify.py  →  validate.py
@@ -20,7 +29,7 @@ excitation.py  →  data_collector.py  →  regressor.py  →  identify.py  → 
 ## 1. 快速开始
 
 ```bash
-cd /home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim
+cd /path/to/agx_piper_grasp_sim
 
 # 1) 辨识（默认 60 s 轨迹，oracle 力矩源）
 .venv/bin/python -m dynamics_identification.identify
@@ -138,16 +147,16 @@ $$q_j(t) = q_{0j} + \sum_{k=1}^{5}\big[ a_{jk}\sin(k\omega t) + b_{jk}\cos(k\ome
 
 | | `--source oracle`（默认） | `--source servo` |
 |---|---|---|
-| τ | 用测到的 `(q, q̇, q̈)` 跑 `mj_inverse` | 采集时记下的伺服广义力 `qfrc_actuator` |
-| 含义 | 精确的 `M q̈ + C q̇ + g` | 真实实验里唯一能测到的量 |
-| 用途 | **验证整条链路**（激励→回归器→求解），必须精确复现 | **真实辨识**，带有限差分误差 |
+| τ | 用测到的 `(q, q̇, q̈)` 跑 `mj_inverse` | 仿真采集时记下的伺服广义力 `qfrc_actuator` |
+| 含义 | 精确的 `M q̈ + C q̇ + g` | MuJoCo 闭环伺服产生的广义力；不是真机电流/力矩记录 |
+| 用途 | **验证整条链路**（激励→回归器→求解），必须精确复现 | **仿真链路测试**，包含有限差分误差；非真机数据 |
 
 `servo` 的固有噪声来自 §2.4 的 `qdd` 差分：实测
 `M·q̈_fd + bias` 与 `qfrc_actuator` 差 **7.6%**，这是该方法的下界。
 
 ---
 
-## 4. 结果（本机实测）
+## 4. 仿真结果（MuJoCo 模型）
 
 ### 4.1 `oracle` —— 链路正确性
 
@@ -174,7 +183,7 @@ result: PASS
 `rmse_mj` 是把辨识出的参数**写回 MuJoCo 模型**后重新跑 `mj_inverse` 的误差，
 为 0 说明参数不只是在代数上自洽，物理引擎也能直接使用。
 
-### 4.2 `servo` —— 真实辨识精度
+### 4.2 `servo` —— 仿真伺服力源测试（非真机数据）
 
 | link | m_hat | m_gt | 误差 | \|ΔCOM\| |
 |---|---|---|---|---|
@@ -184,6 +193,8 @@ result: PASS
 | link4 | 0.3856 | 0.3800 | +1.48% | 74.30 mm |
 | link5 | 0.3886 | 0.3830 | +1.47% | 35.66 mm |
 | link6 | 0.5622 | 0.5566 | +1.01% | 24.23 mm |
+
+> **注意：**此表的 `m_gt` 是 MuJoCo 仿真模型真值，2.95% / 5.56% 误差也来自仿真伺服力源测试，不代表真机精度。真机记录的辨识结果见 [EXP-20261029-001 报告](EXP-20261029-001/辨识结果报告.md)。
 
 - 总质量 3.7139 kg vs 3.6896 kg（**+0.66%**）
 - 辨识扭矩拟合：**2.95%**
