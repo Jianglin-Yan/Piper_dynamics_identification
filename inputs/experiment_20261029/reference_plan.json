@@ -1,0 +1,115 @@
+{
+  "source": "excitation.py:swevers_trajectory",
+  "source_sha256": "8f480e65f56b711c5b05acd2a2042d239170a2951225307a303a5321717d7246",
+  "base_frequency_hz": 0.1,
+  "harmonics": 5,
+  "amplitude_fraction": 0.6,
+  "seed": 0,
+  "source_sample_dt_s": 0.002,
+  "generation_lower_deg": [
+    -150,
+    0,
+    -170,
+    -89,
+    -70,
+    -120
+  ],
+  "generation_upper_deg": [
+    150,
+    180,
+    0,
+    89,
+    70,
+    120
+  ],
+  "source_center_rad": [
+    0.0,
+    1.5707963267948966,
+    -1.4835298641951802,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "execution_anchor_rad": [
+    0.0,
+    0.7853981633974483,
+    -1.0471975511965976,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "adaptation": "q_anchor + scale * C2_envelope * (q_source - q_source_center)",
+  "duration_s": 120.0,
+  "ramp_s": 10.0,
+  "time_scale": 2.0,
+  "scale": 0.5,
+  "speed_scale": 0.5,
+  "source_duration_s": 60.0,
+  "source_ramp_s": 5.0,
+  "source_base_frequency_hz": 0.2,
+  "moving_joints": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "q_min_deg": [
+    -17.978922650289896,
+    32.874949038667204,
+    -78.01627043153641,
+    -16.203747640874038,
+    -9.263550269679634,
+    -16.320641324273822
+  ],
+  "q_max_deg": [
+    26.222667259070853,
+    58.3789239443574,
+    -46.60705823832195,
+    10.433900380069066,
+    8.842211632616335,
+    17.66478658949424
+  ],
+  "max_velocity_per_joint_rad_s": [
+    0.970095575410648,
+    0.5362739039508776,
+    0.610040281492225,
+    0.5417497942342888,
+    0.27069507757854794,
+    0.7201671782730302
+  ],
+  "max_acceleration_per_joint_rad_s2": [
+    2.320016179935056,
+    1.4867181166738732,
+    1.3628608542389589,
+    1.2713737517879562,
+    0.6489291232155117,
+    1.9341248451453592
+  ],
+  "test_velocity_limit_rad_s": 3.0,
+  "test_acceleration_limit_rad_s2": 20.0,
+  "reference_lower_deg": [
+    -145.0,
+    5.0,
+    -165.00000000000003,
+    -84.0,
+    -65.0,
+    -115.0
+  ],
+  "reference_upper_deg": [
+    145.0,
+    175.0,
+    -5.0,
+    84.0,
+    65.0,
+    115.0
+  ],
+  "sampled_brake_endpoints_within_bounds": true,
+  "braking_check_note": "Dense sampled reference and monotonic stop endpoints; no collision or tracking-error certificate.",
+  "reference_sha256": "be3b793755d03d9caef7b289efe6bc219182af25706237089944b1e66d83122c",
+  "constraint_violations": [],
+  "hard_violations": [],
+  "warnings": [],
+  "reference_limit_policy": "warn; not an emergency-stop criterion"
+}

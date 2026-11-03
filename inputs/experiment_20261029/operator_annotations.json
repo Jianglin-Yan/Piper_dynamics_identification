@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "source_run": "20261029_114614_130196",
+  "source": "operator report in conversation after this run",
+  "annotation_time": "2026-10-29T11:58:50.467309+08:00",
+  "trajectory": "repository six-joint multisine",
+  "amplitude_scale": 0.5,
+  "speed_scale": 0.5,
+  "base_motion_observed": true,
+  "base_motion_description": "运动时桌子晃动，后半程操作者手动扶住；未测量基座姿态/加速度。",
+  "manual_support_latter_part": true,
+  "manual_support_start_test_s": null,
+  "manual_support_contact_target": "table or base; no contact with robot arm, explicitly confirmed by operator",
+  "base_motion_measurement_available": false,
+  "usage_status": "exploratory_only_not_validated_for_control",
+  "notes": [
+    "前后半程仅作粗略分段，不能当作精确干预时刻。",
+    "幅度和速度0.5已与本次记录配置核对。",
+    "操作者补充确认：扶桌子或底座，未接触机械臂本体。"
+  ]
+}

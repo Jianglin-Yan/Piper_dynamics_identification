@@ -1,0 +1,6 @@
+# Versions used for the reference identification run (Python 3.10).
+numpy==2.2.6
+scipy==1.15.3
+mujoco==3.16.0
+cvxpy==1.7.5
+clarabel

@@ -1,264 +1,47 @@
-# PiPER 机械臂动力学参数辨识（仿真流程与真机实验）
+# PiPER X 真机动力学参数辨识
 
-本目录包含两类数据来源不同的辨识内容，请勿混为一谈：
+本项目用 2026-10-29 的 PiPER X 真机记录，离线构造 URDF 回归器，辨识 54 维最小参数基，并求解带 CAD、几何和伪惯量约束的物理可行候选。`outputs/reference/piper_identification_report.pdf` 是原始对照报告，保留原文件字节。全过程不向机械臂发送指令。
 
-- **目录根下的原有代码**：基于 MuJoCo 仿真数据的辨识流程，用于验证回归器、参数求解与仿真模型写回；其中的 `oracle` / `servo` 结果不是真机采集结果。
-- **`EXP-20261029-001/` 实验**：本次新增的 PiPER X **真机数据**辨识记录。原始 CAN/关节记录来自真实机械臂，离线使用真机对应的 PiPER X URDF、最小参数基和物理约束进行分析；没有在仿真中生成这批数据。
+## 目录
 
-真机实验记录了 120 秒、100 Hz 数据，筛选后有 11,956 个有效样本。最小参数基 OLS 的训练/留出周期力矩残差分别为 7.06% / 7.08%；由于模型结构存在冗余，逐连杆质量、COM 和惯量尚不能由本次力矩数据唯一确定。物理约束结果是可行候选，不应当作真机称重或惯量测试的真值。
+| 路径 | 内容 |
+| --- | --- |
+| `inputs/experiment_20261029/` | 原实验 `data/` 的完整副本，包括 CAN、采样、轨迹、配置及信号文件；保持原始字节 |
+| `inputs/splits/` | PDF 所用 SG41 完整周期训练/留出划分 |
+| `models/` | PiPER X URDF、名义惯性参数及物理边界使用的碰撞网格 |
+| `src/piper_dynamics/minimum_base_svd.py` | CAD 尺度化 SVD 结构秩检验与最小基 OLS |
+| `src/piper_dynamics/physical_constraint_fit.py` | 凸优化、伪惯量正定、质量/质心/网格边界与 CAD 先验 |
+| `src/piper_dynamics/geometry_bounds.py` | 从碰撞网格计算几何约束 |
+| `src/piper_dynamics/robust_estimator_comparison.py` | OLS、目标 RMS 加权 WLS、Huber IRLS 对照 |
+| `src/piper_dynamics/split.py`, `model_alignment.py` | 固定划分和模型/实测关节映射校验 |
+| `src/piper_dynamics/reference/` | 构造回归器和读取数据所需的固定源码快照；模型文件通过相对链接指向 `models/` |
+| `outputs/minimum_base/`, `physical_constraints/` | 可复算的数值结果、参数和审计文件 |
+| `outputs/reference/` | 原 PDF，仅作对照 |
 
-- [真机辨识结果报告（Markdown）](EXP-20261029-001/辨识结果报告.md)
-- [离线算法、模型资源与运行说明](EXP-20261029-001/train_test/README.md)
-- [实验文件状态索引](EXP-20261029-001/STATUS_ANALYSIS.md)
+旧目录完整备份在 `/home/yjl-10096528/EmbodiedAI/dynamics_identification_backup_2026-11-02`，包括旧仿真辨识代码、历史中间文件和原 PDF。新结构只保留复算这份真机报告所需的源码、输入、模型和主要结果。
 
-以下快速开始、参数化、回归器和旧结果章节介绍的是**仿真辨识流程**；本次真机数据及其专用脚本位于 `EXP-20261029-001/`。
+## 环境与复算
 
-> **仿真代码依赖说明：本目录根下的仿真流程不是独立仿真器，必须配合仿真器项目运行。**
-> 本独立仓库发布了离线算法、模型资源和汇总结果；原始真机 CAN 记录不在此仓库中。
-> 仿真辨识代码依赖 `agx_piper_grasp_sim` 中的 `agx_piper_sim` Python 包、
-> MuJoCo 场景 `assets/scene.xml` 和该项目的 Python 环境。将本仓库放在仿真器目录的
-> `dynamics_identification/` 子目录后运行以下仿真命令。
-
-```
-excitation.py  →  data_collector.py  →  regressor.py  →  identify.py  →  validate.py
-  激励轨迹          仿真采集           精确回归器        最小二乘         泛化验证
-```
-
----
-
-## 1. 快速开始
+使用 Python 3.10，并在项目根目录执行：
 
 ```bash
-cd /path/to/agx_piper_grasp_sim
-
-# 1) 辨识（默认 60 s 轨迹，oracle 力矩源）
-.venv/bin/python -m dynamics_identification.identify
-
-# 2) 在一条没见过的轨迹上验证
-.venv/bin/python -m dynamics_identification.validate
-
-# 3) 只验证、不重新辨识（回归器自检）
-.venv/bin/python -m dynamics_identification.regressor
+python3.10 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+PYTHONPATH=src .venv/bin/python -m piper_dynamics.minimum_base_svd
+PYTHONPATH=src .venv/bin/python -m piper_dynamics.physical_constraint_fit
+PYTHONPATH=src .venv/bin/python -m piper_dynamics.robust_estimator_comparison
 ```
 
-全部耗时约 20 s（60 s 轨迹 + 6001 个样本的回归器构造）。
+本机已有的上层仿真项目环境也可使用：把上述 `.venv/bin/python` 换成 `../.venv/bin/python`。三个入口按顺序运行；后两步依赖第一步的 `outputs/minimum_base/base_parameter_fit.npz`。默认 SG 窗口为 41，使用保存的整周期划分；Huber 最多迭代 60 次，实际 34 次收敛。每个入口可用 `--help` 查看可替换输入、划分和输出目录。生成文件路径写入 JSON，目录移动后需重新运行以更新路径记录。
 
-| 命令 | 输出 |
-|---|---|
-| `identify` | `results/identified_params.npz` + `.json` |
-| `validate` | `results/validation.json` |
-| `regressor` | 自检结果打印到 stdout，退出码 0/1 |
+## PDF 数值对照
 
-### 常用参数
+| 指标 | 复算值 | PDF 四舍五入值 |
+| --- | ---: | ---: |
+| 结构秩 | 54 / 78 | 54 / 78 |
+| 最小基 OLS，训练/留出/全量残差范数比 | 7.0587% / 7.0764% / 7.3325% | 7.06% / 7.08% / 7.33% |
+| 物理约束，训练/留出/全量残差范数比 | 7.4727% / 7.4474% / 7.6631% | 7.47% / 7.45% / 7.66% |
+| OLS/WLS/Huber 留出残差范数比 | 7.0764% / 7.3454% / 7.3703% | 7.076% / 7.345% / 7.370% |
+| 物理可行候选质量，link1–link6 (kg) | 0.709353 / 1.384638 / 0.907546 / 0.585000 / 0.525000 / 0.278277 | 见原 PDF |
 
-| 参数 | 含义 |
-|---|---|
-| `--duration` | 激励轨迹长度（默认 60 s） |
-| `--stride` | 每隔 N 个样本取一个做回归（默认 5，即 100 Hz） |
-| `--source oracle\|servo` | 力矩来源，见 §3 |
-| `--ridge` | 相对 Tikhonov 权重，默认 `1e-8`；`0` = 纯最小二乘 |
-| `--data PATH` | 缓存原始数据，重跑时不必重新仿真 |
-
----
-
-## 2. 方法
-
-### 2.1 参数化：为什么是 `I_origin` 而不是 `I_com`
-
-刚体动力学对惯性参数是**线性**的，但只有在正确选择参数时才成立。
-每个连杆取 10 个参数，全部表达在**关节轴所在的连杆坐标系**里：
-
-$$\theta_i = [\,m,\; h_x, h_y, h_z,\; I_{xx}, I_{yy}, I_{zz}, I_{xy}, I_{xz}, I_{yz}\,]$$
-
-- `m`：质量
-- `h = m·c`：一阶矩（`c` 为质心）
-- `I`：**相对坐标系原点**的转动惯量
-
-这一点是本项目最关键的坑。牛顿-欧拉反向递推
-
-$$f = m a + \alpha \times h + \omega \times (\omega \times h)$$
-$$n = I_{\text{origin}}\,\alpha + \omega \times (I_{\text{origin}}\,\omega) + h \times a$$
-
-对 `(m, h, I_origin)` 线性；而绕质心的惯量
-`I_com = I_origin − m(c·c·1 − c cᵀ)` 对 `(m, h)` 是**非线性**的，
-用 `I_com` 做参数向量根本不存在常数回归器。
-
-实用参数（质量、质心、绕质心惯量）由 `to_com_params()` 事后换算。
-
-### 2.2 回归器：直接探测 MuJoCo 的逆动力学
-
-`mj_inverse` 本身就是递归牛顿-欧拉实现，因此对上述参数也线性。于是
-
-$$\frac{\partial \tau}{\partial \theta_k} = \frac{\tau(\text{carrier} + \epsilon e_k) - \tau(\text{carrier})}{\epsilon}$$
-
-就是 `Y` 的一列，**对任意 `ε` 都精确**。实现要点：
-
-- 探测前给所有臂部 body 装一个固定的 “carrier” 惯量（`m=0.05, I=100`）。
-  carrier 在基线里相减掉，对结果没有影响；它的作用是
-  ① 避免零质量模型让约束分解奇异；② 保证 `carrier + εe_k` 始终是
-  MuJoCo 能表示的**正定**质心惯量（一阶矩探测会用平行轴定理从主惯量里
-  减掉最多 `h·h/m`）。
-- 探测期间关闭接触（辨识数据本来就在无接触工况下采集）。
-- 手指的等约束只作用在 `joint7/joint8`，对 1–6 号 DOF 的广义力贡献为零。
-
-自检：`Y @ θ_gt` 与真实模型的 `mj_inverse` 吻合到 **1e-11 N·m（相对 7e-13）**。
-
-> 早期版本用解析牛顿-欧拉手写 `Y`，关节坐标系里有 180° 翻转，
-> 硬编码 `[0,0,1]` 轴导致 joint3/5 符号相反、joint2 差 20%。
-> 改成探测 `mj_inverse` 之后，轴向/符号问题从结构上消失——
-> 运动学交给 MuJoCo 自己算。
-
-### 2.3 激励轨迹
-
-Swevers 多正弦，每关节 5 阶谐波、基频 0.2 Hz：
-
-$$q_j(t) = q_{0j} + \sum_{k=1}^{5}\big[ a_{jk}\sin(k\omega t) + b_{jk}\cos(k\omega t)\big]$$
-
-系数随机但归一化到 `Σ(|a|+|b|) ≤ 0.6 ×` 半行程，因此**最坏情况也不越限**
-（实测 `clipping: False`）。速度、加速度解析求导，不需要差分。
-
-### 2.4 采集：两个必须注意的地方
-
-1. **必须关掉重力补偿**。仿真器默认在 `step()` 里把 `qfrc_bias`
-   当 `qfrc_applied` 加进去，正好抵消掉要辨识的惯性力。
-   新增的 `Simulation(gravity_compensation=False)` 关掉它。
-2. **`qdd` 用有限差分**。积分器是 `implicitfast`，`data.qacc` 是隐式
-   求解前的显式加速度，不是真实的 `d(q̇)/dt`（关节 4/6 上差两个数量级：
-   795/1165 vs 3.2/7.3）。采集端用 `np.gradient(qd, dt)`。
-
-采集中还会把桌面物体挪到 `z = −5`，避免激励轨迹扫过桌面时产生碰撞冲量。
-
-### 2.5 求解：基参数 + QR
-
-60 个参数**不可全辨识**——关节力矩只约束基参数空间，其余方向落在
-堆叠回归器的零空间里。用列主元 QR（先按列范数归一化，消除量纲差异）
-选出相互独立的列：
-
-- 实测 **rank = 47 / 60**。
-- `--ridge 0`：只解 47 个基参数组合，其余留 0。
-  此时**不能**逐元素和真值比——QR 选出的是**线性组合**，不是真值的子集。
-- `--ridge 1e-8`（默认）：给全部 60 个参数加一个极小的 Tikhonov 项，
-  把零空间方向钉在 CAD 名义值上。可观测方向几乎不受影响，
-  但可以得到一组物理上完整、可写回 MuJoCo 的参数。
-
----
-
-## 3. 两种力矩源
-
-| | `--source oracle`（默认） | `--source servo` |
-|---|---|---|
-| τ | 用测到的 `(q, q̇, q̈)` 跑 `mj_inverse` | 仿真采集时记下的伺服广义力 `qfrc_actuator` |
-| 含义 | 精确的 `M q̈ + C q̇ + g` | MuJoCo 闭环伺服产生的广义力；不是真机电流/力矩记录 |
-| 用途 | **验证整条链路**（激励→回归器→求解），必须精确复现 | **仿真链路测试**，包含有限差分误差；非真机数据 |
-
-`servo` 的固有噪声来自 §2.4 的 `qdd` 差分：实测
-`M·q̈_fd + bias` 与 `qfrc_actuator` 差 **7.6%**，这是该方法的下界。
-
----
-
-## 4. 仿真结果（MuJoCo 模型）
-
-### 4.1 `oracle` —— 链路正确性
-
-```
-regressor rank: 47 / 60
-torque fit: rel err 1.262e-10 %
-per-joint RMSE [N*m]: [0, 0, 0, 0, 0, 0]
-total arm mass: 3.6896 kg (ground truth 3.6896, err -0.00%)
-```
-
-验证（30 s 全新轨迹，seed 1234 ≠ 0）：
-
-```
-joint     rms[N*m]  rmse[N*m]      rmse_mj
-joint1      1.8519     0.0000       0.0000
-joint2      7.2706     0.0000       0.0000
-joint3      4.6794     0.0000       0.0000
-joint4      0.0746     0.0000       0.0000
-joint5      0.8214     0.0000       0.0000
-joint6      0.0054     0.0000       0.0000
-result: PASS
-```
-
-`rmse_mj` 是把辨识出的参数**写回 MuJoCo 模型**后重新跑 `mj_inverse` 的误差，
-为 0 说明参数不只是在代数上自洽，物理引擎也能直接使用。
-
-### 4.2 `servo` —— 仿真伺服力源测试（非真机数据）
-
-| link | m_hat | m_gt | 误差 | \|ΔCOM\| |
-|---|---|---|---|---|
-| link1 | 0.7100 | 0.7100 | 0.00% | 0.00 mm |
-| link2 | 1.1600 | 1.1600 | 0.00% | 7.20 mm |
-| link3 | 0.5074 | 0.5000 | +1.49% | 101.34 mm |
-| link4 | 0.3856 | 0.3800 | +1.48% | 74.30 mm |
-| link5 | 0.3886 | 0.3830 | +1.47% | 35.66 mm |
-| link6 | 0.5622 | 0.5566 | +1.01% | 24.23 mm |
-
-> **注意：**此表的 `m_gt` 是 MuJoCo 仿真模型真值，2.95% / 5.56% 误差也来自仿真伺服力源测试，不代表真机精度。真机记录的辨识结果见 [EXP-20261029-001 报告](EXP-20261029-001/辨识结果报告.md)。
-
-- 总质量 3.7139 kg vs 3.6896 kg（**+0.66%**）
-- 辨识扭矩拟合：**2.95%**
-- 未见轨迹验证：**5.56%**，逐关节 RMSE 0.12–0.29 N·m，`PASS`
-
-**怎么读这张表**：
-
-- 质量误差约 1.5%，方向一致（都偏大），来源是 §3 的有限差分噪声。
-- `|ΔCOM|` 在 link3/4 上到 7–10 cm，看起来很大，但质心只通过
-  `h = m·c` 进入方程，未辨识的连杆上 `h` 的可观测性本来就差；
-  这几个方向的偏差被 `--ridge` 的名义值约束住，对**力矩预测没有影响**
-  （见验证 RMSE）。
-- 评判辨识质量请以**扭矩预测误差**为准，不要看单个物理量的偏差。
-
----
-
-## 5. 验证判据
-
-`validate.py` 对每个关节判断
-
-$$\text{rmse}_j \le \max(\texttt{abs-tol},\; \texttt{tol}\cdot \text{rms}(\tau_j))$$
-
-默认 `tol = 0.10`、`abs-tol = 0.30 N·m`。绝对下限是必要的：
-腕部关节（joint4/6）的力矩本身只有 0.07 / 0.35 N·m 量级，
-纯相对判据会因为分母太小而误判。
-
----
-
-## 6. 文件说明
-
-| 文件 | 作用 |
-|---|---|
-| `excitation.py` | Swevers 多正弦激励轨迹（解析导数，不越限） |
-| `data_collector.py` | 驱动仿真、记录 `q/q̇/q̈/τ/M`，`q̈` 用有限差分 |
-| `regressor.py` | 精确回归器 `Y`（探测 `mj_inverse`）+ 真值 + 自检 |
-| `ground_truth.py` | 从 MuJoCo 模型读真值（另一种独立实现，可交叉核对） |
-| `identify.py` | 采集 → 构 `Y` → QR 选基 → 求解 → 对比 → 存盘 |
-| `validate.py` | 未见轨迹上的扭矩预测 + 写回 MuJoCo 复核 |
-| `AGENT_HANDOFF.md` | 上一轮交接记录（历史文档，已完成） |
-
-### 仿真器侧新增接口
-
-辨识需要但原来取不到的 5 个量，已补进
-`agx_piper_sim/sim/simulation.py`：
-
-| 接口 | 返回 | 说明 |
-|---|---|---|
-| `joint_accelerations()` | `q̈` | `data.qacc`（注意 implicitfast 语义） |
-| `joint_torques()` | `τ` | `data.qfrc_actuator`，广义力矩而非原始控制量 |
-| `gravity_torques()` | `C q̇ + g` | `data.qfrc_bias` |
-| `mass_matrix()` | `6×6` | `mj_fullM` 后取臂部子块（兼容 3.16 签名变更） |
-| `inverse_dynamics(qacc=None)` | `τ` | 在临时 `MjData` 上跑 `mj_inverse`，不扰动仿真 |
-
-外加构造参数 `Simulation(gravity_compensation=True|False)`。
-
----
-
-## 7. 已知限制
-
-- 只辨识 **臂部 6 个关节**。夹爪（`joint7/8`）行程小、惯量比腕部还小一个
-  量级，单独激励它没有意义；辨识时夹爪固定在开合度 `--gripper-open`
-  并把 `link6` 之后 5 个 body 合并进 link6。
-- 模型里没有关节阻尼/摩擦项，所以也没有辨识它。真机上必须加
-  `friction` / `damping` 回归列，否则低频轨迹上会系统性偏差。
-- `servo` 路径的精度被 `qdd` 差分限制在 ~5%。要再提高，需要
-  低通滤波 + 一致的滤波相位，或者记录加速度传感器。
-- 没有画图（环境里没装 matplotlib）。`validate.py` 只输出数值与 JSON。
+精确数值见 `outputs/minimum_base/base_parameter_identification_report.json`、`outputs/physical_constraints/physically_constrained_identification_report.json` 和 `outputs/robust_comparison.json`。本次数据不能唯一确定逐连杆质量、质心和惯量；物理约束结果只是与数据和先验相容的候选值。电流到力矩系数未针对本机标定，结果不得直接用于控制或当作 CAD 真值。

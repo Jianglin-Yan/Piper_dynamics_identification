@@ -1,0 +1,229 @@
+{
+  "mode": "hardware",
+  "completed": true,
+  "previous_controller_session": {
+    "run": "/home/shin/Documents/41Piper/Piper_dynamics_identification/runs/20261029_101835_046830",
+    "state": "DONE",
+    "requires_recovery": false,
+    "reason": "上次回位后已确认六轴失能，未发送电子急停；无需例行重置。"
+  },
+  "home_rad": [
+    0.042027528388023455,
+    -0.051714105736591985,
+    0.03323106895797203,
+    0.11983430644193066,
+    0.3503923006303816,
+    -0.08695230333435751
+  ],
+  "return_home_rad": [
+    0.042027528388023455,
+    0.0,
+    0.0,
+    0.11983430644193066,
+    0.3503923006303816,
+    -0.08695230333435751
+  ],
+  "current_pose_only": false,
+  "standing_start": true,
+  "state": "DONE",
+  "aborted": false,
+  "last_q": [
+    0.04399975044277705,
+    -0.05183627878423159,
+    0.03658210112180115,
+    0.1275486617357456,
+    0.3551046896107663,
+    -0.08710938296703698
+  ],
+  "max_requested_velocity": 0.12,
+  "stop_reason": null,
+  "motors_disabled_confirmed": true,
+  "shutdown_phase": "DISABLED",
+  "release_q_rad": [
+    0.04146902302738527,
+    0.0,
+    0.0,
+    0.11931070766633237,
+    0.3495545425894243,
+    -0.08641125126623925
+  ],
+  "final_enabled": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "test_data": {
+    "sample_count": 11999,
+    "valid_measurement_count": 11997,
+    "raw_test_frame_count": 364794,
+    "raw_frame_stats": {
+      "0x2a1": {
+        "count": 24000,
+        "first": 154348.626605543,
+        "last": 154468.623113127,
+        "max_gap_s": 0.005339504015864804,
+        "observed_hz": 199.99748728686978
+      },
+      "0x2a2": {
+        "count": 24000,
+        "first": 154348.626737755,
+        "last": 154468.623247912,
+        "max_gap_s": 0.005288936983561143,
+        "observed_hz": 199.99748299844654
+      },
+      "0x2a3": {
+        "count": 24000,
+        "first": 154348.626753,
+        "last": 154468.623362144,
+        "max_gap_s": 0.005330597021384165,
+        "observed_hz": 199.99731801754803
+      },
+      "0x2a4": {
+        "count": 24000,
+        "first": 154348.626952149,
+        "last": 154468.623484251,
+        "max_gap_s": 0.005268159002298489,
+        "observed_hz": 199.99744642287206
+      },
+      "0x2a5": {
+        "count": 24000,
+        "first": 154348.627086556,
+        "last": 154468.623585156,
+        "max_gap_s": 0.0053077469929121435,
+        "observed_hz": 199.99750226045725
+      },
+      "0x2a6": {
+        "count": 24000,
+        "first": 154348.627147492,
+        "last": 154468.623711147,
+        "max_gap_s": 0.0052713600161951035,
+        "observed_hz": 199.99739383369572
+      },
+      "0x2a7": {
+        "count": 24000,
+        "first": 154348.62732858,
+        "last": 154468.623898688,
+        "max_gap_s": 0.005320444994140416,
+        "observed_hz": 199.99738307854744
+      },
+      "0x2a8": {
+        "count": 24000,
+        "first": 154348.627478066,
+        "last": 154468.623974313,
+        "max_gap_s": 0.005263076018309221,
+        "observed_hz": 199.99750618216692
+      },
+      "0x251": {
+        "count": 24000,
+        "first": 154348.627505265,
+        "last": 154468.624075767,
+        "max_gap_s": 0.005623325996566564,
+        "observed_hz": 199.99738242185785
+      },
+      "0x252": {
+        "count": 23999,
+        "first": 154348.627761632,
+        "last": 154468.619210992,
+        "max_gap_s": 0.005846543004736304,
+        "observed_hz": 199.9975842278498
+      },
+      "0x253": {
+        "count": 23999,
+        "first": 154348.627779889,
+        "last": 154468.619336385,
+        "max_gap_s": 0.005731171986553818,
+        "observed_hz": 199.99740565748706
+      },
+      "0x263": {
+        "count": 4800,
+        "first": 154348.628153645,
+        "last": 154468.604611632,
+        "max_gap_s": 0.025695612013805658,
+        "observed_hz": 39.99951390896706
+      },
+      "0x254": {
+        "count": 23999,
+        "first": 154348.628172594,
+        "last": 154468.619452263,
+        "max_gap_s": 0.005789812013972551,
+        "observed_hz": 199.9978670633514
+      },
+      "0x255": {
+        "count": 23999,
+        "first": 154348.628180068,
+        "last": 154468.61957846,
+        "max_gap_s": 0.0057846780109684914,
+        "observed_hz": 199.99766917957274
+      },
+      "0x256": {
+        "count": 23999,
+        "first": 154348.628249171,
+        "last": 154468.619829176,
+        "max_gap_s": 0.005833709001308307,
+        "observed_hz": 199.99736647353507
+      },
+      "0x262": {
+        "count": 4800,
+        "first": 154348.632800922,
+        "last": 154468.609423304,
+        "max_gap_s": 0.025661224004579708,
+        "observed_hz": 39.99945910062408
+      },
+      "0x261": {
+        "count": 4800,
+        "first": 154348.637625923,
+        "last": 154468.614369556,
+        "max_gap_s": 0.025647581001976505,
+        "observed_hz": 39.99941867634245
+      },
+      "0x266": {
+        "count": 4800,
+        "first": 154348.638349439,
+        "last": 154468.615428055,
+        "max_gap_s": 0.02570240301429294,
+        "observed_hz": 39.99930699562553
+      },
+      "0x265": {
+        "count": 4800,
+        "first": 154348.643121905,
+        "last": 154468.619679068,
+        "max_gap_s": 0.025646233989391476,
+        "observed_hz": 39.99948084424671
+      },
+      "0x264": {
+        "count": 4799,
+        "first": 154348.647974463,
+        "last": 154468.599564556,
+        "max_gap_s": 0.025590381992515177,
+        "observed_hz": 39.99946975509137
+      }
+    },
+    "max_control_gap_s": 0.010403113992651924,
+    "valid_measurement_ratio": 0.9998333194432869,
+    "test_duration_s": 120.00004198102397,
+    "trajectory_scale": 0.5,
+    "trajectory_speed_scale": 0.5,
+    "torque_calibrated": false,
+    "qdd_est_method": "11-sample cubic Savitzky-Golay derivative of velocity interpolated by per-axis receive timestamps; preview only; edges and gaps masked",
+    "qdd_est_valid_per_joint": [
+      11986,
+      11986,
+      11986,
+      11986,
+      11986,
+      11986
+    ],
+    "units": {
+      "q": "rad",
+      "qd": "rad/s",
+      "qdd": "rad/s^2",
+      "current": "A",
+      "torque_candidate": "Nm",
+      "time": "s"
+    },
+    "note": "Snapshot vectors are asynchronous; receive timestamps retained. qdd_est is estimated, qdd_ref is planned. No measured inertia matrix or calibrated torque is invented."
+  }
+}

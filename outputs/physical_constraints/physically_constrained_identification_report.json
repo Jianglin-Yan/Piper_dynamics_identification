@@ -1,0 +1,1801 @@
+{
+  "title": "PiPER X physically constrained minimum-base dynamics identification",
+  "status": "feasible_standard_parameter_realization_selected_by_priors_not_unique_identification",
+  "physical_link_parameter_identification_successful": false,
+  "physical_feasibility_is_not_identification_success": true,
+  "physically_feasible_realization": true,
+  "standard_parameter_vector_is_unique_from_data": false,
+  "bound_active_links": [
+    "link2",
+    "link4",
+    "link5",
+    "link6"
+  ],
+  "suitable_for_control": false,
+  "source_model": "models/piper_x.urdf + models/nominal_x.json via archived MuJoCo model and regressor",
+  "model_alignment_audit": {
+    "status": "passed",
+    "source_hashes_sha256": {
+      "piper_x.urdf": "0477a703b8f7d8bf2b6638c2d34eff5597051c26d171c9b9172ba8f1183788e5",
+      "nominal_x.json": "bc54e8c13a7cf65209f9907bd348893d09eb816ed3828972cdf0ebb472e49d02",
+      "real_robot/simulation.py": "89b4b527d55a287b52311273fb941c59b50d651d0298b074071a97e11b204aa6",
+      "real_robot/identify_offline.py": "4f27fcf7f14c96a54934692bfc900896938b468bd4d48d5f2967428689e8f548",
+      "real_robot/protocol_read.py": "22d112575a6bd5458dffb9c49ca5d9e5f4fec93f95bbb15d8bc05dbde469ed85",
+      "regressor.py": "cfe9ba16343adc2008df4aed936657ebcdd064795575b04a591dc53544bcec59",
+      "identify.py": "f54f8a79b6d629a6dc206a47b6f9bbc95682f9c491c8b095339385dfc6e0169d"
+    },
+    "joints": [
+      {
+        "joint": "joint1",
+        "urdf_and_nominal_model_match": true
+      },
+      {
+        "joint": "joint2",
+        "urdf_and_nominal_model_match": true
+      },
+      {
+        "joint": "joint3",
+        "urdf_and_nominal_model_match": true
+      },
+      {
+        "joint": "joint4",
+        "urdf_and_nominal_model_match": true
+      },
+      {
+        "joint": "joint5",
+        "urdf_and_nominal_model_match": true
+      },
+      {
+        "joint": "joint6",
+        "urdf_and_nominal_model_match": true
+      }
+    ],
+    "measured_position_mapping": {
+      "conversion": "CAN degrees to radians, direct joint index",
+      "absolute_zero_and_sign_independently_verified": false
+    }
+  },
+  "geometry_constraint_manifest": {
+    "source_repo": "https://github.com/agilexrobotics/agx_arm_urdf",
+    "source_commit": "680fa925cd00db7e2628563d2edc5540963045de",
+    "source_subtrees": [
+      "piper_x/meshes",
+      "agx_gripper/meshes"
+    ],
+    "mesh_sha256": {
+      "link1": "60c53c4d5d20c5b663cc4ced2f5e322d2a857baa6e79cef04a33b5f9f7c1e985",
+      "link2": "0316b881cd0bae6c9f8f794fabdee7fbf041f83f2f75980d34b67555fe8a3561",
+      "link3": "c51994fa4ca6a0577cfc65fe5a666ad47ad6af8dc98fbe81b71c4a7fe8ad09a5",
+      "link4": "10b69bde5305c53fbb4a6dc4e910e8604d54d250a969e6cda8128d8244989831",
+      "link5": "fb7ab27270e6b5fa0b2e6df9fa37722062f4ff397cd4f89883d23551bedd0801",
+      "link6": "8c391520fd963fe4f9b46afcde82ceeab2a93b73c01fc5debe039fe632f597e6",
+      "flange": "f9ce752f93a6598858a779e3d8755a09e466b588efcffc3a1c3953773753a22b",
+      "gripper_base": "0b839dc0bcb7d94e3422c74f6396b54a0441ba4836448ab5586e7f372d1bdbf3",
+      "gripper_link1": "475a7d8db056524d7659fadf5a2c307d62791047b6214d733dfc7846ed1c613d",
+      "gripper_link2": "3f88d534a85e28a33ef7d2061adacbd1d25214aa9325f9e464aad0f9e4b74606"
+    },
+    "geometry_model": "collision-mesh convex hull; link6 includes flange and gripper meshes at URDF positions over the stated prismatic limits",
+    "link6_gripper_positions_m": {
+      "gripper_joint1": [
+        0.0,
+        0.05
+      ],
+      "gripper_joint2": [
+        -0.05,
+        0.0
+      ]
+    },
+    "outward_margin_m": 0.01,
+    "limitations": [
+      "The mesh hull is an outer support bound, not a measured internal mass distribution.",
+      "The 10 mm default margin accommodates collision-mesh and hardware differences.",
+      "Link6 geometry spans the Xacro finger limits; the fitted inertial model still uses the nominal closed-gripper aggregate."
+    ]
+  },
+  "nominal_geometry_audit": [
+    {
+      "link": "link1",
+      "mass_kg": 0.71,
+      "nominal_mass_kg": 0.71,
+      "mass_ratio_to_nominal": 1.0,
+      "mass_within_cad_bounds": true,
+      "mass_bound_active": false,
+      "com_m": [
+        0.0005300000000000001,
+        -0.00039000000000000005,
+        -0.003150000000000014
+      ],
+      "nominal_com_m": [
+        0.0005300000000000001,
+        -0.00039000000000000005,
+        -0.003150000000000014
+      ],
+      "com_delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "com_max_mesh_hull_plane_m": -0.03002060111941923,
+      "com_inside_mesh_hull_with_margin": true,
+      "com_mesh_hull_margin_active": false,
+      "second_moment_box_ratios": [
+        0.12219462312657502,
+        0.15030653094399546,
+        0.1166095709385995
+      ],
+      "max_second_moment_box_ratio": 0.15030653094399546,
+      "second_moment_within_mesh_box": true,
+      "second_moment_bound_active": false,
+      "Icom_matrix_kgm2": [
+        [
+          0.0005002700000000008,
+          7.800000000000153e-07,
+          6.2600000000000375e-06
+        ],
+        [
+          7.800000000000153e-07,
+          0.0004087900000000007,
+          4.619999999999948e-06
+        ],
+        [
+          6.2600000000000375e-06,
+          4.619999999999948e-06,
+          0.00045802000000000055
+        ]
+      ],
+      "Icom_principal_values_kgm2": [
+        0.0004083597627560273,
+        0.00045751983804605007,
+        0.000501200399197925
+      ],
+      "nominal_Icom_principal_values_kgm2": [
+        0.0004083597627560273,
+        0.00045751983804605007,
+        0.000501200399197925
+      ],
+      "scaled_pseudo_inertia_eigenvalues": [
+        0.18939694063285148,
+        0.2310890385214428,
+        0.28582814755154673,
+        0.7213228916837195
+      ],
+      "physical_consistency_pass": true
+    },
+    {
+      "link": "link2",
+      "mass_kg": 1.16,
+      "nominal_mass_kg": 1.16,
+      "mass_ratio_to_nominal": 1.0,
+      "mass_within_cad_bounds": true,
+      "mass_bound_active": false,
+      "com_m": [
+        0.21855999999999995,
+        -0.008590000000000004,
+        0.0022699999999999994
+      ],
+      "nominal_com_m": [
+        0.21855999999999995,
+        -0.008590000000000004,
+        0.0022699999999999994
+      ],
+      "com_delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "com_max_mesh_hull_plane_m": -0.04027603900182028,
+      "com_inside_mesh_hull_with_margin": true,
+      "com_mesh_hull_margin_active": false,
+      "second_moment_box_ratios": [
+        0.9901603990733306,
+        0.09370970694828658,
+        0.1517219550918906
+      ],
+      "max_second_moment_box_ratio": 0.9901603990733306,
+      "second_moment_within_mesh_box": true,
+      "second_moment_bound_active": true,
+      "Icom_matrix_kgm2": [
+        [
+          0.001119149999999994,
+          0.0018291599999999833,
+          0.00019233000000000282
+        ],
+        [
+          0.0018291599999999833,
+          0.06763250999999995,
+          7.669999999979223e-06
+        ],
+        [
+          0.00019233000000000282,
+          7.669999999979223e-06,
+          0.06755899999999995
+        ]
+      ],
+      "Icom_principal_values_kgm2": [
+        0.0010683302209145598,
+        0.06755820835282453,
+        0.0676841214262608
+      ],
+      "nominal_Icom_principal_values_kgm2": [
+        0.0010683302209145598,
+        0.06755820835282453,
+        0.0676841214262608
+      ],
+      "scaled_pseudo_inertia_eigenvalues": [
+        0.008019231915168195,
+        0.010161230941381707,
+        0.4786642051033123,
+        2.7678133813190424
+      ],
+      "physical_consistency_pass": true
+    },
+    {
+      "link": "link3",
+      "mass_kg": 0.67,
+      "nominal_mass_kg": 0.67,
+      "mass_ratio_to_nominal": 1.0,
+      "mass_within_cad_bounds": true,
+      "mass_bound_active": false,
+      "com_m": [
+        0.20139999999999994,
+        -0.004179999999999955,
+        -0.0014099999999999991
+      ],
+      "nominal_com_m": [
+        0.20139999999999994,
+        -0.004179999999999955,
+        -0.0014099999999999991
+      ],
+      "com_delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "com_max_mesh_hull_plane_m": -0.02842464539057847,
+      "com_inside_mesh_hull_with_margin": true,
+      "com_mesh_hull_margin_active": false,
+      "second_moment_box_ratios": [
+        0.9342383185488318,
+        0.11219042499394585,
+        0.1078083710370957
+      ],
+      "max_second_moment_box_ratio": 0.9342383185488318,
+      "second_moment_within_mesh_box": true,
+      "second_moment_bound_active": false,
+      "Icom_matrix_kgm2": [
+        [
+          0.00033471000000000564,
+          0.0002689099999999945,
+          0.00013918000000000066
+        ],
+        [
+          0.0002689099999999945,
+          0.03360410999999993,
+          5.200000000584814e-07
+        ],
+        [
+          0.00013918000000000066,
+          5.200000000584814e-07,
+          0.033569409999999925
+        ]
+      ],
+      "Icom_principal_values_kgm2": [
+        0.0003319538602264036,
+        0.03356991833851236,
+        0.03360635780126111
+      ],
+      "nominal_Icom_principal_values_kgm2": [
+        0.0003319538602264036,
+        0.03356991833851236,
+        0.03360635780126111
+      ],
+      "scaled_pseudo_inertia_eigenvalues": [
+        0.002932507308311436,
+        0.0036561841714995804,
+        0.278840210552819,
+        1.5942682478541328
+      ],
+      "physical_consistency_pass": true
+    },
+    {
+      "link": "link4",
+      "mass_kg": 0.39,
+      "nominal_mass_kg": 0.39,
+      "mass_ratio_to_nominal": 1.0,
+      "mass_within_cad_bounds": true,
+      "mass_bound_active": false,
+      "com_m": [
+        0.058999999999999934,
+        -0.05830999999999993,
+        0.001999999999999998
+      ],
+      "nominal_com_m": [
+        0.058999999999999934,
+        -0.05830999999999993,
+        0.001999999999999998
+      ],
+      "com_delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "com_max_mesh_hull_plane_m": -0.022860965240063306,
+      "com_inside_mesh_hull_with_margin": true,
+      "com_mesh_hull_margin_active": false,
+      "second_moment_box_ratios": [
+        0.6147068742912033,
+        0.7447468285127965,
+        0.13974937598789292
+      ],
+      "max_second_moment_box_ratio": 0.7447468285127965,
+      "second_moment_within_mesh_box": true,
+      "second_moment_bound_active": false,
+      "Icom_matrix_kgm2": [
+        [
+          0.0012017299999999983,
+          0.0013816499999999995,
+          1.1869999999999363e-05
+        ],
+        [
+          0.0013816499999999995,
+          0.002093240000000001,
+          2.169999999998673e-06
+        ],
+        [
+          1.1869999999999363e-05,
+          2.169999999998673e-06,
+          0.003078139999999998
+        ]
+      ],
+      "Icom_principal_values_kgm2": [
+        0.00019568475648727978,
+        0.003075012928613479,
+        0.0031024123148992383
+      ],
+      "nominal_Icom_principal_values_kgm2": [
+        0.00019568475648727978,
+        0.003075012928613479,
+        0.0031024123148992383
+      ],
+      "scaled_pseudo_inertia_eigenvalues": [
+        0.010140238676736885,
+        0.01358487276552829,
+        0.15701613959172034,
+        0.927894856866239
+      ],
+      "physical_consistency_pass": true
+    },
+    {
+      "link": "link5",
+      "mass_kg": 0.35,
+      "nominal_mass_kg": 0.35,
+      "mass_ratio_to_nominal": 1.0,
+      "mass_within_cad_bounds": true,
+      "mass_bound_active": false,
+      "com_m": [
+        4.999999999999951e-05,
+        -0.012819999999999998,
+        -0.004289999999999988
+      ],
+      "nominal_com_m": [
+        4.999999999999951e-05,
+        -0.012819999999999998,
+        -0.004289999999999988
+      ],
+      "com_delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "com_max_mesh_hull_plane_m": -0.021267197558214095,
+      "com_inside_mesh_hull_with_margin": true,
+      "com_mesh_hull_margin_active": false,
+      "second_moment_box_ratios": [
+        0.1396541960775026,
+        0.2618868205210703,
+        0.15126483567144008
+      ],
+      "max_second_moment_box_ratio": 0.2618868205210703,
+      "second_moment_within_mesh_box": true,
+      "second_moment_bound_active": false,
+      "Icom_matrix_kgm2": [
+        [
+          0.00022659999999999976,
+          1.900000000000153e-07,
+          4.9999999999997536e-08
+        ],
+        [
+          1.900000000000153e-07,
+          0.00017739999999999992,
+          8.499999999999766e-07
+        ],
+        [
+          4.9999999999997536e-08,
+          8.499999999999766e-07,
+          0.0001942499999999999
+        ]
+      ],
+      "Icom_principal_values_kgm2": [
+        0.00017735651821630476,
+        0.00019429266025894438,
+        0.00022660082152475036
+      ],
+      "nominal_Icom_principal_values_kgm2": [
+        0.00017735651821630476,
+        0.00019429266025894438,
+        0.00022660082152475036
+      ],
+      "scaled_pseudo_inertia_eigenvalues": [
+        0.08485903573662357,
+        0.10534772783361734,
+        0.1268293035489386,
+        0.45780882214116303
+      ],
+      "physical_consistency_pass": true
+    },
+    {
+      "link": "link6",
+      "mass_kg": 0.5565540813300001,
+      "nominal_mass_kg": 0.5565540813300001,
+      "mass_ratio_to_nominal": 1.0,
+      "mass_within_cad_bounds": true,
+      "mass_bound_active": false,
+      "com_m": [
+        5.781892541467295e-05,
+        -9.238296292471979e-05,
+        0.038252915530080825
+      ],
+      "nominal_com_m": [
+        5.781892541467295e-05,
+        -9.238296292471979e-05,
+        0.038252915530080825
+      ],
+      "com_delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "com_max_mesh_hull_plane_m": -0.03179941975227662,
+      "com_inside_mesh_hull_with_margin": true,
+      "com_mesh_hull_margin_active": false,
+      "second_moment_box_ratios": [
+        0.07824602985984443,
+        0.07480092828746578,
+        0.09090382426088771
+      ],
+      "max_second_moment_box_ratio": 0.09090382426088771,
+      "second_moment_within_mesh_box": true,
+      "second_moment_bound_active": false,
+      "Icom_matrix_kgm2": [
+        [
+          0.0004748253084325089,
+          -4.6580760677267935e-07,
+          2.5146238947243886e-06
+        ],
+        [
+          -4.6580760677267935e-07,
+          0.0007313431795976776,
+          9.139355664169188e-07
+        ],
+        [
+          2.5146238947243886e-06,
+          9.139355664169188e-07,
+          0.0004817615733770977
+        ]
+      ],
+      "Icom_principal_values_kgm2": [
+        0.0004740075584460943,
+        0.0004825751638952197,
+        0.0007313473390659701
+      ],
+      "nominal_Icom_principal_values_kgm2": [
+        0.0004740075584460943,
+        0.0004825751638952197,
+        0.0007313473390659701
+      ],
+      "scaled_pseudo_inertia_eigenvalues": [
+        0.0742656658919369,
+        0.1086124730610252,
+        0.2434417942431229,
+        1.2238483434106955
+      ],
+      "physical_consistency_pass": true
+    }
+  ],
+  "geometry_constraints_file": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/physical_constraints/piper_x_geometry_constraints.json",
+  "minimum_base_set_source": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/minimum_base",
+  "structural_dimensions": {
+    "full_standard_parameters": 78,
+    "minimum_base_parameters": 54,
+    "inertial_rank": 36,
+    "friction_parameters": 18,
+    "standard_parameter_nullspace": 24
+  },
+  "data": {
+    "valid_samples": 11956,
+    "sampling_hz": 100,
+    "train_samples": 955,
+    "validation_samples": 957,
+    "torque_coefficients_Nm_per_A": [
+      4.725,
+      4.134375,
+      4.725,
+      1.232201376,
+      0.7787701152,
+      0.7787701152
+    ],
+    "torque_scale_calibrated_for_this_unit": false
+  },
+  "method": {
+    "base_parameterization": "theta = S(V beta + V0 gamma), beta = V.T @ S^-1 @ theta, tau = (Y S V) beta; S uses nominal CAD characteristic scales",
+    "estimation": "Per-joint-target-RMS-normalized weighted least squares, jointly re-fitting the identifiable minimum-base coordinates and the standard-parameter nullspace realization; six link inertias are constrained by pseudo-inertia LMIs and dissipative friction coefficients are constrained nonnegative.",
+    "loss_scale": "target torque RMS by joint, computed on the fit split; validation uses the same training scales",
+    "physical_constraints": {
+      "pseudo_inertia": "P_i=[[0.5 tr(I_O) I-I_O,h],[h.T,m]]; congruence-scaled P_i >= 1e-9 I",
+      "mass_bounds": "0.5 to 1.5 times the snapshot CAD mass per link",
+      "com_geometry": "COM constrained to the exact PiPER X collision-mesh convex hull expanded outward by 0.01 m; link6 includes flange and gripper meshes over the Xacro prismatic joint ranges",
+      "second_moment_geometry": "each diagonal entry of the pseudo-inertia second-moment matrix is bounded by the mass times the squared radius of an expanded AABB enclosing the same mesh geometry",
+      "friction": "viscous and smooth Coulomb coefficients >= 0; offset signed"
+    },
+    "cad_prior": "mean link-wise log-det Bregman divergence D(P||P_CAD)=tr(P_CAD^-1 P)-logdet(P_CAD^-1/2 P P_CAD^-1/2)-4, plus a weak normalized friction magnitude penalty",
+    "selected_method": "weighted_l2",
+    "selected_lambda": 0.0001,
+    "selection_rule": "minimum mean held-out per-joint RMSE normalized by training target RMS among physically feasible candidates; tie-break on overall held-out relative error"
+  },
+  "unconstrained_minimum_base_OLS": {
+    "held_out_validation_metrics": {
+      "rmse_Nm": [
+        0.08993020572653906,
+        0.22387233312594615,
+        0.22916777326899385,
+        0.05877431417825847,
+        0.055690982571846966,
+        0.03071843362510975
+      ],
+      "target_rms_Nm": [
+        0.5341790551857796,
+        1.2286870409084947,
+        4.577965416328988,
+        0.15576463146950378,
+        0.9087673746070349,
+        0.07767301868038474
+      ],
+      "rmse_over_target_rms": [
+        0.1683521748999737,
+        0.182204520494018,
+        0.05005886948197188,
+        0.3773277259656056,
+        0.061281890314260686,
+        0.39548396788223794
+      ],
+      "r2_per_joint": [
+        0.9716558360050315,
+        0.9667900093649919,
+        0.9178542304886858,
+        0.8562785985735951,
+        0.8489068351174129,
+        0.8425198157434207
+      ],
+      "relative_error_norm_ratio": 0.07076425713965961,
+      "squared_error_sum_Nm2": 113.14004210098429,
+      "macro_relative_rmse": 0.2057848581730113,
+      "macro_relative_rmse_rms": 0.2471794504034679
+    },
+    "physical_standard_realization_feasible": false,
+    "evidence": "A separate closest-to-CAD solve with the training OLS base vector fixed was infeasible even with pseudo-inertia PSD only; the base target therefore must be refit inside the physical set rather than projected after OLS."
+  },
+  "constrained_fit": {
+    "train_metrics": {
+      "rmse_Nm": [
+        0.10094539781440337,
+        0.22769059879358772,
+        0.24400714019372444,
+        0.050846495719715896,
+        0.08555243804447017,
+        0.02162014767555854
+      ],
+      "target_rms_Nm": [
+        0.5380152199165367,
+        1.2270041586535558,
+        4.579927487742304,
+        0.15513334039671214,
+        0.9098841397144165,
+        0.0775389672574201
+      ],
+      "rmse_over_target_rms": [
+        0.18762554306560922,
+        0.18556628124507937,
+        0.05327751167388217,
+        0.32775994889099624,
+        0.09402563943066679,
+        0.27882945105242674
+      ],
+      "r2_per_joint": [
+        0.9647897305790893,
+        0.9655516854580535,
+        0.9066535501591129,
+        0.891485263708474,
+        0.6455512200693693,
+        0.9217773363693291
+      ],
+      "relative_error_norm_ratio": 0.07472667780604339,
+      "squared_error_sum_Nm2": 126.00698141040031,
+      "macro_relative_rmse": 0.1878473958931101,
+      "macro_relative_rmse_rms": 0.21074864575979493
+    },
+    "held_out_validation_metrics": {
+      "rmse_Nm": [
+        0.09931085274608697,
+        0.22863026172410286,
+        0.24194494246837103,
+        0.05110764248912404,
+        0.08515567261403618,
+        0.020187930299802613
+      ],
+      "target_rms_Nm": [
+        0.5341790551857796,
+        1.2286870409084947,
+        4.577965416328988,
+        0.15576463146950378,
+        0.9087673746070349,
+        0.07767301868038474
+      ],
+      "rmse_over_target_rms": [
+        0.18591304129576577,
+        0.1860768886721984,
+        0.05284988427509433,
+        0.32810813345088613,
+        0.09370458820758042,
+        0.25990917622081294
+      ],
+      "r2_per_joint": [
+        0.9654342567029017,
+        0.9653633940014847,
+        0.9084388562959077,
+        0.8913279150711566,
+        0.646733687664703,
+        0.9319839551165412
+      ],
+      "relative_error_norm_ratio": 0.07447364553585707,
+      "squared_error_sum_Nm2": 125.3122877971866,
+      "macro_relative_rmse": 0.1844269520203897,
+      "macro_relative_rmse_rms": 0.20654686903994132
+    },
+    "all_data_refit_in_sample_metrics": {
+      "rmse_Nm": [
+        0.12435072419134376,
+        0.22146321545904385,
+        0.25237900478767,
+        0.05495466789513205,
+        0.0821348194477691,
+        0.024086274815169843
+      ],
+      "target_rms_Nm": [
+        0.5275646888634564,
+        1.1520127671994285,
+        4.596651922524541,
+        0.1574204695682997,
+        0.9099957768110783,
+        0.07768158818723556
+      ],
+      "rmse_over_target_rms": [
+        0.23570706458621238,
+        0.1922402440013112,
+        0.054904963230076424,
+        0.3490948035273709,
+        0.09025846222671083,
+        0.3100641397433174
+      ],
+      "r2_per_joint": [
+        0.9444034479580315,
+        0.9629849351830662,
+        0.8929096188819707,
+        0.8744840405419673,
+        0.63669363483864,
+        0.9038585027049336
+      ],
+      "relative_error_norm_ratio": 0.07663147687583564,
+      "squared_error_sum_Nm2": 1656.5099356953274,
+      "macro_relative_rmse": 0.20537827955249988,
+      "macro_relative_rmse_rms": 0.231546334205826
+    },
+    "base_vector_relative_change_from_unconstrained_OLS": 0.717784563867266,
+    "base_coordinate_representation_error": 0.0,
+    "full_data_base_coordinate_representation_error": 0.0,
+    "train_link_audit": [
+      {
+        "link": "link1",
+        "mass_kg": 0.70898732782359,
+        "nominal_mass_kg": 0.71,
+        "mass_ratio_to_nominal": 0.9985737011599859,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": false,
+        "com_m": [
+          0.0004986525983413263,
+          -0.00035630032263922224,
+          -0.0031497736256286533
+        ],
+        "nominal_com_m": [
+          0.0005300000000000001,
+          -0.00039000000000000005,
+          -0.003150000000000014
+        ],
+        "com_delta_mm": [
+          -0.03134740165867381,
+          0.03369967736077781,
+          0.00022637437136060687
+        ],
+        "com_max_mesh_hull_plane_m": -0.030051440831563647,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": false,
+        "second_moment_box_ratios": [
+          0.11517104787030276,
+          0.13762657875807421,
+          0.11681295524410751
+        ],
+        "max_second_moment_box_ratio": 0.13762657875807421,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.00047682623800783053,
+            6.712541605759813e-07,
+            5.894548722086938e-06
+          ],
+          [
+            6.712541605759813e-07,
+            0.0003981053407475268,
+            4.226954353185653e-06
+          ],
+          [
+            5.894548722086938e-06,
+            4.226954353185653e-06,
+            0.0004237227761978133
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.0003974249485461263,
+          0.00042374064229270007,
+          0.0004774887641143438
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.0004083597627560273,
+          0.00045751983804605007,
+          0.000501200399197925
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.17848495440275866,
+          0.23067716379856348,
+          0.2616448297825267,
+          0.7202259780769308
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link2",
+        "mass_kg": 1.3823799285752063,
+        "nominal_mass_kg": 1.16,
+        "mass_ratio_to_nominal": 1.1917068349786262,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": false,
+        "com_m": [
+          -0.03490891961895113,
+          -0.0018395471540660392,
+          0.0034381529864295234
+        ],
+        "nominal_com_m": [
+          0.21855999999999995,
+          -0.008590000000000004,
+          0.0022699999999999994
+        ],
+        "com_delta_mm": [
+          -253.46891961895108,
+          6.750452845933965,
+          1.168152986429524
+        ],
+        "com_max_mesh_hull_plane_m": 0.003600062378026042,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": false,
+        "second_moment_box_ratios": [
+          0.9999745596173006,
+          0.09435869005824868,
+          0.1375034218242809
+        ],
+        "max_second_moment_box_ratio": 0.9999745596173006,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": true,
+        "Icom_matrix_kgm2": [
+          [
+            0.00135956187599522,
+            -0.006495288137082135,
+            0.00446689149502937
+          ],
+          [
+            -0.006495288137082135,
+            0.1463175366021311,
+            0.00023003097764494906
+          ],
+          [
+            0.00446689149502937,
+            0.00023003097764494906,
+            0.14640876430644023
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.0009315887067985456,
+          0.14653393562265113,
+          0.14662033845511677
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.0010683302209145598,
+          0.06755820835282453,
+          0.0676841214262608
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.007192459026193171,
+          0.008662300739669527,
+          1.3482928484466363,
+          2.5499247611333855
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link3",
+        "mass_kg": 0.8672548985576798,
+        "nominal_mass_kg": 0.67,
+        "mass_ratio_to_nominal": 1.294410296354746,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": false,
+        "com_m": [
+          0.1474423685651306,
+          -0.005842363792386475,
+          -0.004275460249086514
+        ],
+        "nominal_com_m": [
+          0.20139999999999994,
+          -0.004179999999999955,
+          -0.0014099999999999991
+        ],
+        "com_delta_mm": [
+          -53.95763143486934,
+          -1.6623637923865202,
+          -2.8654602490865146
+        ],
+        "com_max_mesh_hull_plane_m": -0.02812183072188208,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": false,
+        "second_moment_box_ratios": [
+          0.33712003899319565,
+          0.09757582916231619,
+          0.08498108849835312
+        ],
+        "max_second_moment_box_ratio": 0.33712003899319565,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.00032641803843445834,
+            8.79674501155839e-05,
+            8.193235369729059e-05
+          ],
+          [
+            8.79674501155839e-05,
+            0.009624129216765358,
+            -3.7208138144590643e-07
+          ],
+          [
+            8.193235369729059e-05,
+            -3.7208138144590643e-07,
+            0.009602614043319725
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.0003248622891065035,
+          0.009603330082217398,
+          0.009624968927195639
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.0003319538602264036,
+          0.03356991833851236,
+          0.03360635780126111
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.003008182036938905,
+          0.0034383504110515207,
+          0.12472472182105922,
+          1.3052761957432077
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link4",
+        "mass_kg": 0.5849999110748717,
+        "nominal_mass_kg": 0.39,
+        "mass_ratio_to_nominal": 1.4999997719868505,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": true,
+        "com_m": [
+          -0.02168626872110194,
+          0.024469078319070706,
+          -0.02446569623754448
+        ],
+        "nominal_com_m": [
+          0.058999999999999934,
+          -0.05830999999999993,
+          0.001999999999999998
+        ],
+        "com_delta_mm": [
+          -80.68626872110188,
+          82.77907831907063,
+          -26.465696237544478
+        ],
+        "com_max_mesh_hull_plane_m": 0.009999973323557461,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": true,
+        "second_moment_box_ratios": [
+          0.04873983575507718,
+          0.09440394708419803,
+          0.40990752782771195
+        ],
+        "max_second_moment_box_ratio": 0.40990752782771195,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.0002434495321571754,
+            5.834287056620459e-05,
+            -4.151277181509437e-05
+          ],
+          [
+            5.834287056620459e-05,
+            0.00025610380964166365,
+            5.5952933812238915e-05
+          ],
+          [
+            -4.151277181509437e-05,
+            5.5952933812238915e-05,
+            0.00023215722568634166
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.00013992536582604537,
+          0.00027877965032821803,
+          0.0003130055513309172
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.00019568475648727978,
+          0.003075012928613479,
+          0.0031024123148992383
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.006466130019104309,
+          0.010656405365397864,
+          0.022816762678593273,
+          0.7092336838553146
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link5",
+        "mass_kg": 0.524999921894794,
+        "nominal_mass_kg": 0.35,
+        "mass_ratio_to_nominal": 1.4999997768422688,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": true,
+        "com_m": [
+          -0.036089192944852265,
+          0.012855057277464239,
+          0.010353608112028003
+        ],
+        "nominal_com_m": [
+          4.999999999999951e-05,
+          -0.012819999999999998,
+          -0.004289999999999988
+        ],
+        "com_delta_mm": [
+          -36.13919294485227,
+          25.675057277464237,
+          14.64360811202799
+        ],
+        "com_max_mesh_hull_plane_m": 0.009999997475616303,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": true,
+        "second_moment_box_ratios": [
+          0.9758547607798868,
+          0.15387857884696396,
+          0.11374576325481006
+        ],
+        "max_second_moment_box_ratio": 0.9758547607798868,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.00014050607957570078,
+            -6.216539782558599e-06,
+            -2.2198028090081442e-05
+          ],
+          [
+            -6.216539782558599e-06,
+            0.0001456830005809736,
+            -5.0757044765568845e-06
+          ],
+          [
+            -2.2198028090081442e-05,
+            -5.0757044765568845e-06,
+            0.00014762819096533167
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.00011915810176751297,
+          0.00014810870171470355,
+          0.00016655046763978948
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.00017735651821630476,
+          0.00019429266025894438,
+          0.00022660082152475036
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.02280397240100328,
+          0.0753509905223787,
+          0.10760382347702217,
+          1.5404767258442478
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link6",
+        "mass_kg": 0.27827707116970896,
+        "nominal_mass_kg": 0.5565540813300001,
+        "mass_ratio_to_nominal": 0.5000000548099636,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": true,
+        "com_m": [
+          -0.009147354999294137,
+          -0.008469054432166421,
+          -0.021588969083296224
+        ],
+        "nominal_com_m": [
+          5.781892541467295e-05,
+          -9.238296292471979e-05,
+          0.038252915530080825
+        ],
+        "com_delta_mm": [
+          -9.20517392470881,
+          -8.376671469241701,
+          -59.84188461337705
+        ],
+        "com_max_mesh_hull_plane_m": 0.00999954406766264,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": true,
+        "second_moment_box_ratios": [
+          0.17276140310603263,
+          0.11488713131662617,
+          0.06356332777521465
+        ],
+        "max_second_moment_box_ratio": 0.17276140310603263,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.00034819372175596983,
+            -6.934352602467433e-05,
+            -0.00025330792939398417
+          ],
+          [
+            -6.934352602467433e-05,
+            0.0006658952277087849,
+            -4.243731371771056e-05
+          ],
+          [
+            -0.00025330792939398417,
+            -4.243731371771056e-05,
+            0.0004507665213155905
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.00012894535820517995,
+          0.0006531281612389756,
+          0.0006827819513361899
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.0004740075584460943,
+          0.0004825751638952197,
+          0.0007313473390659701
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.03058719789897815,
+          0.050083595042243224,
+          0.21266270026086476,
+          0.5819926391880021
+        ],
+        "physical_consistency_pass": true
+      }
+    ],
+    "full_data_link_audit": [
+      {
+        "link": "link1",
+        "mass_kg": 0.709352717156772,
+        "nominal_mass_kg": 0.71,
+        "mass_ratio_to_nominal": 0.9990883340236225,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": false,
+        "com_m": [
+          0.0004974864936328208,
+          -0.00035511008134093877,
+          -0.0031496497337841337
+        ],
+        "nominal_com_m": [
+          0.0005300000000000001,
+          -0.00039000000000000005,
+          -0.003150000000000014
+        ],
+        "com_delta_mm": [
+          -0.03251350636717927,
+          0.034889918659061284,
+          0.00035026621588015935
+        ],
+        "com_max_mesh_hull_plane_m": -0.03005256815729389,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": false,
+        "second_moment_box_ratios": [
+          0.11483694086170856,
+          0.1370779006080806,
+          0.11665471479269396
+        ],
+        "max_second_moment_box_ratio": 0.1370779006080806,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.00047575540232419806,
+            6.673567584778619e-07,
+            5.877651979813738e-06
+          ],
+          [
+            6.673567584778619e-07,
+            0.0003974953950810176,
+            4.210321557564905e-06
+          ],
+          [
+            5.877651979813738e-06,
+            4.210321557564905e-06,
+            0.0004224389600268201
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.00039680277511160573,
+          0.00042247537107470445,
+          0.0004764116112457256
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.0004083597627560273,
+          0.00045751983804605007,
+          0.000501200399197925
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.17806405366510467,
+          0.23046003803421972,
+          0.26075003990741347,
+          0.7205863579952491
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link2",
+        "mass_kg": 1.3846381453105654,
+        "nominal_mass_kg": 1.16,
+        "mass_ratio_to_nominal": 1.193653573543591,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": false,
+        "com_m": [
+          -0.04128745967166866,
+          -0.0022501907921919097,
+          0.0038376059510081485
+        ],
+        "nominal_com_m": [
+          0.21855999999999995,
+          -0.008590000000000004,
+          0.0022699999999999994
+        ],
+        "com_delta_mm": [
+          -259.8474596716686,
+          6.339809207808094,
+          1.567605951008149
+        ],
+        "com_max_mesh_hull_plane_m": 0.009991709493680272,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": true,
+        "second_moment_box_ratios": [
+          0.9999942742847012,
+          0.09968163261051725,
+          0.1482319328949311
+        ],
+        "max_second_moment_box_ratio": 0.9999942742847012,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": true,
+        "Icom_matrix_kgm2": [
+          [
+            0.0014475230875958037,
+            -0.006928103496429183,
+            0.005236414849094596
+          ],
+          [
+            -0.006928103496429183,
+            0.1459333164760889,
+            0.00027636554271179856
+          ],
+          [
+            0.005236414849094596,
+            0.00027636554271179856,
+            0.1460168061141463
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.0009265724242730328,
+          0.14619654971437424,
+          0.14627452353918372
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.0010683302209145598,
+          0.06755820835282453,
+          0.0676841214262608
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.0072215104914782795,
+          0.008547895257885223,
+          1.3373988036802156,
+          2.5689149726515543
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link3",
+        "mass_kg": 0.9075460499805956,
+        "nominal_mass_kg": 0.67,
+        "mass_ratio_to_nominal": 1.3545463432546203,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": false,
+        "com_m": [
+          0.14201280677731037,
+          -0.00571042987782633,
+          -0.005561502657446221
+        ],
+        "nominal_com_m": [
+          0.20139999999999994,
+          -0.004179999999999955,
+          -0.0014099999999999991
+        ],
+        "com_delta_mm": [
+          -59.38719322268957,
+          -1.5304298778263756,
+          -4.151502657446222
+        ],
+        "com_max_mesh_hull_plane_m": -0.028361187708230224,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": false,
+        "second_moment_box_ratios": [
+          0.28914709832299085,
+          0.09382530939981132,
+          0.08653557254114749
+        ],
+        "max_second_moment_box_ratio": 0.28914709832299085,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.00032779582759606197,
+            8.130703691642974e-05,
+            9.898855908720193e-05
+          ],
+          [
+            8.130703691642974e-05,
+            0.007274924997479181,
+            -1.041580559238808e-06
+          ],
+          [
+            9.898855908720193e-05,
+            -1.041580559238808e-06,
+            0.007254318490047849
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.00032543002537487357,
+          0.0072557321534294774,
+          0.007275877136318739
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.0003319538602264036,
+          0.03356991833851236,
+          0.03360635780126111
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.0030288578955270187,
+          0.0034288869943192735,
+          0.09731198306740009,
+          1.3156781606935861
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link4",
+        "mass_kg": 0.5849999150396143,
+        "nominal_mass_kg": 0.39,
+        "mass_ratio_to_nominal": 1.4999997821528572,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": true,
+        "com_m": [
+          -0.02296894011862804,
+          0.023333535190079503,
+          -0.02446456659457254
+        ],
+        "nominal_com_m": [
+          0.058999999999999934,
+          -0.05830999999999993,
+          0.001999999999999998
+        ],
+        "com_delta_mm": [
+          -81.96894011862797,
+          81.64353519007945,
+          -26.46456659457254
+        ],
+        "com_max_mesh_hull_plane_m": 0.009999984233467197,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": true,
+        "second_moment_box_ratios": [
+          0.05530507994468832,
+          0.0904547079325413,
+          0.4047411419928912
+        ],
+        "max_second_moment_box_ratio": 0.4047411419928912,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.0002498944401315101,
+            7.030664645047135e-05,
+            -4.029229411958349e-05
+          ],
+          [
+            7.030664645047135e-05,
+            0.00027007696393028526,
+            5.318267462695611e-05
+          ],
+          [
+            -4.029229411958349e-05,
+            5.318267462695611e-05,
+            0.00026470759055475797
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.00015109666329853391,
+          0.00029801351971199823,
+          0.0003355688116060213
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.00019568475648727978,
+          0.003075012928613479,
+          0.0031024123148992383
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.0069477316765299045,
+          0.01150554390500701,
+          0.024419591521538046,
+          0.7097520533213553
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link5",
+        "mass_kg": 0.52499982258397,
+        "nominal_mass_kg": 0.35,
+        "mass_ratio_to_nominal": 1.4999994930970573,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": true,
+        "com_m": [
+          -0.03521819007534126,
+          0.013089886556561433,
+          0.012982236759765724
+        ],
+        "nominal_com_m": [
+          4.999999999999951e-05,
+          -0.012819999999999998,
+          -0.004289999999999988
+        ],
+        "com_delta_mm": [
+          -35.26819007534126,
+          25.90988655656143,
+          17.27223675976571
+        ],
+        "com_max_mesh_hull_plane_m": 0.009999996154791808,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": true,
+        "second_moment_box_ratios": [
+          0.9302279700357164,
+          0.16220803756056862,
+          0.14562982424272386
+        ],
+        "max_second_moment_box_ratio": 0.9302279700357164,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.00014885031757110221,
+            -4.4859921380673755e-06,
+            -1.726578643862896e-05
+          ],
+          [
+            -4.4859921380673755e-06,
+            0.00014573874104005058,
+            -4.537408372599558e-06
+          ],
+          [
+            -1.726578643862896e-05,
+            -4.537408372599558e-06,
+            0.00015004568383613086
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.0001296436411165079,
+          0.00014826588541768285,
+          0.00016672521591309301
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.00017735651821630476,
+          0.00019429266025894438,
+          0.00022660082152475036
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.023851286239178513,
+          0.08193062790920279,
+          0.10636308339904281,
+          1.5436899647481142
+        ],
+        "physical_consistency_pass": true
+      },
+      {
+        "link": "link6",
+        "mass_kg": 0.2782770657395842,
+        "nominal_mass_kg": 0.5565540813300001,
+        "mass_ratio_to_nominal": 0.5000000450532752,
+        "mass_within_cad_bounds": true,
+        "mass_bound_active": true,
+        "com_m": [
+          -0.010141627754298308,
+          -0.009023845245917343,
+          -0.021585863229547187
+        ],
+        "nominal_com_m": [
+          5.781892541467295e-05,
+          -9.238296292471979e-05,
+          0.038252915530080825
+        ],
+        "com_delta_mm": [
+          -10.199446679712981,
+          -8.931462282992623,
+          -59.838778759628006
+        ],
+        "com_max_mesh_hull_plane_m": 0.009999541053478922,
+        "com_inside_mesh_hull_with_margin": true,
+        "com_mesh_hull_margin_active": true,
+        "second_moment_box_ratios": [
+          0.08464096589885418,
+          0.10577716017134224,
+          0.04613557636835393
+        ],
+        "max_second_moment_box_ratio": 0.10577716017134224,
+        "second_moment_within_mesh_box": true,
+        "second_moment_bound_active": false,
+        "Icom_matrix_kgm2": [
+          [
+            0.000225885159547048,
+            -1.627382315329666e-05,
+            -7.780643056734897e-05
+          ],
+          [
+            -1.627382315329666e-05,
+            0.0003399456687924917,
+            6.200840963887437e-06
+          ],
+          [
+            -7.780643056734897e-05,
+            6.200840963887437e-06,
+            0.00022800747587242828
+          ]
+        ],
+        "Icom_principal_values_kgm2": [
+          0.0001488567076257523,
+          0.00029872233717246596,
+          0.0003462592594137495
+        ],
+        "nominal_Icom_principal_values_kgm2": [
+          0.0004740075584460943,
+          0.0004825751638952197,
+          0.0007313473390659701
+        ],
+        "scaled_pseudo_inertia_eigenvalues": [
+          0.03057096940876106,
+          0.06336594935324757,
+          0.11216161244705213,
+          0.4532517189958074
+        ],
+        "physical_consistency_pass": true
+      }
+    ]
+  },
+  "selected_cv_candidates": [
+    {
+      "method": "weighted_l2",
+      "lambda": 0.0001,
+      "solver_status": "optimal",
+      "validation_metrics": {
+        "rmse_Nm": [
+          0.09931085274608697,
+          0.22863026172410286,
+          0.24194494246837103,
+          0.05110764248912404,
+          0.08515567261403618,
+          0.020187930299802613
+        ],
+        "target_rms_Nm": [
+          0.5341790551857796,
+          1.2286870409084947,
+          4.577965416328988,
+          0.15576463146950378,
+          0.9087673746070349,
+          0.07767301868038474
+        ],
+        "rmse_over_target_rms": [
+          0.18591304129576577,
+          0.1860768886721984,
+          0.05284988427509433,
+          0.32810813345088613,
+          0.09370458820758042,
+          0.25990917622081294
+        ],
+        "r2_per_joint": [
+          0.9654342567029017,
+          0.9653633940014847,
+          0.9084388562959077,
+          0.8913279150711566,
+          0.646733687664703,
+          0.9319839551165412
+        ],
+        "relative_error_norm_ratio": 0.07447364553585707,
+        "squared_error_sum_Nm2": 125.3122877971866,
+        "macro_relative_rmse": 0.1844269520203897,
+        "macro_relative_rmse_rms": 0.20654686903994132
+      },
+      "train_weighted_rmse": 0.210748645759795,
+      "objective": 0.044969942709725944,
+      "geometric_prior_value": 5.540544292291977,
+      "friction_prior_value": 0.4482954484534065,
+      "base_vector_relative_change_vs_unconstrained_ols": 0.717784563867266,
+      "all_links_pass_physical_and_mesh_geometry_bounds": true
+    },
+    {
+      "method": "weighted_l2",
+      "lambda": 0.001,
+      "solver_status": "optimal",
+      "validation_metrics": {
+        "rmse_Nm": [
+          0.10072171459049539,
+          0.2310560041174596,
+          0.24095669285040172,
+          0.052284232631876496,
+          0.09208148144266086,
+          0.02027783618005068
+        ],
+        "target_rms_Nm": [
+          0.5341790551857796,
+          1.2286870409084947,
+          4.577965416328988,
+          0.15576463146950378,
+          0.9087673746070349,
+          0.07767301868038474
+        ],
+        "rmse_over_target_rms": [
+          0.18855421906324252,
+          0.18805114437165069,
+          0.05263401335251279,
+          0.3356617746828677,
+          0.10132569017728911,
+          0.261066667995634
+        ],
+        "r2_per_joint": [
+          0.964445162456124,
+          0.9646245136649948,
+          0.9091853109732706,
+          0.8862666635482618,
+          0.5869338059308062,
+          0.9313767944215907
+        ],
+        "relative_error_norm_ratio": 0.07511721148770703,
+        "squared_error_sum_Nm2": 127.48742442619306,
+        "macro_relative_rmse": 0.18788225160719949,
+        "macro_relative_rmse_rms": 0.21007054108843531
+      },
+      "train_weighted_rmse": 0.21445743506899595,
+      "objective": 0.04831179864935622,
+      "geometric_prior_value": 2.3123846873363716,
+      "friction_prior_value": 0.37112528255852645,
+      "base_vector_relative_change_vs_unconstrained_ols": 0.7810072130387401,
+      "all_links_pass_physical_and_mesh_geometry_bounds": true
+    },
+    {
+      "method": "weighted_l2",
+      "lambda": 0.01,
+      "solver_status": "optimal",
+      "validation_metrics": {
+        "rmse_Nm": [
+          0.10226659224460968,
+          0.23775833147200914,
+          0.2493446919031323,
+          0.05782475611589627,
+          0.10091909157281294,
+          0.02033045639703188
+        ],
+        "target_rms_Nm": [
+          0.5341790551857796,
+          1.2286870409084947,
+          4.577965416328988,
+          0.15576463146950378,
+          0.9087673746070349,
+          0.07767301868038474
+        ],
+        "rmse_over_target_rms": [
+          0.19144627864348382,
+          0.19350601378216697,
+          0.054466268140373725,
+          0.3712316176680804,
+          0.11105052227084176,
+          0.2617441261126891
+        ],
+        "r2_per_joint": [
+          0.9633461121016245,
+          0.9625424480043261,
+          0.9027525175508073,
+          0.8608850120296863,
+          0.5038400299447332,
+          0.9310201830851599
+        ],
+        "relative_error_norm_ratio": 0.07785464455110527,
+        "squared_error_sum_Nm2": 136.9485645948783,
+        "macro_relative_rmse": 0.19724080443627265,
+        "macro_relative_rmse_rms": 0.22200523618037465
+      },
+      "train_weighted_rmse": 0.22576984248951965,
+      "objective": 0.05555468286021106,
+      "geometric_prior_value": 0.45156504592438446,
+      "friction_prior_value": 0.3350531159347864,
+      "base_vector_relative_change_vs_unconstrained_ols": 0.9280398812197982,
+      "all_links_pass_physical_and_mesh_geometry_bounds": true
+    },
+    {
+      "method": "weighted_l2",
+      "lambda": 0.1,
+      "solver_status": "optimal",
+      "validation_metrics": {
+        "rmse_Nm": [
+          0.1043082307315897,
+          0.24005156666902716,
+          0.2643103271887748,
+          0.06916850425228967,
+          0.1033088128568755,
+          0.020225076615508663
+        ],
+        "target_rms_Nm": [
+          0.5341790551857796,
+          1.2286870409084947,
+          4.577965416328988,
+          0.15576463146950378,
+          0.9087673746070349,
+          0.07767301868038474
+        ],
+        "rmse_over_target_rms": [
+          0.19526829013412522,
+          0.19537242493542728,
+          0.05773532631898339,
+          0.4440578300718527,
+          0.1136801515366326,
+          0.2603874158507017
+        ],
+        "r2_per_joint": [
+          0.9618679954432033,
+          0.9618163894553505,
+          0.8907286327748936,
+          0.8009495922214864,
+          0.4800641066851309,
+          0.9317334222591965
+        ],
+        "relative_error_norm_ratio": 0.08082533807588785,
+        "squared_error_sum_Nm2": 147.5990260746082,
+        "macro_relative_rmse": 0.21108357314128715,
+        "macro_relative_rmse_rms": 0.24411254136058297
+      },
+      "train_weighted_rmse": 0.2459084807864236,
+      "objective": 0.0757722317086772,
+      "geometric_prior_value": 0.14561919895686012,
+      "friction_prior_value": 0.36966544515548555,
+      "base_vector_relative_change_vs_unconstrained_ols": 0.9933151007214257,
+      "all_links_pass_physical_and_mesh_geometry_bounds": true
+    },
+    {
+      "method": "weighted_l2",
+      "lambda": 1.0,
+      "solver_status": "optimal",
+      "validation_metrics": {
+        "rmse_Nm": [
+          0.11010334698961324,
+          0.24364250929590403,
+          0.34823451989694126,
+          0.10262617034511211,
+          0.10385800777120847,
+          0.020191254523536144
+        ],
+        "target_rms_Nm": [
+          0.5341790551857796,
+          1.2286870409084947,
+          4.577965416328988,
+          0.15576463146950378,
+          0.9087673746070349,
+          0.07767301868038474
+        ],
+        "rmse_over_target_rms": [
+          0.20611693012059584,
+          0.19829501018888754,
+          0.07606752961803413,
+          0.6588541273903034,
+          0.11428448101596768,
+          0.259951973884532
+        ],
+        "r2_per_joint": [
+          0.9575132490941397,
+          0.9606654641547573,
+          0.8103199078087852,
+          0.5618099127591408,
+          0.47452140167460555,
+          0.9319615536952359
+        ],
+        "relative_error_norm_ratio": 0.09531321788022096,
+        "squared_error_sum_Nm2": 205.25544942540512,
+        "macro_relative_rmse": 0.2522616753697201,
+        "macro_relative_rmse_rms": 0.3168375244814318
+      },
+      "train_weighted_rmse": 0.3161195385408608,
+      "objective": 0.13188355522242523,
+      "geometric_prior_value": 0.02714250204943373,
+      "friction_prior_value": 0.24047452628397195,
+      "base_vector_relative_change_vs_unconstrained_ols": 0.9249837388913706,
+      "all_links_pass_physical_and_mesh_geometry_bounds": true
+    }
+  ],
+  "limitations": [
+    "The 24-dimensional standard-parameter nullspace means per-link mass/COM/inertia are not uniquely determined by this torque dataset. The reported link values are one feasible realization selected by the explicit CAD prior and bounds.",
+    "Physical constraints changed the 54-dimensional training base vector by 71.8% in relative norm from unconstrained OLS; similar validation error does not make the resulting per-link values measured or unique.",
+    "The following links reach a configured mass, COM mesh-hull, or second-moment geometry bound: link2, link4, link5, link6. Bound-active values indicate the result is constraint-limited and should not be treated as independently measured parameters.",
+    "当前电流到力矩比例来自 SDK 型号参考值，未在这台机械臂上校准。",
+    "采集时曾报告底座/桌面运动，但没有测量；固定基座动力学模型无法区分这类扰动。",
+    "质量 0.5–1.5 倍 CAD 是显式先验，不是本台机械臂的实测值；网格约束来自官方碰撞几何的外包络，不描述连杆内部真实密度分布。",
+    "快照模型的 link6 在闭合夹爪姿态下合并了夹爪惯性。",
+    "验证数据来自同一段 120 秒记录的完整留出周期，不是另一次独立采集。",
+    "网格外包络加入了明确的几何膨胀裕量；link6 的几何同时覆盖夹爪开度范围，但惯性先验仍按闭合夹爪聚合值计算。"
+  ],
+  "source_sha256": {
+    "test_raw_can.jsonl": "fc5551092e450774505821a14111e30c5a04b53c0168debe3bad3eac7348f894",
+    "test_signals.npz": "51a33bf283a4f59e57adbb918f9a142df34ebcd4c98d9c0d1c2e33468f2bd9fa",
+    "split": "7b5803df8b7d1f6413f98daaefb3550f175835c97f306871ddb46a5493011624",
+    "urdf": "0477a703b8f7d8bf2b6638c2d34eff5597051c26d171c9b9172ba8f1183788e5",
+    "nominal_x": "bc54e8c13a7cf65209f9907bd348893d09eb816ed3828972cdf0ebb472e49d02",
+    "base_parameter_fit": "b7d71d8ca83508b4ba64ff0850e53f3a22591a67c90726c60e47bab91d5614ea",
+    "geometry_constraints": "0988692939a9ee21fae6c95b9350b88364ee3c9cf7cb395b4853fd40f6a22d58",
+    "script": "6d7a565a9fbfc6cc2d8d2de16fa1b7d127985c934adc734ce95a45bf3b9a9ad0"
+  },
+  "runtime": {
+    "python": "3.10.12",
+    "numpy": "2.2.6",
+    "scipy": "1.15.3",
+    "mujoco": "3.16.0",
+    "cvxpy": "1.7.5"
+  }
+}
