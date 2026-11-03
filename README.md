@@ -8,6 +8,7 @@
 | --- | --- |
 | `inputs/experiment_20261029/` | 原实验 `data/` 的完整副本，包括 CAN、采样、轨迹、配置及信号文件；保持原始字节 |
 | `inputs/splits/` | PDF 所用 SG41 完整周期训练/留出划分 |
+| `datasets/standard_piper/` | 8 条标准 PiPER 真机激励轨迹（raw/SG21/SG41、描述、划分和回归器重建脚本） |
 | `models/` | PiPER X URDF、名义惯性参数及物理边界使用的碰撞网格 |
 | `src/piper_dynamics/minimum_base_svd.py` | CAD 尺度化 SVD 结构秩检验与最小基 OLS |
 | `src/piper_dynamics/physical_constraint_fit.py` | 凸优化、伪惯量正定、质量/质心/网格边界与 CAD 先验 |
@@ -19,6 +20,8 @@
 | `outputs/reference/` | 原 PDF，仅作对照 |
 
 旧目录完整备份在 `/home/yjl-10096528/EmbodiedAI/dynamics_identification_backup_2026-11-02`，包括旧仿真辨识代码、历史中间文件和原 PDF。新结构只保留复算这份真机报告所需的源码、输入、模型和主要结果。
+
+> `datasets/standard_piper/` 是标准 PiPER 数据；`inputs/experiment_20261029/` 的原始 manifest 曾把机型写成 `piper_x`，后来确认是普通 PiPER。两套数据不要混用模型：标准 PiPER 用 `datasets/standard_piper/model/`，X 复算用本项目 `models/`。
 
 ## 环境与复算
 
