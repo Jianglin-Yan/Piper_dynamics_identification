@@ -83,8 +83,12 @@ class Controller(Shutdown):
             poses=np.array([self.start]+[self.start+o for o in offsets]+[self.start])
             self.test=Waypoints(poses,self.test_vmax,self.test_amax,minimum=cfg['mit_test_minimum_segment_s'])
             self.nominal_test=self.test;self.check(self.test,self.test_vmax,self.test_amax)
-            from .gravity import WIRE_TO_JOINT
+            from .gravity import K, B, C, WIRE_TO_JOINT
             self.reference_plan={'trajectory_type':'mit','all_stages':'MIT only, including prepare/return','poses_deg':np.rad2deg(poses).tolist(),'offset_deg':[list(o) for o in cfg['mit_test_offsets_deg']],'minimum_segment_s':cfg['mit_test_minimum_segment_s'],'duration_s':self.test.duration,'test_max_velocity_rad_s':self.test_vmax,'test_max_acceleration_rad_s2':self.test_amax,'ff_scale':cfg['mit_ff_scale'],'ff_ramp_s':cfg['mit_ff_ramp_s'],'prepare_kp_protocol':cfg['mit_prepare_kp'],'prepare_kd_protocol':cfg['mit_prepare_kd'],'kp_protocol':cfg['mit_kp'],'kd_protocol':cfg['mit_kd'],'return_kp_protocol':cfg['mit_return_kp'],'return_kd_protocol':cfg['mit_return_kd'],'gravity_model':None if self.gravity is None else self.gravity.provenance,'simulation_gain_assumption':'PD protocol torque scaled to joint by b*c; not hardware gain calibration','zero_ff_note':'requested FF exactly 0; old 8-bit encoding has finite zero residue'}
+            self.reference_plan['wire_conversion']={'unit':'joint Nm / (b*c) on the wire; firmware multiplies back','k':K.tolist(),'b':B.tolist(),'c':C.tolist(),'b_c':WIRE_TO_JOINT.tolist(),'t_ff_limit_Nm':(8*WIRE_TO_JOINT).tolist(),'k_b_c_Nm_per_A':(K*B*C).tolist()}
+            self.reference_plan['torque_estimate_caps_Nm']=list(cfg['mit_joint_torque_estimate_caps_Nm'])
+            self.reference_plan['estimate_velocity_limit_rad_s']=float(cfg['mit_estimate_velocity_limit_rad_s'])
+            self.reference_plan['budget_exceed_duration_s']=float(cfg['mit_budget_exceed_duration_s'])
         elif cfg.get('trajectory') in ('static','reciprocal','payload'):
             from .validation_trials import ValidationTrial
             self.trial=ValidationTrial(self.start,cfg,self.lower,self.upper)
