@@ -303,7 +303,7 @@ def main():
             result.update(completed=True,state='PREFLIGHT_ONLY')
             return
         recorder=TestRecorder(path,cfg,'sim' if a.sim else 'hardware')
-        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False;last_rx_dropped=0;last_tick_duration=0.;last_tick_state=ctrl.state;last_status=-1e9
+        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False;last_rx_dropped=0;last_tick_duration=0.;last_tick_state=ctrl.state;last_status=-1e9;last_step=-1
         while not ctrl.finished:
             now=step*dt if a.sim else time.monotonic()
             if viewer and not viewer.is_running() and not viewer_closed:
@@ -339,19 +339,19 @@ def main():
                 ctrl.fault(f'Control loop late: gap={loop_gap*1000:.1f} ms, threshold={cfg["loop_watchdog_s"]*1000:.1f} ms, previous_state={last_tick_state}, previous_tick={last_tick_duration*1000:.1f} ms')
             last_wall=time.monotonic();tick_started=last_wall;last_tick_state=ctrl.state
             ctrl.tick(now,s,action);last_tick_duration=time.monotonic()-tick_started
-            if ctrl.active and not ctrl.shutdown_phase and ctrl.state in ('TESTING','FF_RAMP_IN','FF_RAMP_OUT') and now-last_status>=1.:
+            if ctrl.state=='TESTING' and getattr(ctrl.test,'ends',None) is not None:
+                idx=min(int(np.searchsorted(ctrl.test.ends,max(0.,now-ctrl.path_t),side='right')),len(ctrl.test.parts)-1)
+                if idx!=last_step:
+                    last_step=idx;ui.status(f'移动到期望位置 {idx+1}/{len(ctrl.test.parts)}')
+            else:last_step=-1
+            if ctrl.active and not ctrl.shutdown_phase and ctrl.state in ('FF_RAMP_IN','FF_RAMP_OUT') and now-last_status>=1.:
                 last_status=now
                 scale=float(cfg.get('mit_ff_scale',0.))
-                if ctrl.state in ('FF_RAMP_IN','FF_RAMP_OUT') and scale>0:
+                if scale>0:
                     pct=100*ctrl.mit_ff_ratio/scale
                     if 0.5<pct<99.5:
                         peak=float(np.max(np.abs(ctrl.mit_telemetry['ff_requested_Nm']))) if ctrl.mit_telemetry else 0.
                         ui.status(f'力矩渐变 {scale:.2f}  进度 {pct:.0f}%  当前最大 |FF| {peak:.2f} Nm')
-                elif ctrl.state=='TESTING' and getattr(ctrl.test,'duration',0)>0:
-                    t=now-ctrl.path_t;dur=ctrl.test.duration
-                    err=float(np.max(np.abs(s['q']-ctrl.last_target)[ctrl.controlled_axes]))*57.2957795
-                    ff=f'  前馈 {100*ctrl.mit_ff_ratio:.0f}%' if selected=='mit' and getattr(ctrl,'mit_ff_ratio',0)>0 else ''
-                    ui.status(f't={t:.1f}/{dur:.1f} s ({100*min(t/dur,1):.0f}%)  误差 {err:.2f}°{ff}')
             try:recorder.update(ctrl,now,s,now if a.sim else time.monotonic(),action)
             except OSError as e:log_failure=str(e);ctrl.request_stop(s,now,'Test data logging unavailable: '+str(e))
             tracking_target=ctrl.last_target if not ctrl.shutdown_phase else np.full(6,np.nan)
