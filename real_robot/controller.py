@@ -61,6 +61,7 @@ class Controller(Shutdown):
         self.test_vmax=cfg.get('test_max_velocity_rad_s',self.vmax);self.test_amax=cfg.get('test_max_acceleration_rad_s2',self.amax)
         self.braking_amax=cfg.get('braking_max_acceleration_rad_s2',self.amax)
         self.braking_from_test=False;self.last_tracking_warning=-np.inf;self.last_envelope_warning=-np.inf
+        self.tracking_over_since=None;self.envelope_exceeded=False
         self.reference_plan=None
         if self.multisine:
             from .multisine import RepositoryMultisine,reference_report,TrajectoryRejected
@@ -193,8 +194,6 @@ class Controller(Shutdown):
             self.b.check(s,True)
             if not self.motors_ready(s):raise ValueError('Unexpected motor enable state (including passive J6)')
             if s.get('status',{}).get('control_mode',1)!=1:raise ValueError('CAN position control not established')
-            if np.max(np.abs(np.rad2deg(s['q']-self.last_target))[self.controlled_axes])>self.tracking_hard_limit():
-                raise ValueError('tracking too far from accepted reference')
             lo,hi=self.measurement_bounds()
             if np.any(s['q']<lo) or np.any(s['q']>hi):raise ValueError('measured pose outside session hard bounds')
             v=self.reference_velocity(now)
@@ -360,22 +359,24 @@ class Controller(Shutdown):
                 if self.state!='ARMING' and not self.motors_ready(s):raise ValueError('Joint disabled during active session')
                 errors=np.rad2deg(s['q']-self.last_target);errors[~self.controlled_axes]=0.
                 if np.max(np.abs(errors))>self.tracking_hard_limit():
-                    j=int(np.argmax(np.abs(errors)))
-                    raise ValueError(f'tracking error exceeded: J{j+1}, target={np.rad2deg(self.last_target[j]):.3f}°, actual={np.rad2deg(s["q"][j]):.3f}°, error={errors[j]:+.3f}°')
+                    if self.tracking_over_since is None:self.tracking_over_since=now
+                    if now-self.tracking_over_since>=self.c.get('tracking_soft_duration_s',.2):
+                        j=int(np.argmax(np.abs(errors)))
+                        self.request_stop(s,now,f'tracking error: J{j+1} {errors[j]:+.2f}° > {self.tracking_hard_limit():g}° for {self.c.get("tracking_soft_duration_s",.2):.2f} s')
+                        self.tracking_over_since=None
+                        if self.shutdown_phase:return
+                else:self.tracking_over_since=None
                 lo,hi=self.measurement_bounds()
                 if np.any(s['q']<lo) or np.any(s['q']>hi):raise ValueError('measured angle outside session hard bounds')
                 if not self.multisine and np.max(np.abs(errors))>self.c.get('tracking_warning_deg',10.) and now-self.last_tracking_warning>=1.:
                     self.last_tracking_warning=now;self.event(f'TRACKING_WARNING：跟踪误差 {np.max(np.abs(errors)):.2f}°，记录告警；独立硬线 {self.tracking_hard_limit():g}°。')
-                if (np.any(s['q']<self.lower) or np.any(s['q']>self.upper)) and now-self.last_envelope_warning>=1.:
-                    self.last_envelope_warning=now;self.event('ANGLE_WARNING：实测角度超出规划余量；记录告警，尚未达到独立反馈角度硬线。')
                 if self.multisine and self.state=='TESTING':
                     if np.max(np.abs(errors))>self.c['test_tracking_warning_deg'] and now-self.last_tracking_warning>=1.:
                         self.last_tracking_warning=now;self.event(f'TRACKING_WARNING：跟踪误差 {np.max(np.abs(errors)):.2f}°，记录告警；独立硬线 {self.tracking_hard_limit():g}°。')
                     low=np.deg2rad(self.reference_plan['q_min_deg']);high=np.deg2rad(self.reference_plan['q_max_deg'])
                     speed_envelope=np.array(self.reference_plan['max_velocity_per_joint_rad_s'])*1.25+.15
                     exceeds=np.any(np.abs(s['qd'])>speed_envelope) or np.any(s['q']<low-np.deg2rad(2)) or np.any(s['q']>high+np.deg2rad(2))
-                    if exceeds and now-self.last_envelope_warning>=1.:
-                        self.last_envelope_warning=now;self.event('REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。')
+                    if exceeds:self.envelope_exceeded=True
                 speed=self.speed_monitor.update(now,np.where(self.controlled_axes,s['qd'],0.))
                 if speed['level']=='emergency':
                     raise ValueError(f'emergency overspeed: J{speed["joint"]}, feedback={speed["speed"]:+.3f} rad/s, threshold={self.speed_monitor.emergency:.3f} rad/s for {self.speed_monitor.emergency_duration:.2f} s')

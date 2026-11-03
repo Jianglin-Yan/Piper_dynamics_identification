@@ -85,7 +85,7 @@ class TestMultisine(unittest.TestCase):
         for n in range(30):
             s=b.snapshot();s['q']=k.last_target.copy();s['qd'][0]=2.6;tick(k,n*.01,s)
         self.assertEqual(k.state,'TESTING');self.assertEqual(b.stops,[])
-        self.assertTrue(any('REFERENCE_ENVELOPE_WARNING' in x for x in e))
+        self.assertTrue(k.envelope_exceeded)
 
     def test_tracking_error_above_old_pilot_limit_does_not_abort(self):
         c,b,k,e=self.make();s=b.snapshot();s['q'][5]+=np.deg2rad(6.)
@@ -97,8 +97,10 @@ class TestMultisine(unittest.TestCase):
         for n in range(12):
             s=b.snapshot();s['q']=k.last_target.copy();s['qd'][0]=3.1;tick(k,n*.01,s)
         self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
-        c,b,k,e=self.make();s=b.snapshot();s['q'][5]+=np.deg2rad(26.)
-        tick(k,.01,s);self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
+        c,b,k,e=self.make()
+        for n in range(25):
+            s=b.snapshot();s['q'][5]+=np.deg2rad(26.);tick(k,n*.01,s)
+        self.assertEqual(k.state,'BRAKING');self.assertEqual(len(b.stops),0)
 
     def test_real_feedback_failure_not_downgraded_to_warning(self):
         c,b,k,e=self.make();b.bad=True;tick(k,.01,b.snapshot())

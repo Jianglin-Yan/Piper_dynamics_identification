@@ -36,16 +36,17 @@ class ProtocolTests(unittest.TestCase):
   c=profile('static');c['standing_start']=False
   with self.assertRaises(ValueError):validate_config(c)
  def test_static_tracking_warning_and_independent_hard_line(self):
-  for error,expected in [(12.,'READY'),(25.1,'FAULT')]:
+  for error,expected in [(12.,'READY'),(25.1,'BRAKING')]:
    c,b,k,messages=make('static');b.q=k.start.copy();k.last_target=k.start.copy();k.state='READY';k.active=True;b.active=True;b.enabled=True
-   b.q[1]+=np.deg2rad(error);step(b,k,10)
+   for n in range(10,40):
+    b.q=k.start.copy();b.q[1]+=np.deg2rad(error);b.v[:]=0.;step(b,k,n)
    self.assertEqual(k.state,expected)
    if error<25:self.assertTrue(any('TRACKING_WARNING' in m for m in messages))
  def test_feedback_margin_is_warn_only_and_targets_still_bounded(self):
   c,b,k,messages=make('static');b.q=k.start.copy();k.last_target=k.start.copy();k.state='READY';k.active=True;b.active=True;b.enabled=True
   # Measured feedback can briefly exceed the planning interior without changing command bounds.
   b.q[0]=k.upper[0]+np.deg2rad(1);k.last_target[0]=k.upper[0]
-  step(b,k,10);self.assertNotEqual(k.state,'FAULT');self.assertTrue(any('ANGLE_WARNING' in m for m in messages))
+  step(b,k,10);self.assertNotEqual(k.state,'FAULT')
   q=k.start.copy();q[0]=k.upper[0]+np.deg2rad(1)
   with self.assertRaises(ValueError):k.command(q)
  def test_feedback_extension_is_from_original_limits_for_all_validation_scripts(self):

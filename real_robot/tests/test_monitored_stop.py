@@ -99,6 +99,12 @@ class TestControlledStop(unittest.TestCase):
         self.assertEqual(k.state,'BRAKING');b.bad=True;tick(k,.11,b.snapshot())
         self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
 
+    def test_sustained_tracking_error_uses_controlled_stop(self):
+        c,b,k,events=self.make()
+        for n in range(25):
+            s=b.snapshot();s['q'][5]+=np.deg2rad(26.);tick(k,1+n*.01,s)
+        self.assertEqual(k.state,'BRAKING');self.assertEqual(b.stops,[])
+
     def test_sustained_emergency_current_uses_controlled_stop(self):
         c,b,k,events=self.make()
         for n in range(8):
