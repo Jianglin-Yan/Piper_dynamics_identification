@@ -97,11 +97,11 @@ class MitTorqueBudget(unittest.TestCase):
   k.mit_sample['qd'][1]=-3.0;k.command(q)
   self.assertEqual(k.budget_cycles,0)
  def test_single_cycle_exceedance_does_not_fault(self):
-  c,k=self.make();q=k.start.copy();q[1]+=np.deg2rad(20.);k.mit_sample={'q':k.start.copy(),'qd':np.zeros(6)}
+  c,k=self.make();q=k.start.copy();q[1]+=np.deg2rad(30.);k.mit_sample={'q':k.start.copy(),'qd':np.zeros(6)}
   k.command(q);self.assertEqual(k.budget_cycles,1)
   k.command(k.start.copy());self.assertEqual(k.budget_cycles,0)
  def test_sustained_exceedance_reports_joint_and_value(self):
-  c,k=self.make();q=k.start.copy();q[1]+=np.deg2rad(20.);k.mit_sample={'q':k.start.copy(),'qd':np.zeros(6)}
+  c,k=self.make();q=k.start.copy();q[1]+=np.deg2rad(30.);k.mit_sample={'q':k.start.copy(),'qd':np.zeros(6)}
   with self.assertRaisesRegex(ValueError,r'J2 \+\d+\.\d\d Nm vs 16\.0 Nm for 0\.10 s'):
    for _ in range(k.budget_limit):k.command(q)
 

@@ -13,13 +13,12 @@ from .trajectory import transit,smooth
 from .validation_trials import Waypoints
 
 
-# Protocol PD gains per joint, shared by prepare/test/return. J2/J3/J5 carry half
-# again over the 10/0.8 baseline: at baseline the folded-to-standing prepare sags
-# 6.3-6.5 deg on those axes, 15/1.2 brings the simulated static error to about
-# 4.2-4.3 deg. 20/1.6 and the rejected 40/60 pair both produced audible motor
-# whine on hardware, so this step is deliberately half of the previous increase.
-MIT_KP=[10.,15.,15.,10.,15.,10.]
-MIT_KD=[.8,1.2,1.2,.8,1.2,.8]
+# Official reference PD gains, identical on all six joints and on every stage
+# (prepare / test / return). The 15/1.2 step was rejected after hardware noise and
+# joint kick events; at 10/0.8 the measured static error is about 1 deg on J3 and
+# 4 deg on J5, so the arrival window is relaxed instead of raising the gains.
+MIT_KP=[10.]*6
+MIT_KD=[.8]*6
 
 
 def configure(c,ff_scale=0.,gain_scale=1.,model='nominal',fit='sg21_LS'):
@@ -47,10 +46,10 @@ def configure(c,ff_scale=0.,gain_scale=1.,model='nominal',fit='sg21_LS'):
                               [10.,15.,15.,12.,15.,20.],
                               [-10.,-15.,-15.,12.,15.,20.]],
         mit_test_minimum_segment_s=3.5,
-        settle_error_deg=2.8,mit_prepare_tolerance_deg=5.0,
+        settle_error_deg=2.8,mit_prepare_tolerance_deg=8.0,
         # Pure PD leaves ~4.2-4.3 deg static sag at the park pose, so the MOVE J 3 deg
         # release window would always time out. This MIT-only window is used instead.
-        mit_park_tolerance_deg=5.,park_release_tolerance_deg=3.,settle_timeout_s=20.,
+        mit_park_tolerance_deg=8.,park_release_tolerance_deg=3.,settle_timeout_s=20.,
         feedback_stop_policy='stop',passive_wrist=False,hold_start_wrist=False,release_gripper=False,
         torque_candidate_coefficients_Nm_per_A=NM_PER_A.tolist(),
         torque_candidate_profile='official standard PiPER k*b*c; not individually calibrated')
