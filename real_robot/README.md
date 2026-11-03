@@ -3,6 +3,20 @@
 2026-11-02型号修正：铭牌和关节轴向已确认是普通PiPER，当前默认模型为 `piper`，不再使用PiPER X。固件限位为J1±150°、J2 0–180°、J3 −170–0°、J4±100°、J5±70°、J6±120°；运行时仍与新鲜查询结果取交集。新采集的候选力矩按普通PiPER官方参考系数记录，尚未实机标定。旧原始数据不改写，重算与完整结果见 `../identification/总览.md`，入口 `bash ../identification/tools/reprocess_piper.sh`。
 
 
+## 入口与脚本（2026-11-03 重构）
+
+MOVE J 与 MIT 是两个入口，共用 `controller`／`monitoring`／`test_data` 等基础代码：
+
+| 命令 | Python 入口 | 任务 |
+|---|---|---|
+| `bash real_robot/test_mit.sh sim\|hardware --ff-scale 0..1` | `python -m real_robot.run_mit` | MIT 固定轨迹 |
+| `bash real_robot/test_static.sh ...` | `python -m real_robot.run_movej --trial static` | 静态 8 姿态 |
+| `bash real_robot/test_reciprocal.sh ...` | `run_movej --trial reciprocal` | 正反两档 |
+| `bash real_robot/test_payload.sh ...` | `run_movej --trial payload` | 负载循环 |
+| `bash real_robot/pilot.sh ...` | `python -m real_robot.run` | sim／pad／read／recover |
+
+`.sh` 现在只做转发（模式映射 + 默认超时），不再包含参数过滤；拒绝 `--trajectory`、`--trial` 越界的规则集中在 `run_mit.py`／`run_movej.py`，参数合法性仍由 `run.validate_config` 统一检查。
+
 ## 终端输出约定（2026-11-03 重构）
 
 运行脚本的终端只保留四类输出，详细政策与阈值看本文件，不再重复打印：

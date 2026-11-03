@@ -71,7 +71,7 @@ class Controller(Shutdown):
             from .validation_trials import ValidationTrial
             self.trial=ValidationTrial(self.start,cfg,self.lower,self.upper)
             self.test=self.trial.reference;self.nominal_test=self.test;self.reference_plan=self.trial.plan
-            self.emit('VALIDATION：'+cfg['trajectory']+'；'+('J1–J5受控，J6被动。' if cfg.get('passive_wrist') else '六轴受控。')+('正反速度档 '+str(cfg['reciprocal_speeds_rad_s'])+' rad/s。' if cfg['trajectory']=='reciprocal' else '移动上限 '+str(cfg['validation_move_velocity_rad_s'])+' rad/s。'))
+            self.emit('验证模式：'+('J1–J5 受控，J6 被动' if cfg.get('passive_wrist') else '六轴受控')+('，正反档 '+str(cfg['reciprocal_speeds_rad_s'])+' rad/s' if cfg['trajectory']=='reciprocal' else '，移动上限 '+str(cfg['validation_move_velocity_rad_s'])+' rad/s'))
             if cfg['trajectory']=='payload':self.emit('PAYLOAD：自行挂载／更换并等待；全程持续记录，不自动标重量。卸载后LB+Y直接切下一姿态，LB+RB结束。')
         else:
             self.nominal_test=Excitation(self.start,cfg['joint']-1,np.deg2rad(cfg['amplitude_deg']),cfg['frequency_hz'],cfg['duration_s'],cfg['ramp_s'])

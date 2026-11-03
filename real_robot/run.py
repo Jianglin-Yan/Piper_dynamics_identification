@@ -202,7 +202,8 @@ def main():
     elif selected=='multisine':
         ui.header('MOVE J 六轴多正弦',['控制方式：MOVE J（固件位置控制）',f'任务：{100*float(cfg.get("trajectory_scale",1)):.0f}% 幅度六轴多正弦'])
     else:
-        ui.header(f'MOVE J {cfg["trajectory"]}',['控制方式：MOVE J（固件位置控制）',f'任务：{cfg["trajectory"]} 测试'])
+        names={'static':'静态验证','reciprocal':'正反对照','payload':'负载测试','pilot':'J6 试采'}
+        ui.header(f'MOVE J {names.get(cfg["trajectory"],cfg["trajectory"])}',['控制方式：MOVE J（固件位置控制）',f'任务：{names.get(cfg["trajectory"],cfg["trajectory"])}'])
     def record(row):
         nonlocal log_failure
         if ctrl is not None and getattr(ctrl,'mit_telemetry',None) is not None:row['mit']=ctrl.mit_telemetry
