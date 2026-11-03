@@ -22,6 +22,14 @@ def load_npz(path):
 def original_modules():
     import real_robot
     root = Path(real_robot.__file__).resolve().parent.parent
+    # The 2026-11-03 repository layout moved the frozen reference solver into
+    # src/piper_dynamics/reference. Keep the legacy root layout working for
+    # older checkouts, then fall back to the packaged reference snapshot.
+    if not (root / '__init__.py').is_file():
+        reference = root / 'src' / 'piper_dynamics' / 'reference'
+        if not (reference / '__init__.py').is_file():
+            raise RuntimeError('Dynamics reference solver is missing from both legacy root and src/piper_dynamics/reference')
+        root = reference
     name = '_piper_original_identification'
     if name not in sys.modules:
         spec = importlib.util.spec_from_file_location(

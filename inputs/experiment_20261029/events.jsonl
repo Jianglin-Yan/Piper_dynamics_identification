@@ -1,0 +1,154 @@
+{"t_monotonic_s": 154262.240327144, "message": "STARTUP_HISTORY：上次回位后已确认六轴失能，未发送电子急停；无需例行重置。 记录：/home/shin/Documents/41Piper/Piper_dynamics_identification/runs/20261029_101835_046830"}
+{"t_monotonic_s": 154262.9037014, "message": "只读查询完成：S-V1.7-3250618；详细参数已保存 hardware.json"}
+{"t_monotonic_s": 154262.90388447, "message": "反馈监测：速度 2.00 rad/s 告警，2.50 rad/s 持续 0.15 s 后仅告警、继续测试；独立硬线和严重故障仍走故障停止。"}
+{"t_monotonic_s": 154262.903895849, "message": "当前碰撞检测等级：[0, 0, 0, 0, 0, 0]"}
+{"t_monotonic_s": 154262.914731358, "message": "STANDING：LB+X 将先进入合法边界小过渡点，再平滑移到 [0.0, 45.0, -60.0, 0.0, 0.0, 0.0]°；到位后才允许 LB+Y。"}
+{"t_monotonic_s": 154262.914760094, "message": "RETURN_HOME：原始启动值保留；实际回位到最近合法点 [2.408, 0.0, 0.0, 6.866, 20.076, -4.982]°；相对原始启动值差 [0.0, 2.963, -1.904, 0.0, 0.0, 0.0]°。"}
+{"t_monotonic_s": 154263.1545333, "message": "MULTISINE：原库六关节多正弦，幅度scale=0.5，速度scale=0.5，时长120秒，峰值速度 0.970 rad/s，峰值加速度 2.320 rad/s²。"}
+{"t_monotonic_s": 154263.513594286, "message": "WAITING：启动位置已保存。LB+X 准备；LB+Y 仅在 READY 后开始；LB+RB 中止。"}
+{"t_monotonic_s": 154263.560724043, "message": "FIRMWARE_PLANNER_WARNING：参考加速度高于固件返回的规划配置；仅提示，固件可能平滑/限速。不会修改固件配置。"}
+{"t_monotonic_s": 154263.560748229, "message": "HARD_LINES：速度 3.0 rad/s；测试跟踪 25.0°；电流 [4.0, 4.0, 4.0, 3.0, 3.0, 3.0] A。这些是独立工程保护线，不是厂商认证危险极限。"}
+{"t_monotonic_s": 154263.560871295, "message": "启动角度（度）：[2.408, -2.963, 1.904, 6.866, 20.076, -4.982]"}
+{"t_monotonic_s": 154263.564022066, "message": "DATA：只将 TESTING 写入 test_samples.jsonl；原始测试帧和导出数据在收尾后生成。"}
+{"t_monotonic_s": 154271.364123805, "message": "手柄指令：PREPARE"}
+{"t_monotonic_s": 154271.364442115, "message": "ARMING：保持当前目标，等待六轴使能反馈。"}
+{"t_monotonic_s": 154271.544317711, "message": "CURRENT_WARNING：J5=-1.875 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154271.574569943, "message": "BOUNDARY_ENTRY：固件 MOVE J 以 2% 速度进入合法边界；先确认实际运动，不开始试采。"}
+{"t_monotonic_s": 154272.404493686, "message": "PREPARING"}
+{"t_monotonic_s": 154278.464384358, "message": "CURRENT_WARNING：J5=-1.551 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154279.644393162, "message": "CURRENT_WARNING：J5=-1.512 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154281.954358028, "message": "CURRENT_WARNING：J5=-1.503 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154289.504478942, "message": "READY：已到测试起点。松开按键后 LB+Y 开始。"}
+{"t_monotonic_s": 154348.624211863, "message": "手柄指令：START"}
+{"t_monotonic_s": 154348.624455035, "message": "TESTING"}
+{"t_monotonic_s": 154352.494358504, "message": "CURRENT_WARNING：J5=-1.501 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154355.694353714, "message": "CURRENT_WARNING：J5=-1.570 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154359.034372757, "message": "TRACKING_WARNING：跟踪误差 10.20°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154359.32437438, "message": "CURRENT_WARNING：J5=-1.646 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154360.204349303, "message": "TRACKING_WARNING：跟踪误差 10.29°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154360.664360692, "message": "CURRENT_WARNING：J5=-1.541 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154361.184207511, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154361.564210654, "message": "TRACKING_WARNING：跟踪误差 10.08°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154362.604471796, "message": "CURRENT_WARNING：J5=-1.508 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154362.784394363, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154363.054216414, "message": "TRACKING_WARNING：跟踪误差 10.03°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154364.064205992, "message": "TRACKING_WARNING：跟踪误差 11.47°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154364.764313927, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154365.264322382, "message": "CURRENT_WARNING：J5=-1.505 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154369.034390347, "message": "TRACKING_WARNING：跟踪误差 10.19°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154369.324244088, "message": "CURRENT_WARNING：J5=-1.504 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154370.194207511, "message": "TRACKING_WARNING：跟踪误差 10.07°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154370.664240775, "message": "CURRENT_WARNING：J5=-1.526 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154371.234276538, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154371.564209038, "message": "TRACKING_WARNING：跟踪误差 10.04°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154372.614236434, "message": "CURRENT_WARNING：J5=-1.714 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154372.774419315, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154373.05420746, "message": "TRACKING_WARNING：跟踪误差 10.05°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154374.06420749, "message": "TRACKING_WARNING：跟踪误差 11.49°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154374.464351741, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154375.274279257, "message": "CURRENT_WARNING：J5=-1.518 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154379.034187046, "message": "TRACKING_WARNING：跟踪误差 10.20°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154379.324236919, "message": "CURRENT_WARNING：J5=-1.533 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154380.19421068, "message": "TRACKING_WARNING：跟踪误差 10.06°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154380.66424706, "message": "CURRENT_WARNING：J5=-1.534 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154381.074388522, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154381.564393808, "message": "TRACKING_WARNING：跟踪误差 10.04°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154382.604397955, "message": "CURRENT_WARNING：J5=-1.510 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154383.05430577, "message": "TRACKING_WARNING：跟踪误差 10.04°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154384.054386424, "message": "TRACKING_WARNING：跟踪误差 11.47°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154384.46443522, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154385.714353033, "message": "CURRENT_WARNING：J5=-1.534 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154389.034335874, "message": "TRACKING_WARNING：跟踪误差 10.20°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154389.324399357, "message": "CURRENT_WARNING：J5=-1.513 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154390.194264348, "message": "TRACKING_WARNING：跟踪误差 10.05°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154390.664238212, "message": "CURRENT_WARNING：J5=-1.515 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154391.354367773, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154391.564206999, "message": "TRACKING_WARNING：跟踪误差 10.02°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154392.61423568, "message": "CURRENT_WARNING：J5=-1.660 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154392.954309261, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154393.054391179, "message": "TRACKING_WARNING：跟踪误差 10.04°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154394.064207094, "message": "TRACKING_WARNING：跟踪误差 11.44°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154394.454204082, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154395.27423411, "message": "CURRENT_WARNING：J5=-1.507 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154399.034303938, "message": "TRACKING_WARNING：跟踪误差 10.21°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154399.324246337, "message": "CURRENT_WARNING：J5=-1.535 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154400.194340778, "message": "TRACKING_WARNING：跟踪误差 10.04°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154400.664390837, "message": "CURRENT_WARNING：J5=-1.505 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154401.064332966, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154401.564403269, "message": "TRACKING_WARNING：跟踪误差 10.02°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154402.614321318, "message": "CURRENT_WARNING：J5=-1.728 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154402.954253201, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154403.054272127, "message": "TRACKING_WARNING：跟踪误差 10.03°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154404.054378369, "message": "TRACKING_WARNING：跟踪误差 11.41°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154404.744262574, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154405.714371853, "message": "CURRENT_WARNING：J5=-1.536 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154409.024400863, "message": "TRACKING_WARNING：跟踪误差 10.01°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154409.324298868, "message": "CURRENT_WARNING：J5=-1.523 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154410.194373552, "message": "TRACKING_WARNING：跟踪误差 10.03°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154410.664421886, "message": "CURRENT_WARNING：J5=-1.522 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154411.49432852, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154411.564233883, "message": "TRACKING_WARNING：跟踪误差 10.01°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154412.614416362, "message": "CURRENT_WARNING：J5=-1.754 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154413.054364159, "message": "TRACKING_WARNING：跟踪误差 10.02°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154414.054400426, "message": "TRACKING_WARNING：跟踪误差 11.45°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154414.764311252, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154415.714411495, "message": "CURRENT_WARNING：J5=-1.508 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154419.034265413, "message": "TRACKING_WARNING：跟踪误差 10.22°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154419.324383724, "message": "CURRENT_WARNING：J5=-1.517 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154420.194212487, "message": "TRACKING_WARNING：跟踪误差 10.03°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154420.664411183, "message": "CURRENT_WARNING：J5=-1.526 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154421.434370673, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154421.564340698, "message": "TRACKING_WARNING：跟踪误差 10.00°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154422.614449148, "message": "CURRENT_WARNING：J5=-1.752 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154422.894588856, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154423.054397903, "message": "TRACKING_WARNING：跟踪误差 10.01°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154424.064538582, "message": "TRACKING_WARNING：跟踪误差 11.41°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154424.774396144, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154425.714442583, "message": "CURRENT_WARNING：J5=-1.502 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154428.064350228, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154429.02438679, "message": "TRACKING_WARNING：跟踪误差 10.02°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154429.324406344, "message": "CURRENT_WARNING：J5=-1.599 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154430.194375112, "message": "TRACKING_WARNING：跟踪误差 10.02°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154431.184417139, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154431.564403677, "message": "TRACKING_WARNING：跟踪误差 10.01°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154432.624415297, "message": "CURRENT_WARNING：J5=-1.677 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154432.774389223, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154433.064487868, "message": "TRACKING_WARNING：跟踪误差 10.08°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154434.064374797, "message": "TRACKING_WARNING：跟踪误差 11.45°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154434.484352658, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154435.724566795, "message": "CURRENT_WARNING：J5=-1.542 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154439.034301699, "message": "TRACKING_WARNING：跟踪误差 10.22°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154439.334309739, "message": "CURRENT_WARNING：J5=-1.523 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154440.194401545, "message": "TRACKING_WARNING：跟踪误差 10.00°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154441.574241088, "message": "TRACKING_WARNING：跟踪误差 10.41°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154441.624388539, "message": "CURRENT_WARNING：J5=-1.527 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154442.734353404, "message": "CURRENT_WARNING：J5=-1.553 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154443.044257667, "message": "TRACKING_WARNING：跟踪误差 10.02°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154444.044381033, "message": "TRACKING_WARNING：跟踪误差 11.47°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154444.484332666, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154444.874331274, "message": "CURRENT_WARNING：J5=-1.512 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154446.044386903, "message": "CURRENT_WARNING：J5=-1.521 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154449.024383046, "message": "TRACKING_WARNING：跟踪误差 10.02°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154449.314335548, "message": "CURRENT_WARNING：J5=-1.547 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154450.20438681, "message": "TRACKING_WARNING：跟踪误差 10.37°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154451.174353855, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154451.574498555, "message": "TRACKING_WARNING：跟踪误差 10.41°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154451.624385893, "message": "CURRENT_WARNING：J5=-1.561 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154452.704414118, "message": "CURRENT_WARNING：J5=-1.505 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154452.784302153, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154453.044386569, "message": "TRACKING_WARNING：跟踪误差 10.00°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154454.05438526, "message": "TRACKING_WARNING：跟踪误差 11.45°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154454.774392177, "message": "REFERENCE_ENVELOPE_WARNING：现在的运动比仿真参考更夸张；记录告警，不因参考超出而停止。"}
+{"t_monotonic_s": 154454.874386626, "message": "CURRENT_WARNING：J5=-1.526 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154456.044552518, "message": "CURRENT_WARNING：J5=-1.512 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154459.034304574, "message": "TRACKING_WARNING：跟踪误差 10.22°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154459.314332906, "message": "CURRENT_WARNING：J5=-1.544 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154460.204368361, "message": "TRACKING_WARNING：跟踪误差 10.14°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154461.574488591, "message": "CURRENT_WARNING：J5=-1.532 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154461.594384197, "message": "TRACKING_WARNING：跟踪误差 10.16°，记录告警；独立硬线 25°。"}
+{"t_monotonic_s": 154462.754410936, "message": "CURRENT_WARNING：J5=-1.558 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154465.624412332, "message": "CURRENT_WARNING：J5=-1.556 A；记录短时越阈值，不卸力。"}
+{"t_monotonic_s": 154468.62454319, "message": "RETURNING"}
+{"t_monotonic_s": 154485.734406463, "message": "DISABLING：回位结束，实际位置相对原始启动值差 [-0.032, 2.963, -1.904, -0.03, -0.048, 0.031]°；失能即撤去驱动力矩，等待六轴新反馈确认。"}
+{"t_monotonic_s": 154486.024267518, "message": "DONE：六轴已确认失能，驱动力矩已撤去，关闭采集并退出。"}
+{"t_monotonic_s": 154488.067742175, "message": "DATA_SAVED：11999 条测试快照；test_signals.csv / test_signals.npz，详见 test_quality.json。"}

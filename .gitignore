@@ -8,3 +8,6 @@ results/*.npy
 
 # Python runtime caches are not source changes
 __pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
