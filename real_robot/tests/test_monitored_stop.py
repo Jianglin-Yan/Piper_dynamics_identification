@@ -51,6 +51,11 @@ class TestMonitors(unittest.TestCase):
         v[4]=.4;monitor.update(.05,v);v[4]=1.3
         self.assertNotEqual(monitor.update(.06,v)['level'],'emergency')
 
+    def test_current_warning_fires_before_the_stop_line(self):
+        m=CurrentMonitor(config());v=np.zeros(6);v[4]=1.6
+        self.assertEqual(m.update(0,v)['level'],'warning')
+        for n in range(1,30):self.assertNotEqual(m.update(n*.01,v)['level'],'stop')
+
     def test_current_transient_sustained_and_emergency(self):
         m=CurrentMonitor(config());v=np.zeros(6);v[4]=2.6
         self.assertEqual(m.update(0,v)['level'],'warning')

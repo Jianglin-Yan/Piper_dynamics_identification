@@ -68,6 +68,7 @@ class CurrentMonitor:
         self.duration=cfg.get('feedback_current_stop_duration_s',.20)
         self.multiplier=cfg.get('feedback_current_emergency_multiplier',2.)
         self.emergency_duration=cfg.get('feedback_current_emergency_duration_s',.05)
+        self.warning_multiplier=cfg.get('feedback_current_warning_multiplier',.6)
         self.since=[None]*6;self.since_emergency=[None]*6;self.last_warning=-np.inf
 
     def update(self,now,current):
@@ -85,6 +86,6 @@ class CurrentMonitor:
         emergency=[axis for axis,since in enumerate(self.since_emergency) if since is not None and now-since>=self.emergency_duration-1e-9]
         if emergency:j=max(emergency,key=lambda axis:ratio[axis]);level='emergency'
         elif sustained:j=max(sustained,key=lambda axis:ratio[axis]);level='stop'
-        elif np.max(ratio)>1 and now-self.last_warning>=1:
+        elif np.max(ratio)>self.warning_multiplier and now-self.last_warning>=1:
             self.last_warning=now;level='warning'
         return {'level':level,'joint':j+1,'current':float(current[j])}

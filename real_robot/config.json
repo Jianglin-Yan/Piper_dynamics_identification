@@ -82,5 +82,6 @@
   ],
   "torque_candidate_profile": "official_pyAgxArm_standard_piper_reference_not_calibrated",
   "feedback_current_emergency_duration_s": 0.05,
-  "tracking_soft_duration_s": 0.2
+  "tracking_soft_duration_s": 0.2,
+  "feedback_current_warning_multiplier": 0.6
 }
