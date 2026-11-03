@@ -1,6 +1,6 @@
 """Backend-independent state machine. ABORT = controlled braking + return, not safety-rated E-stop."""
 import numpy as np
-from .trajectory import Excitation, ScaledTrajectory, Segment, transit, brake, check_path
+from .trajectory import Excitation, ScaledTrajectory, Segment, transit, brake, check_path, smooth
 from .current_pose import current_pose_bounds, ARM_POSE_TOLERANCE_DEG, HOLD_TOLERANCE_DEG
 from .standing import standing_plan
 from .monitoring import SpeedMonitor, CurrentMonitor
@@ -10,6 +10,15 @@ from .shutdown import Shutdown
 class Controller(Shutdown):
     def __init__(self, backend, cfg, snapshot, now, emit=print):
         self.b=backend;self.c=cfg;self.emit=emit;self.home=snapshot['q'].copy();self.now=now
+        self.mit=cfg.get('trajectory')=='mit'
+        if self.mit:
+            self.mit_sample=snapshot;self.mit_time=now
+            self.mit_kp=np.array(cfg['mit_prepare_kp']);self.mit_kd=np.array(cfg['mit_prepare_kd'])
+            self.mit_ff_ratio=0.;self.mit_telemetry=None;self.returning_mit=False;self.ff_print_t=-np.inf
+            self.budget_cycles=0;self.budget_limit=max(1,int(round(cfg['mit_budget_exceed_duration_s']*cfg['command_hz'])))
+            from .gravity import GravityModel
+            self.gravity=GravityModel(cfg) if cfg['mit_ff_scale']>0 else None
+        elif not hasattr(self,'gravity'):self.gravity=None
         self.controlled_axes=np.array([True]*5+[not cfg.get('passive_wrist',False)])
         self.passive_q=self.home[5]
         self.trial=None
@@ -65,8 +74,16 @@ class Controller(Shutdown):
                       f'峰值加速度 {max(self.reference_plan["max_acceleration_per_joint_rad_s2"]):.3f} rad/s²。')
             if self.reference_plan['hard_violations']:raise TrajectoryRejected(self.reference_plan)
             if self.reference_plan['warnings']:self.emit('REFERENCE_WARNING：'+str(self.reference_plan['warnings'])+'；规划参考告警，不作急停。')
-        elif cfg.get('trajectory') in ('gravity','mit'):
+        elif cfg.get('trajectory')=='gravity':
             self.test=Segment(self.start,self.start,cfg['duration_s']);self.nominal_test=self.test
+        elif cfg.get('trajectory')=='mit':
+            from .validation_trials import Waypoints
+            offsets=np.deg2rad(cfg['mit_test_offsets_deg'])
+            poses=np.array([self.start]+[self.start+o for o in offsets]+[self.start])
+            self.test=Waypoints(poses,self.test_vmax,self.test_amax,minimum=cfg['mit_test_minimum_segment_s'])
+            self.nominal_test=self.test;self.check(self.test,self.test_vmax,self.test_amax)
+            from .gravity import WIRE_TO_JOINT
+            self.reference_plan={'trajectory_type':'mit','all_stages':'MIT only, including prepare/return','poses_deg':np.rad2deg(poses).tolist(),'offset_deg':[list(o) for o in cfg['mit_test_offsets_deg']],'minimum_segment_s':cfg['mit_test_minimum_segment_s'],'duration_s':self.test.duration,'test_max_velocity_rad_s':self.test_vmax,'test_max_acceleration_rad_s2':self.test_amax,'ff_scale':cfg['mit_ff_scale'],'ff_ramp_s':cfg['mit_ff_ramp_s'],'prepare_kp_protocol':cfg['mit_prepare_kp'],'prepare_kd_protocol':cfg['mit_prepare_kd'],'kp_protocol':cfg['mit_kp'],'kd_protocol':cfg['mit_kd'],'return_kp_protocol':cfg['mit_return_kp'],'return_kd_protocol':cfg['mit_return_kd'],'gravity_model':None if self.gravity is None else self.gravity.provenance,'simulation_gain_assumption':'PD protocol torque scaled to joint by b*c; not hardware gain calibration','zero_ff_note':'requested FF exactly 0; old 8-bit encoding has finite zero residue'}
         elif cfg.get('trajectory') in ('static','reciprocal','payload'):
             from .validation_trials import ValidationTrial
             self.trial=ValidationTrial(self.start,cfg,self.lower,self.upper)
@@ -82,6 +99,13 @@ class Controller(Shutdown):
         self.outbound=transit(outbound_start,self.start,self.vmax,self.amax)
         self.inbound=transit(self.start,self.return_home,self.vmax,self.amax)
         for p in (self.outbound,self.inbound):self.check(p)
+        if self.mit:
+            self.outbound=transit(self.home,self.start,self.vmax,self.amax);self.check(self.outbound)
+            if self.gravity is not None:
+                ts=np.linspace(0.,self.test.duration,101);gs=np.array([self.gravity(self.test.at(x)[0]) for x in ts])
+                peak=float(cfg['mit_ff_scale'])*np.abs(gs).max(0);self.expected_peak_ff_nm=peak
+                self.reference_plan['expected_peak_ff_Nm']=peak.tolist()
+                self.emit('前馈规模：最大 |FF| '+str(np.round(peak,2).tolist())+' Nm，固件上限 '+str(np.round(8*WIRE_TO_JOINT,2).tolist())+' Nm')
         self.state='WAITING';self.active=False;self.armed=False;self.aborted=False;self.last_target=self.home.copy()
         self.path=None;self.path_t=now;self.next_state=None;self.stable_since=None;self.settle_started=now
         self.speed_monitor=SpeedMonitor(cfg);self.current_monitor=CurrentMonitor(cfg);self.stop_reason=None;self.hold_goal=None
@@ -97,7 +121,8 @@ class Controller(Shutdown):
         return q
     def motors_ready(self,s):
         enabled=np.asarray(s['enabled'],bool)
-        return bool(np.all(enabled[self.controlled_axes]) and not np.any(enabled[~self.controlled_axes]))
+        ready=bool(np.all(enabled[self.controlled_axes]) and not np.any(enabled[~self.controlled_axes]))
+        return ready and (not self.mit or s.get('status',{}).get('motion_mode',4)==4)
     def begin_testing(self,now):
         self.set_path('TESTING',self.test,now)
         if self.trial:self.trial.begin(self,now)
@@ -123,6 +148,7 @@ class Controller(Shutdown):
     def set_path(self,state,path,now,note=''):
         self.path=path;self.path_t=now;self.state=state;self.stable_since=None;self.event(state+(f'  {note}' if note else ''))
     def reference_velocity(self,now):
+        if self.mit and getattr(self,'stop_velocity',None) is not None:return self.stop_velocity.copy()
         if self.path is not None and self.state in ('PREPARING','TESTING','BRAKING','RETURNING'):
             v=self.path.at(max(0.,now-self.path_t-1/self.c['command_hz']))[1].copy();v[~self.controlled_axes]=0.
             return v
@@ -153,6 +179,9 @@ class Controller(Shutdown):
             except Exception as e:self.event('FAULT_STOP_FAILED：'+str(e))
         self.active=False
     def request_stop(self,s,now,reason):
+        if self.mit:return self._mit_request_stop(s,now,reason)
+        return self._request_stop_base(s,now,reason)
+    def _request_stop_base(self,s,now,reason):
         """Controlled stop: brake the accepted reference, return to park, then disable."""
         self.now=now
         if self.finished or self.shutdown_phase:return
@@ -186,7 +215,12 @@ class Controller(Shutdown):
         if np.max(np.abs(s['qd'])[self.controlled_axes])>self.c.get('arming_velocity_limit_rad_s',.15):raise ValueError('Robot is moving before arming')
         self.active=True;self.b.arm(self.home if self.current_pose_only else s['q']);self.state='ARMING';self.path_t=now;self.next_state=next_state
         self.event('ARMING：保持当前目标，等待J1–J5使能、J6失能反馈。' if self.c.get('passive_wrist') else 'ARMING：保持当前目标，等待六轴使能反馈。')
+        if self.mit and self.active and self.state=='ARMING':self.command(self.home)
     def begin_ready_or_test(self,next_state,now):
+        if self.mit:
+            if next_state=='PREPARE':self.set_path('PREPARING',self.outbound,now,'进入准备位置')
+            else:self.begin_testing(now)
+            return
         if next_state=='PREPARE' and self.standing_start and np.max(np.abs(self.boundary_goal-self.home))>1e-7:
             self.b.begin_native_move(self.boundary_goal)
             self.last_target=self.boundary_goal.copy();self.path_t=now;self.state='BOUNDARY_ENTRY';self.entry_stable_since=None
@@ -194,6 +228,9 @@ class Controller(Shutdown):
         elif next_state=='PREPARE':self.set_path('PREPARING',self.outbound,now,'进入准备位置')
         else:self.begin_testing(now)
     def finish_settle(self,now,s):
+        if self.mit:return self._mit_finish_settle(now,s)
+        return self._finish_settle_base(now,s)
+    def _finish_settle_base(self,now,s):
         target=self.start if self.state=='SETTLING_READY' else self.return_home
         self.command(target)
         stable=self.position_stable(s,now,target,self.c['settle_error_deg'])
@@ -210,6 +247,9 @@ class Controller(Shutdown):
                 self.begin_disarm(s,now)
             else:raise ValueError('Timed out settling at target')
     def command(self,q):
+        if self.mit:return self._mit_command(q)
+        return self._command_base(q)
+    def _command_base(self,q):
         q=np.asarray(q).copy()
         if self.c.get('hold_start_wrist') and abs(q[5]-self.home[5])>1e-9:raise ValueError('Payload cannot change startup J6 target')
         if not self.controlled_axes[5]:q[5]=self.passive_q
@@ -218,6 +258,96 @@ class Controller(Shutdown):
         if np.any(q<self.lower-1e-9) or np.any(q>self.upper+1e-9):raise ValueError('command outside bounds')
         self.b.command(q);self.last_target=np.asarray(q).copy()
     def tick(self,now,s,action=None):
+        if self.mit:
+            self.mit_sample=s;self.mit_time=now
+            self._mit_tick_pre(now,s)
+        self._tick_base(now,s,action)
+        if self.mit and not self.shutdown_phase:self._mit_tick_post(now,s)
+    # ---- MIT mode: same stage machine, different command and ramp handling ----
+    def _mit_command(self,q):
+        from .gravity import WIRE_TO_JOINT, encode_mit
+        q=np.asarray(q,float);s=self.mit_sample;v=self.reference_velocity(self.mit_time)
+        if q.shape!=(6,) or np.any(q<self.lower-1e-9) or np.any(q>self.upper+1e-9):raise ValueError('MIT reference outside command bounds')
+        g=np.zeros(6) if self.gravity is None or self.mit_ff_ratio==0 else self.gravity(s['q'])
+        ff=self.mit_ff_ratio*g
+        vlim=float(self.c['mit_estimate_velocity_limit_rad_s']);qd=np.clip(s['qd'],-vlim,vlim)
+        pd=(self.mit_kp*(q-s['q'])+self.mit_kd*(v-qd))*WIRE_TO_JOINT
+        est=pd+ff;caps=np.asarray(self.c['mit_joint_torque_estimate_caps_Nm'],float);over=np.abs(est)>caps
+        if np.any(over):
+            self.budget_cycles+=1;j=int(np.argmax(np.abs(est)/caps))
+            if self.budget_cycles==1:
+                self.event(f'BUDGET_WARNING：J{j+1} 力矩估计 {est[j]:+.2f} Nm 超过 {caps[j]:.1f} Nm；连续 {self.c["mit_budget_exceed_duration_s"]:.2f} s 才故障。')
+            if self.budget_cycles>=self.budget_limit:
+                raise ValueError(f'MIT PD+FF estimate over budget: J{j+1} {est[j]:+.2f} Nm vs {caps[j]:.1f} Nm for {self.c["mit_budget_exceed_duration_s"]:.2f} s')
+        else:self.budget_cycles=0
+        self.b.command_pd(q,v,self.mit_kp,self.mit_kd,ff);self.last_target=q.copy()
+        self.mit_telemetry={'phase':self.state,'ff_ratio':self.mit_ff_ratio,'q_ref':q.copy(),'v_ref':v.copy(),'kp_protocol':self.mit_kp.copy(),'kd_protocol':self.mit_kd.copy(),'g_Nm':g,'ff_requested_Nm':ff,'wire_t_ref':ff/WIRE_TO_JOINT,'quantized_ff_Nm':np.array([encode_mit(j+1,float(q[j]),float(ff[j]),float(v[j]),float(self.mit_kp[j]),float(self.mit_kd[j]))[2] for j in range(6)]),'pd_estimate_Nm':pd,'total_estimate_Nm':est}
+    def _mit_tick_pre(self,now,s):
+        if self.state=='FF_RAMP_IN':
+            f=float(smooth((now-self.ff_phase_t)/self.c['mit_ff_ramp_s'])[0]);self.mit_ff_ratio=self.c['mit_ff_scale']*f
+            self.mit_kp=(1-f)*np.array(self.c['mit_prepare_kp'])+f*np.array(self.c['mit_kp'])
+            self.mit_kd=(1-f)*np.array(self.c['mit_prepare_kd'])+f*np.array(self.c['mit_kd'])
+        if self.state=='TESTING' and now-self.path_t>=self.test.duration:self.request_stop(s,now,'MIT trial completed')
+        if self.state=='FF_RAMP_OUT':
+            f=float(smooth((now-self.ff_phase_t)/self.c['mit_ff_ramp_s'])[0]);self.mit_ff_ratio=(1-f)*self.ff_exit_ratio
+            self.mit_kp=(1-f)*self.exit_kp+f*np.array(self.c['mit_return_kp']);self.mit_kd=(1-f)*self.exit_kd+f*np.array(self.c['mit_return_kd'])
+    def _mit_tick_post(self,now,s):
+        try:
+            if self.state=='FF_RAMP_IN':
+                self.command(self.start)
+                if now-self.ff_phase_t>=self.c['mit_ff_ramp_s']:
+                    self.mit_ff_ratio=self.c['mit_ff_scale'];self.state='READY'
+                    if float(self.c['mit_ff_scale'])>0:self.event(f'渐变完成：前馈已达{100*self.mit_ff_ratio:.0f}%')
+                    self.event('READY  到达准备位置')
+            elif self.state=='FF_RAMP_OUT':
+                self.command(self.last_target)
+                if now-self.ff_phase_t>=self.c['mit_ff_ramp_s']:
+                    if float(self.c['mit_ff_scale'])>0:self.event('渐变完成：前馈已归零')
+                    self.mit_ff_ratio=0.;self.returning_mit=True
+                    self._request_stop_base(s,now,self.stop_reason)
+        except Exception as e:self.fault(e)
+    def _mit_finish_settle(self,now,s):
+        if self.state=='SETTLING_HOME':
+            if self.position_stable(s,now,self.return_home,self.c['mit_park_tolerance_deg']):self.begin_disarm(s,now)
+            elif now-self.settle_started>self.c['settle_timeout_s']:raise ValueError('Timed out settling at target')
+            return
+        if self.state!='SETTLING_READY':return self._finish_settle_base(now,s)
+        self.command(self.start)
+        if self.position_stable(s,now,self.start,self.c['mit_prepare_tolerance_deg']):
+            self.state='FF_RAMP_IN';self.ff_phase_t=now;self.ff_print_t=now
+            scale=float(self.c['mit_ff_scale'])
+            if scale<=0:self.event('渐变：纯PD（0%），机械臂静止3秒')
+            else:self.event(f'渐变：前馈 0→{100*scale:.0f}%，用时{self.c["mit_ff_ramp_s"]:g}秒，期间机械臂静止')
+        elif now-self.settle_started>self.c['settle_timeout_s']:raise ValueError('MIT preparation failed to settle; no gain auto-escalation')
+    def _mit_request_stop(self,s,now,reason):
+        self.now=now
+        if self.finished or self.shutdown_phase or self.state in ('BRAKING','RETURNING','SETTLING_HOME'):return
+        if not self.active:return self._request_stop_base(s,now,reason)
+        if reason=='MIT trial completed':
+            self.stop_reason=reason;self.state='FF_RAMP_OUT';self.ff_phase_t=now;self.ff_exit_ratio=self.mit_ff_ratio;self.exit_kp=self.mit_kp.copy();self.exit_kd=self.mit_kd.copy();self.ff_print_t=now
+            if float(self.c['mit_ff_scale'])<=0:self.event('渐变：纯PD（0%），机械臂静止3秒')
+            else:self.event(f'渐变：前馈 {100*self.mit_ff_ratio:.0f}→0%，用时{self.c["mit_ff_ramp_s"]:g}秒，期间机械臂静止')
+            return
+        if self.returning_mit:return
+        if self.state=='ARMING' and not self.motors_ready(s):
+            self.mit_ff_ratio=0.;self.begin_disarm(s,now);return
+        try:
+            from .mit_trial import bumpless_reference
+            self.b.check(s,True)
+            if not self.motors_ready(s):raise ValueError('MIT not active; no forced return')
+            old=self.mit_telemetry;kp=np.array(self.c['mit_return_kp']);kd=np.array(self.c['mit_return_kd'])
+            if old is None:q=s['q'].copy();v=np.zeros(6)
+            else:q,v=bumpless_reference(s['q'],s['qd'],old['q_ref'],old['v_ref'],old['kp_protocol'],old['kd_protocol'],old['wire_t_ref'],kp,kd)
+            bounded=np.clip(q,self.lower,self.upper)
+            if np.max(abs(q-bounded))>1e-8:self.event('RETURN_REFERENCE_WARNING：无扰参考触及规划边界，已限制；切换不保证完全连续。')
+            self.mit_ff_ratio=0.;self.mit_kp=kp;self.mit_kd=kd;self.stop_velocity=v
+            self.command(bounded);self.returning_mit=True
+            self.event('MIT_ABORT_RETURN：前馈请求立即清零；统一PD增益接管，以无扰参考制动，MIT回位失能。')
+            self._request_stop_base(s,now,reason)
+        except Exception as e:self.fault('MIT controlled return unavailable: '+str(e))
+        finally:
+            if hasattr(self,'stop_velocity'):del self.stop_velocity
+    def _tick_base(self,now,s,action=None):
         self.now=now
         if not self.controlled_axes[5]:self.passive_q=float(s['q'][5])
         if self.finished:return
