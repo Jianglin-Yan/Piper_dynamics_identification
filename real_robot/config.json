@@ -80,5 +80,6 @@
     0.7787701152,
     0.7787701152
   ],
-  "torque_candidate_profile": "official_pyAgxArm_standard_piper_reference_not_calibrated"
+  "torque_candidate_profile": "official_pyAgxArm_standard_piper_reference_not_calibrated",
+  "feedback_current_emergency_duration_s": 0.05
 }

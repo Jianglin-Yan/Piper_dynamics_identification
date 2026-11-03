@@ -93,13 +93,13 @@ class TestHistory(unittest.TestCase):
     def test_excluded_current_session_does_not_mask_previous(self):
         old=self.session('FAULT',[('0x150','0100000000000000')]);new=self.session('RECOVERED',[('0x150','0200000000000000')])
         self.assertEqual(previous_controller_session([self.root],'can0',exclude=new)['run'],str(old))
-    def test_guard_runs_before_can_or_pad_is_opened(self):
-        self.session('FAULT',[('0x150','0100000000000000')],channel='test-can0')
-        c=config();c['channel']='test-can0';config_path=self.root/'custom.json';config_path.write_text(json.dumps(c))
-        from real_robot.run import main
-        with patch('sys.argv',['pilot','--hardware','--standing','--config',str(config_path),'--output',str(self.root)]),patch('real_robot.run.BASE',self.root/'real_robot'),patch('real_robot.hardware.Hardware') as hardware,patch('real_robot.run.Gamepad') as pad,contextlib.redirect_stdout(io.StringIO()):
-            with self.assertRaises(SystemExit) as e:main()
-        self.assertEqual(e.exception.code,2);hardware.assert_not_called();pad.assert_not_called()
+    def test_recovery_warning_is_reported_not_fatal(self):
+        from real_robot.session_history import recovery_notice
+        self.session('FAULT',[('0x150','0100000000000000')])
+        notice=recovery_notice(self.history())
+        self.assertIn('未正常交接',notice);self.assertIn(self.history()['run'],notice)
+        self.session('RECOVERED',[('0x150','0200000000000000')])
+        self.assertIsNone(recovery_notice(self.history()))
 
 
 if __name__=='__main__':unittest.main()

@@ -58,7 +58,10 @@ class TestMonitors(unittest.TestCase):
         self.assertEqual(m.update(.2,v)['level'],'stop')
         v[4]=0;m.update(.21,v);v[4]=1.6
         self.assertNotEqual(m.update(.22,v)['level'],'stop')
-        v[4]=3.1;self.assertEqual(m.update(.23,v)['level'],'emergency')
+        v[4]=3.1
+        level=None
+        for n in range(6):level=m.update(.23+n*.01,v)['level']
+        self.assertEqual(level,'emergency')
 
     def test_invalid_threshold_order_refused(self):
         c=config();c['feedback_speed_stop_rad_s']=.2
@@ -95,6 +98,12 @@ class TestControlledStop(unittest.TestCase):
         c,b,k,events=self.make();k.request_stop(b.snapshot(),.1,'test stop')
         self.assertEqual(k.state,'BRAKING');b.bad=True;tick(k,.11,b.snapshot())
         self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
+
+    def test_sustained_emergency_current_uses_controlled_stop(self):
+        c,b,k,events=self.make()
+        for n in range(8):
+            t=1+n*.01;b.q=k.last_target.copy();s=b.snapshot();s['qd'][:]=0;s['current_A']=np.zeros(6);s['current_A'][4]=3.1;tick(k,t,s)
+        self.assertEqual(k.state,'BRAKING');self.assertEqual(b.stops,[])
 
     def test_current_limit_uses_return_when_feedback_healthy(self):
         c,b,k,events=self.make()

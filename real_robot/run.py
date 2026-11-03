@@ -1,5 +1,5 @@
 """python -m real_robot.run --sim / --hardware / --read-only / --calibrate-pad"""
-import argparse, datetime, json, signal, time
+import argparse, datetime, json, signal, sys, time
 from pathlib import Path
 import numpy as np
 from .controller import Controller
@@ -236,12 +236,20 @@ def main():
                 lease=open('/tmp/piper-pilot-'+cfg['channel']+'.lock','w')
                 fcntl.flock(lease,fcntl.LOCK_EX|fcntl.LOCK_NB)
             if a.hardware:
-                from .session_history import previous_controller_session, require_recovered
+                from .session_history import previous_controller_session, recovery_notice
                 history=previous_controller_session([BASE.parent/'runs',a.output],cfg['channel'],exclude=path)
                 result['previous_controller_session']=history
                 if history:
                     emit('STARTUP_HISTORY：'+history['reason']+' 记录：'+history['run'])
-                if not a.preflight_only:require_recovered(history)
+                notice=None if a.preflight_only else recovery_notice(history)
+                if notice:
+                    ui.warn(notice)
+                    if sys.stdin.isatty():
+                        ui.event('请人工确认机械臂已支撑、无电子急停。按 Enter 继续，Ctrl+C 退出。')
+                        try:input()
+                        except EOFError:raise RuntimeError('未确认恢复条件，退出')
+                        result['operator_confirmed_after_recovery_warning']=True
+                    else:ui.warn('非交互运行：不等待确认，请自行核实')
             b=Hardware(cfg,path);info=b.discover();(path/'hardware.json').write_text(json.dumps(info,ensure_ascii=False,indent=2));emit('只读查询完成：'+next((x for x in info['firmware'].split('\x00') if x.startswith('S-V')),'未知固件')+'；详细参数已保存 hardware.json')
             s=b.snapshot();b.check(s,False)
             if a.recover:

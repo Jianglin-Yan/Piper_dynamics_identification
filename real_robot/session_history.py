@@ -47,6 +47,12 @@ def previous_controller_session(roots,channel,exclude=None):
     return None
 
 
+def recovery_notice(info):
+    """Human-readable warning; callers decide whether to prompt, never auto-refuse."""
+    if not info or not info.get('requires_recovery'):return None
+    return '上次会话未正常交接：'+info['reason']+'（记录：'+info['run']+'）'
+
+
 def require_recovered(info):
     if info and info['requires_recovery']:
         raise RuntimeError('RECOVERY_REQUIRED：'+info['reason']+' 记录：'+info['run']+

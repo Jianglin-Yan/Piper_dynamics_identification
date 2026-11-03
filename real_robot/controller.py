@@ -264,7 +264,9 @@ class Controller(Shutdown):
                     self.event(f'警告：J{speed["joint"]} 速度 {speed["speed"]:+.3f} rad/s')
                 if 'current_A' in s:
                     current=self.current_monitor.update(now,np.where(self.controlled_axes,s['current_A'],0.))
-                    if current['level']=='emergency':raise ValueError(f'emergency current: J{current["joint"]}, feedback={current["current"]:+.3f} A')
+                    if current['level']=='emergency':
+                        self.request_stop(s,now,f'over-current: J{current["joint"]}, {current["current"]:+.3f} A for {self.current_monitor.emergency_duration:.2f} s')
+                        if self.shutdown_phase:return
                     if current['level']=='stop' and self.c.get('feedback_stop_policy')=='warn':
                         if now-self.last_envelope_warning>=1.:
                             self.last_envelope_warning=now;self.event(f'警告：持续电流 {current["current"]:+.3f} A')

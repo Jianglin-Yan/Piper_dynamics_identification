@@ -145,10 +145,7 @@ class Hardware:
         if s['status'].get('arm_status',255)!=0 or s['status'].get('error_code',65535)!=0 or any(s['faults']):raise RuntimeError(f'Arm/driver fault: arm_status={s["status"].get("arm_status")}, error_code={s["status"].get("error_code")}, driver_bits={s["faults"]}; if current-pose target was rejected, no automatic retries')
         if s['status'].get('control_mode') not in (0,1):raise RuntimeError('Arm is under another control mode')
         if active and s['status'].get('control_mode')!=1 and now-self.armed_at>.3:raise RuntimeError('Lost CAN position control')
-        # Lower profile thresholds are timed by Controller and stop with braking/return/disable.
-        # This independent upper bound remains an immediate fault, including during a hold.
-        if np.any(np.abs(s['current_A'])>np.asarray(self.c['max_current_feedback_A'])*self.c.get('feedback_current_emergency_multiplier',2.)):
-            raise RuntimeError('Emergency feedback current threshold exceeded')
+        # Current levels are timed by Controller/monitoring; only firmware fault bits are immediate.
         if max(s['temp_C'])>self.c['max_temperature_C']:raise RuntimeError('Over-temperature threshold')
         if min(s['voltage_V'])<20 or max(s['voltage_V'])>26:raise RuntimeError('Supply voltage outside pilot range')
         self.heartbeat=now

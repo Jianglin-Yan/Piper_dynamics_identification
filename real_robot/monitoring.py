@@ -8,7 +8,7 @@ SPEED_DEFAULTS={
     'feedback_speed_emergency_rad_s': 1.20,
     'feedback_speed_emergency_duration_s': .10,
 }
-CURRENT_DEFAULTS={'feedback_current_stop_duration_s':.20,'feedback_current_emergency_multiplier':2.0}
+CURRENT_DEFAULTS={'feedback_current_stop_duration_s':.20,'feedback_current_emergency_multiplier':2.0,'feedback_current_emergency_duration_s':.05}
 
 
 def validate_speed_limits(cfg):
@@ -67,7 +67,8 @@ class CurrentMonitor:
         self.limits=np.asarray(cfg['max_current_feedback_A'],float)
         self.duration=cfg.get('feedback_current_stop_duration_s',.20)
         self.multiplier=cfg.get('feedback_current_emergency_multiplier',2.)
-        self.since=[None]*6;self.last_warning=-np.inf
+        self.emergency_duration=cfg.get('feedback_current_emergency_duration_s',.05)
+        self.since=[None]*6;self.since_emergency=[None]*6;self.last_warning=-np.inf
 
     def update(self,now,current):
         current=np.asarray(current,float)
@@ -77,8 +78,12 @@ class CurrentMonitor:
             if value>1:
                 if self.since[axis] is None:self.since[axis]=now
             else:self.since[axis]=None
+            if value>self.multiplier:
+                if self.since_emergency[axis] is None:self.since_emergency[axis]=now
+            else:self.since_emergency[axis]=None
         sustained=[axis for axis,since in enumerate(self.since) if since is not None and now-since>=self.duration-1e-9]
-        if np.max(ratio)>self.multiplier:level='emergency'
+        emergency=[axis for axis,since in enumerate(self.since_emergency) if since is not None and now-since>=self.emergency_duration-1e-9]
+        if emergency:j=max(emergency,key=lambda axis:ratio[axis]);level='emergency'
         elif sustained:j=max(sustained,key=lambda axis:ratio[axis]);level='stop'
         elif np.max(ratio)>1 and now-self.last_warning>=1:
             self.last_warning=now;level='warning'
