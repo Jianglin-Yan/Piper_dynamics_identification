@@ -25,10 +25,6 @@ class Controller(Shutdown):
                 cfg['standing_start_deg'][5]=float(np.rad2deg(self.home[5]))
             self.start,self.boundary_goal,self.lower,self.upper=standing_plan(cfg,self.home)
             self.return_home=self.boundary_goal.copy()
-            difference=np.rad2deg(self.return_home-self.home)
-            self.emit('准备目标：'+str(np.rad2deg(self.start).round(2).tolist())+'°')
-            if np.max(np.abs(difference))>1e-8:
-                self.emit('回位点：'+str(np.rad2deg(self.return_home).round(2).tolist())+'°（相对启动值差 '+str(difference.round(2).tolist())+'°）')
         if self.current_pose_only:
             self.lower,self.upper=current_pose_bounds(cfg,self.home)
             self.emit('当前姿态模式：J1–J5 保持启动目标，仅 J6 运动')
@@ -51,7 +47,6 @@ class Controller(Shutdown):
         if self.standing_start:
             raw_lower=np.deg2rad(cfg['lower_deg']);raw_upper=np.deg2rad(cfg['upper_deg'])
             excursion=np.rad2deg(np.maximum(0.,np.maximum(raw_lower-self.home,self.home-raw_upper)))
-            if np.any(excursion>0):self.emit('启动姿态略超限位 '+str(excursion.round(2).tolist())+'°，按容差接受')
         self.vmax=cfg['max_velocity_rad_s'];self.amax=cfg['max_acceleration_rad_s2']
         self.multisine=cfg.get('trajectory','pilot')=='multisine'
         self.test_vmax=cfg.get('test_max_velocity_rad_s',self.vmax);self.test_amax=cfg.get('test_max_acceleration_rad_s2',self.amax)
@@ -125,8 +120,8 @@ class Controller(Shutdown):
     def tracking_hard_limit(self):
         return self.c.get('test_tracking_hard_deg',self.c['tracking_error_deg']) if self.multisine and (self.state=='TESTING' or (self.state=='BRAKING' and self.braking_from_test)) else self.c['tracking_error_deg']
     def event(self,text):self.emit(text)
-    def set_path(self,state,path,now):
-        self.path=path;self.path_t=now;self.state=state;self.stable_since=None;self.event(state)
+    def set_path(self,state,path,now,note=''):
+        self.path=path;self.path_t=now;self.state=state;self.stable_since=None;self.event(state+(f'  {note}' if note else ''))
     def reference_velocity(self,now):
         if self.path is not None and self.state in ('PREPARING','TESTING','BRAKING','RETURNING'):
             v=self.path.at(max(0.,now-self.path_t-1/self.c['command_hz']))[1].copy();v[~self.controlled_axes]=0.
@@ -196,7 +191,7 @@ class Controller(Shutdown):
             self.b.begin_native_move(self.boundary_goal)
             self.last_target=self.boundary_goal.copy();self.path_t=now;self.state='BOUNDARY_ENTRY';self.entry_stable_since=None
             self.event('BOUNDARY_ENTRY：固件 MOVE J 以 2% 速度进入合法边界；先确认实际运动，不开始试采。')
-        elif next_state=='PREPARE':self.set_path('PREPARING',self.outbound,now)
+        elif next_state=='PREPARE':self.set_path('PREPARING',self.outbound,now,'进入准备位置')
         else:self.begin_testing(now)
     def finish_settle(self,now,s):
         target=self.start if self.state=='SETTLING_READY' else self.return_home
@@ -205,9 +200,9 @@ class Controller(Shutdown):
         if stable:
             if self.state=='SETTLING_READY':
                 if self.trial and self.trial.kind=='payload':
-                    self.event('READY：已到站立姿态，自动开始持续记录。自行挂载／换载；卸载后LB+Y直接下一姿态。')
+                    self.event('READY  到达准备位置（自动记录）')
                     self.begin_testing(now)
-                else:self.state='READY';self.event('READY：已到测试起点。松开按键后 LB+Y 开始。')
+                else:self.state='READY';self.event('READY  到达准备位置')
             else:self.begin_disarm(s,now)
         elif now-self.settle_started>self.c['settle_timeout_s']:
             if self.state=='SETTLING_HOME' and self.position_stable(s,now,target,self.c.get('park_release_tolerance_deg',3.)):
@@ -288,7 +283,7 @@ class Controller(Shutdown):
                 if action=='PREPARE':
                     if np.max(np.abs(s['q']-self.home)[self.controlled_axes])>np.deg2rad(self.c['settle_error_deg']):raise ValueError('Startup pose changed; restart')
                     if not self.trial and np.max(np.abs(self.start-self.home)[self.controlled_axes])<1e-7:
-                        self.state='READY';self.event('READY：使用启动姿态')
+                        self.state='READY';self.event('READY  到达准备位置（启动姿态）')
                     else:self.activate(s,now,'PREPARE')
                 elif action=='START':self.event('尚未准备：先 LB+X；没有发送运动指令。')
             elif self.state=='READY':
@@ -314,7 +309,7 @@ class Controller(Shutdown):
                 self.command(self.boundary_goal)
                 at_goal=self.position_stable(s,now,self.boundary_goal,.2)
                 if at_goal:
-                    self.b.finish_native_move();self.set_path('PREPARING',self.outbound,now)
+                    self.b.finish_native_move();self.set_path('PREPARING',self.outbound,now,'进入准备位置')
                 else:self.entry_stable_since=None
                 if self.state=='BOUNDARY_ENTRY' and now-self.path_t>8.:
                     raise ValueError('Boundary entry did not reach target in 8 s; controlled-axis errors_deg='+str(np.rad2deg(s['q']-self.boundary_goal)[self.controlled_axes].round(3).tolist())+'; passive_J6='+str(bool(self.c.get('passive_wrist')))+'; position control not proven, no standing move or trial')
@@ -328,7 +323,7 @@ class Controller(Shutdown):
                     elif self.state in ('TESTING','BRAKING'):
                         if self.state=='TESTING':p=self.inbound
                         else:p=transit(q,self.return_target(),self.vmax,self.amax);self.check(p)
-                        self.set_path('RETURNING',p,now)
+                        self.set_path('RETURNING',p,now,'开始回位')
                     else:self.state='SETTLING_HOME';self.settle_started=now;self.stable_since=None
             elif self.state in ('SETTLING_READY','SETTLING_HOME'):self.finish_settle(now,s)
         except Exception as e:self.fault(e)

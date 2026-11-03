@@ -297,7 +297,6 @@ def main():
             policy=json.loads((path/'session_policy.json').read_text())
             policy.update(controlled_joints=ctrl.trial.active_joints,passive_joints=ctrl.trial.passive_joints,moving_joints=[1,2,3,4,5] if cfg.get('hold_start_wrist') else ctrl.trial.active_joints,gripper_control=ctrl.trial.plan['gripper_policy'],fixed_at_startup_joints=[6] if cfg.get('hold_start_wrist') else [],return_pose_policy='J1–J5 park; J6 holds startup angle' if cfg.get('hold_start_wrist') else 'all six joints park')
             (path/'session_policy.json').write_text(json.dumps(policy,ensure_ascii=False,indent=2))
-        ui.event(f'{sim_note}  启动角度 {np.round(np.rad2deg(ctrl.home),2).tolist()}°  回位点 {np.round(np.rad2deg(ctrl.return_home),2).tolist()}°')
         if a.preflight_only:
             samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
             result.update(completed=True,state='PREFLIGHT_ONLY')
@@ -339,17 +338,19 @@ def main():
                 ctrl.fault(f'Control loop late: gap={loop_gap*1000:.1f} ms, threshold={cfg["loop_watchdog_s"]*1000:.1f} ms, previous_state={last_tick_state}, previous_tick={last_tick_duration*1000:.1f} ms')
             last_wall=time.monotonic();tick_started=last_wall;last_tick_state=ctrl.state
             ctrl.tick(now,s,action);last_tick_duration=time.monotonic()-tick_started
-            if ctrl.active and not ctrl.shutdown_phase and ctrl.state in ('PREPARING','TESTING','BRAKING','RETURNING','FF_RAMP_IN','FF_RAMP_OUT') and now-last_status>=1.:
+            if ctrl.active and not ctrl.shutdown_phase and ctrl.state in ('TESTING','FF_RAMP_IN','FF_RAMP_OUT') and now-last_status>=1.:
                 last_status=now
-                err=float(np.max(np.abs(s['q']-ctrl.last_target)[ctrl.controlled_axes]))*57.2957795
-                parts=[]
-                if ctrl.state=='TESTING' and getattr(ctrl,'test',None) is not None and getattr(ctrl.test,'duration',0)>0:
-                    t=now-ctrl.path_t;dur=ctrl.test.duration;parts.append(f't={t:.1f}/{dur:.1f} s ({100*min(t/dur,1):.0f}%)')
-                elif ctrl.path is not None and ctrl.state in ('PREPARING','RETURNING') and getattr(ctrl.path,'duration',0)>0:
-                    t=now-ctrl.path_t;dur=ctrl.path.duration;parts.append(f't={t:.1f}/{dur:.1f} s ({100*min(t/dur,1):.0f}%)')
-                parts.append(f'误差 {err:.2f}°')
-                if selected=='mit' and getattr(ctrl,'mit_ff_ratio',0)>0:parts.append(f'前馈 {100*ctrl.mit_ff_ratio:.0f}%')
-                ui.status('  '.join(parts))
+                scale=float(cfg.get('mit_ff_scale',0.))
+                if ctrl.state in ('FF_RAMP_IN','FF_RAMP_OUT') and scale>0:
+                    pct=100*ctrl.mit_ff_ratio/scale
+                    if 0.5<pct<99.5:
+                        peak=float(np.max(np.abs(ctrl.mit_telemetry['ff_requested_Nm']))) if ctrl.mit_telemetry else 0.
+                        ui.status(f'力矩渐变 {scale:.2f}  进度 {pct:.0f}%  当前最大 |FF| {peak:.2f} Nm')
+                elif ctrl.state=='TESTING' and getattr(ctrl.test,'duration',0)>0:
+                    t=now-ctrl.path_t;dur=ctrl.test.duration
+                    err=float(np.max(np.abs(s['q']-ctrl.last_target)[ctrl.controlled_axes]))*57.2957795
+                    ff=f'  前馈 {100*ctrl.mit_ff_ratio:.0f}%' if selected=='mit' and getattr(ctrl,'mit_ff_ratio',0)>0 else ''
+                    ui.status(f't={t:.1f}/{dur:.1f} s ({100*min(t/dur,1):.0f}%)  误差 {err:.2f}°{ff}')
             try:recorder.update(ctrl,now,s,now if a.sim else time.monotonic(),action)
             except OSError as e:log_failure=str(e);ctrl.request_stop(s,now,'Test data logging unavailable: '+str(e))
             tracking_target=ctrl.last_target if not ctrl.shutdown_phase else np.full(6,np.nan)

@@ -45,7 +45,6 @@ class TestLegalReturnAndRestart(unittest.TestCase):
         c,b,k,m=self.make();home=k.home.copy();self.run_session(b,k)
         np.testing.assert_allclose(k.home,home);np.testing.assert_allclose(b.q,k.return_home,atol=1e-8)
         np.testing.assert_allclose(np.rad2deg(k.return_home-home),[0,2.618,-2.798,0,0,0],atol=1e-8)
-        self.assertTrue(any('回位点' in x and '差' in x for x in m))
     def test_two_sessions_rearm_disabled_arm_without_reset(self):
         c,b,k,m=self.make();self.run_session(b,k)
         next_session=Controller(b,c,b.snapshot(),0,m.append)

@@ -150,7 +150,7 @@ class MitController(Controller):
         super().activate(s,now,next_state)
         if self.active and self.state=='ARMING':self.command(self.home)
     def begin_ready_or_test(self,next_state,now):
-        if next_state=='PREPARE':self.set_path('PREPARING',self.outbound,now)
+        if next_state=='PREPARE':self.set_path('PREPARING',self.outbound,now,'进入准备位置')
         else:self.begin_testing(now)
     def reference_velocity(self,now):
         if hasattr(self,'stop_velocity'):return self.stop_velocity.copy()
@@ -251,7 +251,7 @@ class MitController(Controller):
                 if now-self.ff_phase_t>=self.c['mit_ff_ramp_s']:
                     self.mit_ff_ratio=self.c['mit_ff_scale'];self.state='READY'
                     if float(self.c['mit_ff_scale'])>0:self.event(f'渐变完成：前馈已达{100*self.mit_ff_ratio:.0f}%')
-                    self.event('READY：LB+Y 开始固定轨迹')
+                    self.event('READY  到达准备位置')
             elif self.state=='FF_RAMP_OUT':
                 self.command(self.last_target)
                 if now-self.ff_phase_t>=self.c['mit_ff_ramp_s']:
