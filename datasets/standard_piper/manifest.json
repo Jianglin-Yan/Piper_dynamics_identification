@@ -1,0 +1,325 @@
+{
+  "name": "standard_piper",
+  "robot": "standard PiPER (not PiPER X)",
+  "model_files": [
+    "model/piper.urdf",
+    "model/nominal_piper.json",
+    "model/piper.xml"
+  ],
+  "torque_coefficients_Nm_per_A": [
+    4.725,
+    4.725,
+    4.725,
+    0.7787701152,
+    0.7787701152,
+    0.7787701152
+  ],
+  "torque_calibrated": false,
+  "note": "Raw acquisition manifests may say model=piper_x; the physical arm was later confirmed standard PiPER. These files use the standard PiPER model.",
+  "datasets": [
+    {
+      "label": "old_fast_0",
+      "source_experiment": "EXP-20261029-001",
+      "source_subdir": "data",
+      "source_run": "20261029_114614_130196",
+      "n_samples": {
+        "raw": 1952,
+        "sg21": 1952,
+        "sg41": 1912
+      },
+      "duration_s": 99.54,
+      "cycles": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "files": {
+        "raw": {
+          "file": "old_fast_0/raw.npz",
+          "sha256": "802bfa6cd56715c9a630caea6cb1f7bc39692333b130baac5f5f5e8f41e77faf"
+        },
+        "sg21": {
+          "file": "old_fast_0/sg21.npz",
+          "sha256": "8cb7da985287768703c5b46fe00b1e31ad71110d3603214060d6311b5f8ec8a1"
+        },
+        "sg41": {
+          "file": "old_fast_0/sg41.npz",
+          "sha256": "77731c88be51e068fc871da27c7bb402b994744d989b572724ba49e1ea07f903"
+        }
+      }
+    },
+    {
+      "label": "old_slow_0",
+      "source_experiment": "EXP-20261029-002",
+      "source_subdir": "data",
+      "source_run": "20261029_160914_946035",
+      "n_samples": {
+        "raw": 3953,
+        "sg21": 3953,
+        "sg41": 3911
+      },
+      "duration_s": 199.52,
+      "cycles": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "files": {
+        "raw": {
+          "file": "old_slow_0/raw.npz",
+          "sha256": "3697740b82648d6fddaf8bbcfaf51a2b75534aa17b7b792fe415bb60d7b32e2c"
+        },
+        "sg21": {
+          "file": "old_slow_0/sg21.npz",
+          "sha256": "253f8509ca4e2fa0897f1a441ba291ce79fd7b9e7405daf16becd3ecc43a90e4"
+        },
+        "sg41": {
+          "file": "old_slow_0/sg41.npz",
+          "sha256": "bf6001f8755ba71ce13fe5fbfd178aaa84c94da2b60a01ff2654a0e1007b98f2"
+        }
+      }
+    },
+    {
+      "label": "old_fast_1234",
+      "source_experiment": "EXP-20261029-001",
+      "source_subdir": "validation/data/seed1234",
+      "source_run": null,
+      "n_samples": {
+        "raw": 1952,
+        "sg21": 1952,
+        "sg41": 1912
+      },
+      "duration_s": 99.54,
+      "cycles": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "files": {
+        "raw": {
+          "file": "old_fast_1234/raw.npz",
+          "sha256": "4af8ca30bfa452c28a0ba8f10154f3d9f1a82da07991a8da9c9c6744fc5eb89a"
+        },
+        "sg21": {
+          "file": "old_fast_1234/sg21.npz",
+          "sha256": "1ef4fe274cab31afd1df046dfd0e5029d888826725d230096d716ceee0cd2e37"
+        },
+        "sg41": {
+          "file": "old_fast_1234/sg41.npz",
+          "sha256": "2b1047e14ff024f9de7fd26703d2347bb7c3389a8cc25de1d66bc1f3c8caa57a"
+        }
+      }
+    },
+    {
+      "label": "old_fast_1111",
+      "source_experiment": "EXP-20261029-001",
+      "source_subdir": "validation/data/seed1111",
+      "source_run": null,
+      "n_samples": {
+        "raw": 1952,
+        "sg21": 1952,
+        "sg41": 1912
+      },
+      "duration_s": 99.54,
+      "cycles": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "files": {
+        "raw": {
+          "file": "old_fast_1111/raw.npz",
+          "sha256": "f11104fefe80ce050d1867777d6eae2871a746eb78656d937b4d59a5f0c0723b"
+        },
+        "sg21": {
+          "file": "old_fast_1111/sg21.npz",
+          "sha256": "4570ae340d678045e07c7930c2f9085219c75adb8b925f0d7df3ca85929d7f7a"
+        },
+        "sg41": {
+          "file": "old_fast_1111/sg41.npz",
+          "sha256": "3bb4bcc02909d5583ddb90cb32b2b266d1bb78a9506db1e0802a66cc30346c8e"
+        }
+      }
+    },
+    {
+      "label": "balanced_v1",
+      "source_experiment": "EXP-20261030-001",
+      "source_subdir": "data",
+      "source_run": "20261030_104822_499096",
+      "n_samples": {
+        "raw": 1952,
+        "sg21": 1952,
+        "sg41": 1912
+      },
+      "duration_s": 99.54,
+      "cycles": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "files": {
+        "raw": {
+          "file": "balanced_v1/raw.npz",
+          "sha256": "f0bccc1093542586044756799f2a687c1dc30402fc5e2fde6d9918faab42eefb"
+        },
+        "sg21": {
+          "file": "balanced_v1/sg21.npz",
+          "sha256": "2fd509eaf9a52e477b733d9380f541bbab97f661aca97d88ad70fa5513966968"
+        },
+        "sg41": {
+          "file": "balanced_v1/sg41.npz",
+          "sha256": "8ef7726e1432b5287d7482a51831d1f7cba9ab66d4470e1f347f349d38f27970"
+        }
+      }
+    },
+    {
+      "label": "balanced_v2",
+      "source_experiment": "EXP-20261030-002",
+      "source_subdir": "data",
+      "source_run": "20261030_132842_448131",
+      "n_samples": {
+        "raw": 3953,
+        "sg21": 3953,
+        "sg41": 3911
+      },
+      "duration_s": 199.52,
+      "cycles": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "files": {
+        "raw": {
+          "file": "balanced_v2/raw.npz",
+          "sha256": "3fb779907bd2b569d1d5c94a15dfc81a7611bb503d71e5a7c78247fbf0fdd2c7"
+        },
+        "sg21": {
+          "file": "balanced_v2/sg21.npz",
+          "sha256": "0e443b2fb10e4376bdcd8bbd054424a47a6f2939db51aba1576c7b5b0a477bd4"
+        },
+        "sg41": {
+          "file": "balanced_v2/sg41.npz",
+          "sha256": "c356bc0f9e52f047b89d142ce2ff8fbc708e8e60b04645a3db43eeea32653f9a"
+        }
+      }
+    },
+    {
+      "label": "old_slow_1234",
+      "source_experiment": "EXP-20261029-002",
+      "source_subdir": "validation/data/seed1234",
+      "source_run": null,
+      "n_samples": {
+        "raw": 3953,
+        "sg21": 3953,
+        "sg41": 3911
+      },
+      "duration_s": 199.52,
+      "cycles": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "files": {
+        "raw": {
+          "file": "old_slow_1234/raw.npz",
+          "sha256": "459565f994132cbe1bd26594f5aaffb8204a01d1a02fd8cb5713d8577b23fa1a"
+        },
+        "sg21": {
+          "file": "old_slow_1234/sg21.npz",
+          "sha256": "46c359d2c7b4f819367e14ae86a650d69eea0cd8a6b4efabe7d3ec20376fd61f"
+        },
+        "sg41": {
+          "file": "old_slow_1234/sg41.npz",
+          "sha256": "b4287cd7dde8f1093d6ebf64e1aef03f63d31ff898fe99bb60b68e4dba7413c6"
+        }
+      }
+    },
+    {
+      "label": "old_slow_1111",
+      "source_experiment": "EXP-20261029-002",
+      "source_subdir": "validation/data/seed1111",
+      "source_run": null,
+      "n_samples": {
+        "raw": 3953,
+        "sg21": 3953,
+        "sg41": 3911
+      },
+      "duration_s": 199.52,
+      "cycles": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "files": {
+        "raw": {
+          "file": "old_slow_1111/raw.npz",
+          "sha256": "b71a958320d87de2cfa48e1010627eec9dbab4acbf2508c9cbe57455222d6b37"
+        },
+        "sg21": {
+          "file": "old_slow_1111/sg21.npz",
+          "sha256": "0e085a4d578b5dcb2e22a61f324d1d105842c39c7ca75341abbfe85a50df778b"
+        },
+        "sg41": {
+          "file": "old_slow_1111/sg41.npz",
+          "sha256": "2ff1304e718c325cc4c360bf426e42ed70beec91846e4c56417c9c6bc9109c1f"
+        }
+      }
+    }
+  ]
+}
