@@ -49,7 +49,7 @@ def configure(c,ff_scale=0.,gain_scale=1.,model='nominal',fit='sg21_LS'):
         settle_error_deg=2.8,mit_prepare_tolerance_deg=8.0,
         # Pure PD leaves ~4.2-4.3 deg static sag at the park pose, so the MOVE J 3 deg
         # release window would always time out. This MIT-only window is used instead.
-        mit_park_tolerance_deg=8.,park_release_tolerance_deg=3.,settle_timeout_s=20.,
+        mit_park_tolerance_deg=8.,park_release_tolerance_deg=3.,settle_timeout_s=20.,mit_release_s=2.0,
         feedback_stop_policy='stop',passive_wrist=False,hold_start_wrist=False,release_gripper=False,
         torque_candidate_coefficients_Nm_per_A=NM_PER_A.tolist(),
         torque_candidate_profile='official standard PiPER k*b*c; not individually calibrated')

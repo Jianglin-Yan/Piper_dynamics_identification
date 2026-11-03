@@ -33,7 +33,11 @@ class Controller(Shutdown):
                 cfg['standing_start_deg']=list(cfg.get('standing_start_deg',[0.,45.,-60.,0.,0.,0.]))
                 cfg['standing_start_deg'][5]=float(np.rad2deg(self.home[5]))
             self.start,self.boundary_goal,self.lower,self.upper=standing_plan(cfg,self.home)
-            self.return_home=self.boundary_goal.copy()
+            # MIT commands a joint impedance target, not the firmware MOVE J endpoint,
+            # so it can return to the measured park pose even when that is a couple of
+            # degrees outside the firmware limits (the arm is already held there at
+            # arm time). MOVE J keeps the nearest legal point.
+            self.return_home=self.home.copy() if self.mit else self.boundary_goal.copy()
         if self.current_pose_only:
             self.lower,self.upper=current_pose_bounds(cfg,self.home)
             self.emit('当前姿态模式：J1–J5 保持启动目标，仅 J6 运动')
@@ -296,7 +300,12 @@ class Controller(Shutdown):
             self.mit_kp=(1-f)*self.exit_kp+f*np.array(self.c['mit_return_kp']);self.mit_kd=(1-f)*self.exit_kd+f*np.array(self.c['mit_return_kd'])
     def _mit_tick_post(self,now,s):
         try:
-            if self.state=='FF_RAMP_IN':
+            if self.state=='RELEASING':
+                f=float(smooth((now-self.release_t)/float(self.c['mit_release_s']))[0])
+                self.mit_kp=np.array(self.c['mit_kp'])*(1-f);self.mit_kd=np.array(self.c['mit_kd'])*(1-f)
+                self.command(self.return_home)
+                if f>=1.-1e-9:self.begin_disarm(s,now)
+            elif self.state=='FF_RAMP_IN':
                 self.command(self.start)
                 if now-self.ff_phase_t>=self.c['mit_ff_ramp_s']:
                     self.mit_ff_ratio=self.c['mit_ff_scale'];self.state='READY'
@@ -311,7 +320,15 @@ class Controller(Shutdown):
         except Exception as e:self.fault(e)
     def _mit_finish_settle(self,now,s):
         if self.state=='SETTLING_HOME':
-            if self.position_stable(s,now,self.return_home,self.c['mit_park_tolerance_deg']):self.begin_disarm(s,now)
+            if self.position_stable(s,now,self.return_home,self.c['mit_park_tolerance_deg']):
+                release=float(self.c.get('mit_release_s',0.))
+                from .mit_trial import MitSimulation
+                # The release assumes the park is physically supported; the simulator has
+                # no support, so it keeps the previous direct-disarm behaviour.
+                if release>0 and not isinstance(self.b,MitSimulation):
+                    self.state='RELEASING';self.release_t=now
+                    self.event(f'释放：{release:g}秒内缓慢撤去刚度，机械臂落到启动支撑位置')
+                else:self.begin_disarm(s,now)
             elif now-self.settle_started>self.c['settle_timeout_s']:raise ValueError('Timed out settling at target')
             return
         if self.state!='SETTLING_READY':return self._finish_settle_base(now,s)
