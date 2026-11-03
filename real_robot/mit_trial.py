@@ -139,6 +139,13 @@ class MitController(Controller):
         self.test=Waypoints(poses,self.test_vmax,self.test_amax,minimum=c['mit_test_minimum_segment_s']);self.nominal_test=self.test;self.check(self.test,self.test_vmax,self.test_amax)
         self.reference_plan={'trajectory_type':'mit','all_stages':'MIT only, including prepare/return','poses_deg':np.rad2deg(poses).tolist(),'offset_deg':[list(o) for o in c['mit_test_offsets_deg']],'minimum_segment_s':c['mit_test_minimum_segment_s'],'duration_s':self.test.duration,'test_max_velocity_rad_s':self.test_vmax,'test_max_acceleration_rad_s2':self.test_amax,'ff_scale':c['mit_ff_scale'],'ff_ramp_s':c['mit_ff_ramp_s'],'prepare_kp_protocol':c['mit_prepare_kp'],'prepare_kd_protocol':c['mit_prepare_kd'],'kp_protocol':c['mit_kp'],'kd_protocol':c['mit_kd'],'return_kp_protocol':c['mit_return_kp'],'return_kd_protocol':c['mit_return_kd'],'gravity_model':None if self.gravity is None else self.gravity.provenance,'simulation_gain_assumption':'PD protocol torque scaled to joint by b*c; not hardware gain calibration','zero_ff_note':'requested FF exactly 0; old 8-bit encoding has finite zero residue'}
         self.event('MIT_ONLY：准备／固定轨迹／回收全程MIT；前馈比例 '+str(c['mit_ff_scale'])+'；无MOVE J回退。协议Kp='+str(c['mit_kp'])+'，Kd='+str(c['mit_kd'])+'。')
+        if self.gravity is not None:
+            # Preflight readout: what this fraction can request along the path, next to
+            # the firmware's per-joint t_ff limit of 8*b*c.
+            ts=np.linspace(0.,self.test.duration,101);gs=np.array([self.gravity(self.test.at(x)[0]) for x in ts])
+            peak=float(c['mit_ff_scale'])*np.abs(gs).max(0);self.expected_peak_ff_nm=peak
+            self.reference_plan['expected_peak_ff_Nm']=peak.tolist()
+            self.event('FF_SCALE：比例 '+str(c['mit_ff_scale'])+'，路径上预计最大 |FF| = '+str(np.round(peak,2).tolist())+' Nm；固件单轴上限 8*b*c = '+str(np.round(8*WIRE_TO_JOINT,2).tolist())+' Nm。')
         self.event('PD_SETTLE：纯PD允许重力静差，到位容差5°，实际误差持续记录；不把静差判成编码失败。')
     def motors_ready(self,s):return super().motors_ready(s) and s.get('status',{}).get('motion_mode',4)==4
     def activate(self,s,now,next_state):
