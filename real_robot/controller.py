@@ -25,24 +25,21 @@ class Controller(Shutdown):
                 cfg['standing_start_deg'][5]=float(np.rad2deg(self.home[5]))
             self.start,self.boundary_goal,self.lower,self.upper=standing_plan(cfg,self.home)
             self.return_home=self.boundary_goal.copy()
-            if cfg.get('trajectory')=='mit':self.emit('STANDING_MIT：LB+X从启动实测角度直接MIT平滑到 '+str(np.rad2deg(self.start).round(3).tolist())+'°；不经过MOVE J边界过渡。')
-            elif cfg.get('passive_wrist',False):self.emit('STANDING：LB+X 平滑准备J1–J5到 '+str(np.rad2deg(self.start[:5]).round(3).tolist())+'°；J6／夹爪释放、可手调；到位后才允许LB+Y。')
-            elif cfg.get('hold_start_wrist'):self.emit('STANDING：LB+X 平滑准备J1–J5；J6全程使能，保持启动角度 '+str(round(float(np.rad2deg(self.home[5])),3))+'°；夹爪释放、可手调。')
-            else:self.emit('STANDING：LB+X 将先进入合法边界小过渡点，再平滑移到 '+str(np.rad2deg(self.start).round(3).tolist())+'°；到位后才允许 LB+Y。')
             difference=np.rad2deg(self.return_home-self.home)
+            self.emit('准备目标：'+str(np.rad2deg(self.start).round(2).tolist())+'°')
             if np.max(np.abs(difference))>1e-8:
-                self.emit('RETURN_HOME：原始启动值保留；实际回位到最近合法点 '+str(np.rad2deg(self.return_home).round(3).tolist())+'°；相对原始启动值差 '+str(difference.round(3).tolist())+'°。')
+                self.emit('回位点：'+str(np.rad2deg(self.return_home).round(2).tolist())+'°（相对启动值差 '+str(difference.round(2).tolist())+'°）')
         if self.current_pose_only:
             self.lower,self.upper=current_pose_bounds(cfg,self.home)
-            self.emit('CURRENT_POSE：已锚定启动姿态，仅 J6 运动；J1–J5 保持原目标，允许测量漂移不超过 0.5°。')
+            self.emit('当前姿态模式：J1–J5 保持启动目标，仅 J6 运动')
         if cfg.get('passive_wrist',False):
             self.lower[5]=min(np.deg2rad(cfg['lower_deg'][5]),self.home[5]-np.deg2rad(2.))
             self.upper[5]=max(np.deg2rad(cfg['upper_deg'][5]),self.home[5]+np.deg2rad(2.))
-            self.emit('PASSIVE_WRIST：J1–J5受控；LB+X时单独释放J6和夹爪，不再保持它们的启动角度，实际位置持续记录。')
+            self.emit('J6／夹爪释放，可手调')
         if cfg.get('hold_start_wrist'):
             self.lower[5]=np.deg2rad(cfg['lower_deg'][5]);self.upper[5]=np.deg2rad(cfg['upper_deg'][5])
             if not self.lower[5]<=self.home[5]<=self.upper[5]:raise ValueError('Payload startup J6 must lie within reported joint limits to hold its angle')
-            self.emit('FIXED_WRIST：J6全程保持启动角度，不失能、不跟随手调；仅夹爪释放。')
+            self.emit('J6 保持启动角度；夹爪释放')
         outside=(self.home<self.lower)|(self.home>self.upper)
         if np.any(outside):
             raw_lower=np.deg2rad(cfg['lower_deg']);raw_upper=np.deg2rad(cfg['upper_deg'])
@@ -54,7 +51,7 @@ class Controller(Shutdown):
         if self.standing_start:
             raw_lower=np.deg2rad(cfg['lower_deg']);raw_upper=np.deg2rad(cfg['upper_deg'])
             excursion=np.rad2deg(np.maximum(0.,np.maximum(raw_lower-self.home,self.home-raw_upper)))
-            if np.any(excursion>0):self.emit('STARTUP_WARNING：接受六轴启动反馈余量'+str(cfg.get('startup_limit_tolerance_deg',10.))+'°；各轴越界量'+str(excursion.round(3).tolist())+'°。先进入合法边界，不改零位或固件限位。')
+            if np.any(excursion>0):self.emit('启动姿态略超限位 '+str(excursion.round(2).tolist())+'°，按容差接受')
         self.vmax=cfg['max_velocity_rad_s'];self.amax=cfg['max_acceleration_rad_s2']
         self.multisine=cfg.get('trajectory','pilot')=='multisine'
         self.test_vmax=cfg.get('test_max_velocity_rad_s',self.vmax);self.test_amax=cfg.get('test_max_acceleration_rad_s2',self.amax)
@@ -97,7 +94,7 @@ class Controller(Shutdown):
         self.pose_history=[];self.pose_history_state=None
         self.fault_reason=None
         self.init_shutdown()
-        self.emit('WAITING：LB+X准备后自动记录首姿态；LB+Y直接切姿态；LB+RB中止。' if self.trial and self.trial.kind=='payload' else 'WAITING：启动位置已保存。LB+X 准备；LB+Y 仅在 READY 后开始；LB+RB 中止。')
+        self.emit('WAITING：LB+X 准备，LB+Y 开始，LB+RB 中止' if not (self.trial and self.trial.kind=='payload') else 'WAITING：LB+X 准备并记录首姿态，LB+Y 切姿态，LB+RB 结束')
 
     def return_target(self):
         q=self.return_home.copy()
@@ -145,13 +142,19 @@ class Controller(Shutdown):
         span=np.ptp(np.array([q for _,q in self.pose_history]),axis=0)
         return (np.max(np.abs(np.rad2deg(s['q']-target))[self.controlled_axes])<=tolerance_deg and
                 np.max(np.rad2deg(span)[self.controlled_axes])<=self.c.get('settle_position_window_deg',.20))
-    def fault(self,reason):
+    def fault(self,reason,part=None,measured=None):
         if self.fault_reason:return
         self.fault_reason=str(reason)
         self.state='FAULT';self.shutdown_phase='FAULT_WAITING_PARK';self.settle_started=self.now
-        self.event('FAULT：'+str(reason)+'；故障停止，不自动恢复或强行回位。正常回位未确认时，可先支撑机械臂，再按 Ctrl+C 按提示失能退出。')
+        reason_text=str(reason)
+        if part is None:part=next((f'J{n}' for n in range(1,7) if f'J{n}' in reason_text),'未细分')
+        if measured is None:measured='见原因'
+        action='已发送停止，未自动回位；保持监视' if self.active else '未使能，无需动作'
+        ui=getattr(self,'ui',None)
+        if ui is not None:ui.fault(reason_text,part=part,measured=measured,action=action,next_step='确认机械臂有支撑后按 Ctrl+C 失能；核对原因后再运行')
+        else:self.event('FAULT：'+reason_text)
         if self.active:
-            try:self.b.quick_stop(str(reason))
+            try:self.b.quick_stop(reason_text)
             except Exception as e:self.event('FAULT_STOP_FAILED：'+str(e))
         self.active=False
     def request_stop(self,s,now,reason):
@@ -178,7 +181,7 @@ class Controller(Shutdown):
             p=brake(self.last_target.copy(),v,stop_vmax,stop_amax);self.check(p,stop_vmax,stop_amax)
             if self.state=='BOUNDARY_ENTRY':self.b.finish_native_move()
             self.set_path('BRAKING',p,now)
-            self.event('CONTROLLED_STOP：'+self.stop_reason+'；取消轨迹，平滑制动、回位、确认静止，再失能退出。')
+            self.event('停止：'+self.stop_reason+'（制动→回位→失能）')
         except Exception as e:
             self.fault('Controlled stop unavailable: '+str(e)+'; original reason: '+self.stop_reason)
     def activate(self,s,now,next_state):
@@ -253,23 +256,23 @@ class Controller(Shutdown):
                     raise ValueError(f'emergency overspeed: J{speed["joint"]}, feedback={speed["speed"]:+.3f} rad/s, threshold={self.speed_monitor.emergency:.3f} rad/s for {self.speed_monitor.emergency_duration:.2f} s')
                 if speed['level']=='stop' and self.c.get('feedback_stop_policy')=='warn':
                     if now-self.last_envelope_warning>=1.:
-                        self.last_envelope_warning=now;self.event(f'SPEED_WARNING：持续反馈速度 {speed["speed"]:+.3f} rad/s，超过告警线；尚未到独立硬线。')
+                        self.last_envelope_warning=now;self.event(f'警告：持续速度 {speed["speed"]:+.3f} rad/s')
                 elif speed['level']=='stop':
                     self.request_stop(s,now,f'sustained overspeed: J{speed["joint"]}, feedback={speed["speed"]:+.3f} rad/s, threshold={self.speed_monitor.stop:.3f} rad/s for {self.speed_monitor.duration:.2f} s')
                     if self.shutdown_phase:return
                 elif speed['level']=='warning':
-                    self.event(f'SPEED_WARNING：J{speed["joint"]}={speed["speed"]:+.3f} rad/s；记录瞬时反馈，不卸力。')
+                    self.event(f'警告：J{speed["joint"]} 速度 {speed["speed"]:+.3f} rad/s')
                 if 'current_A' in s:
                     current=self.current_monitor.update(now,np.where(self.controlled_axes,s['current_A'],0.))
                     if current['level']=='emergency':raise ValueError(f'emergency current: J{current["joint"]}, feedback={current["current"]:+.3f} A')
                     if current['level']=='stop' and self.c.get('feedback_stop_policy')=='warn':
                         if now-self.last_envelope_warning>=1.:
-                            self.last_envelope_warning=now;self.event(f'CURRENT_WARNING：持续电流 {current["current"]:+.3f} A，记录告警，独立硬线保留。')
+                            self.last_envelope_warning=now;self.event(f'警告：持续电流 {current["current"]:+.3f} A')
                     elif current['level']=='stop':
                         self.request_stop(s,now,f'sustained feedback current: J{current["joint"]}, feedback={current["current"]:+.3f} A')
                         if self.shutdown_phase:return
                     elif current['level']=='warning':
-                        self.event(f'CURRENT_WARNING：J{current["joint"]}={current["current"]:+.3f} A；记录短时越阈值，不卸力。')
+                        self.event(f'警告：J{current["joint"]} 电流 {current["current"]:+.3f} A')
             if action=='STOP':
                 self.request_stop(s,now,'operator/input stop')
                 if self.state in ('DONE','FAULT'):return
@@ -283,7 +286,7 @@ class Controller(Shutdown):
                 if action=='PREPARE':
                     if np.max(np.abs(s['q']-self.home)[self.controlled_axes])>np.deg2rad(self.c['settle_error_deg']):raise ValueError('Startup pose changed; restart')
                     if not self.trial and np.max(np.abs(self.start-self.home)[self.controlled_axes])<1e-7:
-                        self.state='READY';self.event('READY：使用启动姿态，无需移动。松开按键后 LB+Y 开始。')
+                        self.state='READY';self.event('READY：使用启动姿态')
                     else:self.activate(s,now,'PREPARE')
                 elif action=='START':self.event('尚未准备：先 LB+X；没有发送运动指令。')
             elif self.state=='READY':
@@ -292,7 +295,7 @@ class Controller(Shutdown):
                     if np.max(np.abs(s['q']-self.start)[self.controlled_axes])>np.deg2rad(self.c.get('mit_prepare_tolerance_deg',self.c['settle_error_deg'])):raise ValueError('Not at prepared start')
                     if not self.active:self.activate(s,now,'TEST')
                     else:self.begin_testing(now)
-                elif action=='PREPARE':self.event('READY：已经准备，无需重复移动。')
+                elif action=='PREPARE':self.event('已在 READY')
             elif self.state=='ARMING':
                 self.command(self.home)
                 mode_ready=s.get('status',{}).get('control_mode',1)==1

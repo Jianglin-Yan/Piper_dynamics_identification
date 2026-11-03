@@ -138,15 +138,13 @@ class MitController(Controller):
         offsets=np.deg2rad(c['mit_test_offsets_deg']);poses=np.array([self.start]+[self.start+o for o in offsets]+[self.start])
         self.test=Waypoints(poses,self.test_vmax,self.test_amax,minimum=c['mit_test_minimum_segment_s']);self.nominal_test=self.test;self.check(self.test,self.test_vmax,self.test_amax)
         self.reference_plan={'trajectory_type':'mit','all_stages':'MIT only, including prepare/return','poses_deg':np.rad2deg(poses).tolist(),'offset_deg':[list(o) for o in c['mit_test_offsets_deg']],'minimum_segment_s':c['mit_test_minimum_segment_s'],'duration_s':self.test.duration,'test_max_velocity_rad_s':self.test_vmax,'test_max_acceleration_rad_s2':self.test_amax,'ff_scale':c['mit_ff_scale'],'ff_ramp_s':c['mit_ff_ramp_s'],'prepare_kp_protocol':c['mit_prepare_kp'],'prepare_kd_protocol':c['mit_prepare_kd'],'kp_protocol':c['mit_kp'],'kd_protocol':c['mit_kd'],'return_kp_protocol':c['mit_return_kp'],'return_kd_protocol':c['mit_return_kd'],'gravity_model':None if self.gravity is None else self.gravity.provenance,'simulation_gain_assumption':'PD protocol torque scaled to joint by b*c; not hardware gain calibration','zero_ff_note':'requested FF exactly 0; old 8-bit encoding has finite zero residue'}
-        self.event('MIT_ONLY：准备／固定轨迹／回收全程MIT；前馈比例 '+str(c['mit_ff_scale'])+'；无MOVE J回退。协议Kp='+str(c['mit_kp'])+'，Kd='+str(c['mit_kd'])+'。')
         if self.gravity is not None:
             # Preflight readout: what this fraction can request along the path, next to
             # the firmware's per-joint t_ff limit of 8*b*c.
             ts=np.linspace(0.,self.test.duration,101);gs=np.array([self.gravity(self.test.at(x)[0]) for x in ts])
             peak=float(c['mit_ff_scale'])*np.abs(gs).max(0);self.expected_peak_ff_nm=peak
             self.reference_plan['expected_peak_ff_Nm']=peak.tolist()
-            self.event('FF_SCALE：比例 '+str(c['mit_ff_scale'])+'，路径上预计最大 |FF| = '+str(np.round(peak,2).tolist())+' Nm；固件单轴上限 8*b*c = '+str(np.round(8*WIRE_TO_JOINT,2).tolist())+' Nm。')
-        self.event('PD_SETTLE：纯PD允许重力静差，到位容差5°，实际误差持续记录；不把静差判成编码失败。')
+            self.event('前馈规模：最大 |FF| '+str(np.round(peak,2).tolist())+' Nm，固件上限 '+str(np.round(8*WIRE_TO_JOINT,2).tolist())+' Nm')
     def motors_ready(self,s):return super().motors_ready(s) and s.get('status',{}).get('motion_mode',4)==4
     def activate(self,s,now,next_state):
         super().activate(s,now,next_state)
@@ -204,8 +202,8 @@ class MitController(Controller):
         if self.position_stable(s,now,self.start,self.c['mit_prepare_tolerance_deg']):
             self.state='FF_RAMP_IN';self.ff_phase_t=now;self.ff_print_t=now
             scale=float(self.c['mit_ff_scale'])
-            if scale<=0:self.event('FF_RAMP_IN_START：前馈比例为0（纯PD），无重力前馈；机械臂保持静止3秒后进入READY。')
-            else:self.event(f'FF_RAMP_IN_START：已到标准姿态；机械臂保持静止，重力前馈将在{self.c["mit_ff_ramp_s"]:g}秒内由0%升到{100*scale:.0f}%，按实测关节角计算。异常请按LB+RB。')
+            if scale<=0:self.event('渐变：纯PD（0%），机械臂静止3秒')
+            else:self.event(f'渐变：前馈 0→{100*scale:.0f}%，用时{self.c["mit_ff_ramp_s"]:g}秒，期间机械臂静止')
         elif now-self.settle_started>self.c['settle_timeout_s']:raise ValueError('MIT preparation failed to settle; no gain auto-escalation')
     def request_stop(self,s,now,reason):
         self.now=now
@@ -213,8 +211,8 @@ class MitController(Controller):
         if not self.active:return super().request_stop(s,now,reason)
         if reason=='MIT trial completed':
             self.stop_reason=reason;self.state='FF_RAMP_OUT';self.ff_phase_t=now;self.ff_exit_ratio=self.mit_ff_ratio;self.exit_kp=self.mit_kp.copy();self.exit_kd=self.mit_kd.copy();self.ff_print_t=now
-            if float(self.c['mit_ff_scale'])<=0:self.event('FF_RAMP_OUT_START：前馈比例为0（纯PD），无前馈可撤；机械臂保持静止3秒后开始MIT回位。')
-            else:self.event(f'FF_RAMP_OUT_START：轨迹结束，机械臂保持静止；重力前馈将在{self.c["mit_ff_ramp_s"]:g}秒内由{100*self.mit_ff_ratio:.0f}%降到0%，PD增益不变。')
+            if float(self.c['mit_ff_scale'])<=0:self.event('渐变：纯PD（0%），机械臂静止3秒')
+            else:self.event(f'渐变：前馈 {100*self.mit_ff_ratio:.0f}→0%，用时{self.c["mit_ff_ramp_s"]:g}秒，期间机械臂静止')
             return
         if self.returning_mit:return
         if self.state=='ARMING' and not self.motors_ready(s):
@@ -252,13 +250,11 @@ class MitController(Controller):
                 self.command(self.start)
                 if now-self.ff_phase_t>=self.c['mit_ff_ramp_s']:
                     self.mit_ff_ratio=self.c['mit_ff_scale'];self.state='READY'
-                    if float(self.c['mit_ff_scale'])>0:self.event(f'FF_RAMP_IN_DONE：前馈已达{100*self.mit_ff_ratio:.0f}%，机械臂仍静止；READY，LB+Y执行固定轨迹。')
-                    else:self.event('READY：MIT准备和前馈渐入完成；LB+Y执行固定轨迹。')
-                else:self.ff_progress(now,'FF_RAMP_IN',100*float(self.c['mit_ff_scale']),self.start)
+                    if float(self.c['mit_ff_scale'])>0:self.event(f'渐变完成：前馈已达{100*self.mit_ff_ratio:.0f}%')
+                    self.event('READY：LB+Y 开始固定轨迹')
             elif self.state=='FF_RAMP_OUT':
                 self.command(self.last_target)
                 if now-self.ff_phase_t>=self.c['mit_ff_ramp_s']:
-                    if float(self.c['mit_ff_scale'])>0:self.event('FF_RAMP_OUT_DONE：前馈已归零，PD增益不变；开始MIT回位。')
+                    if float(self.c['mit_ff_scale'])>0:self.event('渐变完成：前馈已归零')
                     self.mit_ff_ratio=0.;self.returning_mit=True;super().request_stop(s,now,self.stop_reason)
-                else:self.ff_progress(now,'FF_RAMP_OUT',0.,self.last_target)
         except Exception as e:self.fault(e)

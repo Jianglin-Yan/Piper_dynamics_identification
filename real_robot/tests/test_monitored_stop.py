@@ -83,7 +83,7 @@ class TestControlledStop(unittest.TestCase):
             if k.finished:break
         self.assertEqual(k.state,'DONE');self.assertFalse(b.enabled);self.assertFalse(b.active);self.assertEqual(b.stops,[])
         count=len(b.commands);tick(k,t+.01,b.snapshot(),'START');self.assertEqual(len(b.commands),count)
-        self.assertTrue(any('CONTROLLED_STOP' in e for e in events))
+        self.assertTrue(any('停止：' in e for e in events))
 
     def test_manual_stop_waiting_sends_no_commands(self):
         c=config();b=Fake(c);k=Controller(b,c,b.snapshot(),0,lambda _:None)

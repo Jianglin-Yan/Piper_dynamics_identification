@@ -30,7 +30,7 @@ class Shutdown:
         # WAITING may inherit powered motors from a different program. Never assume off.
         self.stop_reason=str(reason);self.shutdown_phase='VERIFY_PARK'
         self.state='PARK_VERIFY';self.settle_started=now
-        self.event('PARK_VERIFY：未启动运动；确认启动位置静止后失能，不带电退出。')
+        self.event('未启动运动：确认静止后失能')
 
     def begin_disarm(self,s,now):
         self.release_q=np.asarray(s['q']).copy();self.shutdown_phase='DISABLING'
@@ -38,15 +38,14 @@ class Shutdown:
         self.disarm_started=now;self.disable_last_attempt=None;self.disable_sent=None
         self.disable_stable_since=None
         delta=np.rad2deg(self.release_q-self.home).round(3).tolist()
-        self.event('DISABLING：当前位置相对原始启动值差 '+str(delta)+
-                   '°；失能即撤去驱动力矩，等待六轴新反馈确认。')
+        self.event('失能：相对启动值差 '+str(delta)+'°')
         self.poll_disarm(s,now)
 
     def supported_disarm(self,s,now):
         """Explicit operator confirmation: supported arm may be disabled at its current pose."""
         if self.finished:return
         self.operator_supported_disarm=True;self.stop_reason='Operator confirmed physical support; disable at current pose'
-        self.event('SUPPORTED_DISARM：已由操作者确认有支撑；立即逐轴失能，不回位、不复位、不使能。')
+        self.event('已确认支撑：立即逐轴失能')
         self.begin_disarm(s,now)
 
     def confirm_physical_power_off(self):
@@ -54,7 +53,7 @@ class Shutdown:
         self.operator_power_off_confirmed=True;self.shutdown_complete=True;self.active=False
         self.state='FAULT';self.shutdown_phase='OPERATOR_POWER_OFF'
         if not self.fault_reason:self.fault_reason='Disable unconfirmed; operator explicitly confirmed physical power cut'
-        self.event('OPERATOR_POWER_OFF：操作者确认已切断机械臂电源；保存记录并退出。未通过CAN确认失能，不标记为正常完成。')
+        self.event('操作者确认已断电：保存记录并退出（未通过 CAN 确认失能）')
 
     def poll_disarm(self,s,now):
         # Keep receiving while disabling. No position, re-enable, reset, or electronic-stop command here.

@@ -6,6 +6,7 @@ from .controller import Controller
 from .gamepad import Gamepad, calibrate
 from .monitoring import validate_speed_limits
 from .test_data import TestRecorder, export_test_data
+from .ui import Printer
 
 BASE=Path(__file__).parent
 
@@ -193,6 +194,15 @@ def main():
         except OSError:pass
         try:events.write(json.dumps({'t_monotonic_s':time.monotonic(),'message':msg},ensure_ascii=False)+'\n')
         except OSError as error:log_failure=str(error)
+    ui=Printer(emit)
+    if selected=='mit':
+        ui.header('MIT 固定轨迹 · 重力前馈验证',['控制方式：MIT（PD＋重力前馈）',f'前馈比例：{100*cfg["mit_ff_scale"]:.0f}%','任务：五姿态固定轨迹，核对辨识模型的重力补偿'])
+    elif selected=='gravity':
+        ui.header('MIT 重力补偿试验',['控制方式：MIT（PD＋重力前馈）',f'前馈比例：{100*cfg["mit_ff_scale"]:.0f}%','任务：重力补偿保持'])
+    elif selected=='multisine':
+        ui.header('MOVE J 六轴多正弦',['控制方式：MOVE J（固件位置控制）',f'任务：{100*float(cfg.get("trajectory_scale",1)):.0f}% 幅度六轴多正弦'])
+    else:
+        ui.header(f'MOVE J {cfg["trajectory"]}',['控制方式：MOVE J（固件位置控制）',f'任务：{cfg["trajectory"]} 测试'])
     def record(row):
         nonlocal log_failure
         if ctrl is not None and getattr(ctrl,'mit_telemetry',None) is not None:row['mit']=ctrl.mit_telemetry
@@ -201,6 +211,7 @@ def main():
     from .operator_exit import OperatorExit
     operator_exit=OperatorExit(emit)
     old_handlers={s:signal.signal(s,operator_exit.signal) for s in (signal.SIGINT,signal.SIGTERM)}
+    sim_note='实机'
     try:
         if a.sim:
             if cfg.get('passive_wrist',False):
@@ -211,7 +222,7 @@ def main():
                 from .gravity import GravitySimulation as Simulation
             else:
                 from .simulation import Simulation
-            b=Simulation(cfg);emit('SIMULATION：全程MIT PD，重力开启，无隐藏补偿；PD输出缩放为b*c仿真假设，未实机整定。' if selected=='mit' else 'SIMULATION：普通PiPER模型，简化几何；未连接机械臂。重力测试关闭隐藏重力补偿，并模拟旧固件MIT量化。' if selected=='gravity' else 'SIMULATION：普通PiPER模型，简化几何；未连接机械臂。仿真增益不是实机建议值。')
+            b=Simulation(cfg);sim_note='仿真预览（未连接机械臂）'
         else:
             if selected=='mit':
                 from .mit_trial import MitHardware as Hardware
@@ -246,12 +257,6 @@ def main():
             if a.read_only:
                 samples.write(json.dumps(s,default=serializable)+'\n');result.update(completed=True,state='READ_ONLY');return
             b.preflight(info)
-            monitor_action="仅告警、继续测试" if cfg.get("feedback_stop_policy")=="warn" else "制动回位并失能"
-            emit(f'反馈监测：速度 {cfg["feedback_speed_warning_rad_s"]:.2f} rad/s 告警，{cfg["feedback_speed_stop_rad_s"]:.2f} rad/s 持续 {cfg["feedback_speed_stop_duration_s"]:.2f} s 后{monitor_action}；独立硬线和严重故障仍走故障停止。')
-            if a.from_current:
-                emit('FROM_CURRENT：按操作者指定使用当前姿态，只进行 J6 有界试采；不修改限位/零位/保护等级。')
-            if a.from_current or a.standing:
-                emit('当前碰撞检测等级：'+str(info['collision']['collision_levels']))
             (path/'effective_config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
         if not a.scripted and not a.preflight_only:pad=Gamepad(a.pad)
         if a.viewer:
@@ -266,7 +271,7 @@ def main():
         elif selected=='gravity':
             from .gravity import GravityController
             ctrl_type=GravityController
-        ctrl=ctrl_type(b,cfg,s,now,emit)
+        ctrl=ctrl_type(b,cfg,s,now,ui.event);ctrl.ui=ui
         if selected in ('gravity','mit'):(path/'reference_plan.json').write_text(json.dumps(ctrl.reference_plan,ensure_ascii=False,indent=2))
         if ctrl.reference_plan and ctrl.multisine:
             from .multisine import save_reference
@@ -274,7 +279,6 @@ def main():
             limits=cfg.get('reported_motor_max_acceleration_rad_s2')
             if limits and np.any(np.array(ctrl.reference_plan['max_acceleration_per_joint_rad_s2'])>limits):
                 emit('FIRMWARE_PLANNER_WARNING：参考加速度高于固件返回的规划配置；仅提示，固件可能平滑/限速。不会修改固件配置。')
-            emit('HARD_LINES：速度 '+str(cfg['feedback_speed_emergency_rad_s'])+' rad/s 连续 '+str(cfg['feedback_speed_emergency_duration_s'])+' s；测试跟踪 '+str(cfg['test_tracking_hard_deg'])+'°；电流 '+str((np.asarray(cfg['max_current_feedback_A'])*cfg['feedback_current_emergency_multiplier']).tolist())+' A。这些是独立工程保护线，不是厂商认证危险极限。')
         if ctrl.trial:ctrl.trial.save(path)
         result['home_rad']=ctrl.home.tolist()
         result['return_home_rad']=ctrl.return_home.tolist()
@@ -285,14 +289,13 @@ def main():
             policy=json.loads((path/'session_policy.json').read_text())
             policy.update(controlled_joints=ctrl.trial.active_joints,passive_joints=ctrl.trial.passive_joints,moving_joints=[1,2,3,4,5] if cfg.get('hold_start_wrist') else ctrl.trial.active_joints,gripper_control=ctrl.trial.plan['gripper_policy'],fixed_at_startup_joints=[6] if cfg.get('hold_start_wrist') else [],return_pose_policy='J1–J5 park; J6 holds startup angle' if cfg.get('hold_start_wrist') else 'all six joints park')
             (path/'session_policy.json').write_text(json.dumps(policy,ensure_ascii=False,indent=2))
-        emit('启动角度（度）：'+str(np.round(np.rad2deg(ctrl.home),3).tolist()))
+        ui.event(f'{sim_note}  启动角度 {np.round(np.rad2deg(ctrl.home),2).tolist()}°  回位点 {np.round(np.rad2deg(ctrl.return_home),2).tolist()}°')
         if a.preflight_only:
             samples.write(json.dumps({'feedback':s,'home_rad':ctrl.home},default=serializable)+'\n')
             result.update(completed=True,state='PREFLIGHT_ONLY')
             return
         recorder=TestRecorder(path,cfg,'sim' if a.sim else 'hardware')
-        emit('DATA：只将 TESTING 写入 test_samples.jsonl；原始测试帧和导出数据在收尾后生成。')
-        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False;last_rx_dropped=0;last_tick_duration=0.;last_tick_state=ctrl.state
+        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False;last_rx_dropped=0;last_tick_duration=0.;last_tick_state=ctrl.state;last_status=-1e9
         while not ctrl.finished:
             now=step*dt if a.sim else time.monotonic()
             if viewer and not viewer.is_running() and not viewer_closed:
@@ -309,7 +312,7 @@ def main():
                 elif a.scripted=='abort' and ctrl.state=='TESTING' and now-ctrl.path_t>=5.2 and not scripted_aborted:
                     action='ABORT';scripted_aborted=True
             if ctrl.shutdown_phase and action in ('PREPARE','START'):action=None
-            if action:emit('手柄指令：'+action)
+            if action:ui.event('手柄：'+action)
             if a.sim:b.advance(dt)
             s=b.snapshot()
             dropped=s.get('can_rx_dropped_total',0)
@@ -328,6 +331,17 @@ def main():
                 ctrl.fault(f'Control loop late: gap={loop_gap*1000:.1f} ms, threshold={cfg["loop_watchdog_s"]*1000:.1f} ms, previous_state={last_tick_state}, previous_tick={last_tick_duration*1000:.1f} ms')
             last_wall=time.monotonic();tick_started=last_wall;last_tick_state=ctrl.state
             ctrl.tick(now,s,action);last_tick_duration=time.monotonic()-tick_started
+            if ctrl.active and not ctrl.shutdown_phase and ctrl.state in ('PREPARING','TESTING','BRAKING','RETURNING','FF_RAMP_IN','FF_RAMP_OUT') and now-last_status>=1.:
+                last_status=now
+                err=float(np.max(np.abs(s['q']-ctrl.last_target)[ctrl.controlled_axes]))*57.2957795
+                parts=[]
+                if ctrl.state=='TESTING' and getattr(ctrl,'test',None) is not None and getattr(ctrl.test,'duration',0)>0:
+                    t=now-ctrl.path_t;dur=ctrl.test.duration;parts.append(f't={t:.1f}/{dur:.1f} s ({100*min(t/dur,1):.0f}%)')
+                elif ctrl.path is not None and ctrl.state in ('PREPARING','RETURNING') and getattr(ctrl.path,'duration',0)>0:
+                    t=now-ctrl.path_t;dur=ctrl.path.duration;parts.append(f't={t:.1f}/{dur:.1f} s ({100*min(t/dur,1):.0f}%)')
+                parts.append(f'误差 {err:.2f}°')
+                if selected=='mit' and getattr(ctrl,'mit_ff_ratio',0)>0:parts.append(f'前馈 {100*ctrl.mit_ff_ratio:.0f}%')
+                ui.status('  '.join(parts))
             try:recorder.update(ctrl,now,s,now if a.sim else time.monotonic(),action)
             except OSError as e:log_failure=str(e);ctrl.request_stop(s,now,'Test data logging unavailable: '+str(e))
             tracking_target=ctrl.last_target if not ctrl.shutdown_phase else np.full(6,np.nan)
