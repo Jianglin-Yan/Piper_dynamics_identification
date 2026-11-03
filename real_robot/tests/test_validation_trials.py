@@ -36,7 +36,7 @@ class ProtocolTests(unittest.TestCase):
   c=profile('static');c['standing_start']=False
   with self.assertRaises(ValueError):validate_config(c)
  def test_static_tracking_warning_and_independent_hard_line(self):
-  for error,expected in [(12.,'READY'),(25.1,'BRAKING')]:
+  for error,expected in [(12.,'READY'),(36.,'BRAKING')]:
    c,b,k,messages=make('static');b.q=k.start.copy();k.last_target=k.start.copy();k.state='READY';k.active=True;b.active=True;b.enabled=True
    for n in range(10,40):
     b.q=k.start.copy();b.q[1]+=np.deg2rad(error);b.v[:]=0.;step(b,k,n)
@@ -52,7 +52,7 @@ class ProtocolTests(unittest.TestCase):
  def test_feedback_extension_is_from_original_limits_for_all_validation_scripts(self):
   for kind in ('static','reciprocal','payload'):
    for direction in (-1,1):
-    for overshoot,should_fault in ((5.9,False),(6.1,True)):
+    for overshoot,should_fault in ((9.9,False),(10.1,True)):
      c,b,k,messages=make(kind);b.q=k.start.copy();k.last_target=k.start.copy();k.state='READY';k.active=True;b.active=True;b.enabled=True
      raw=c['upper_deg'][0] if direction>0 else c['lower_deg'][0]
      b.q[0]=np.deg2rad(raw+direction*overshoot)
@@ -62,7 +62,7 @@ class ProtocolTests(unittest.TestCase):
  def test_test_phase_excludes_extra_startup_corridor(self):
   c,b,k,_=make('static');k.lower[1]=np.deg2rad(c['lower_deg'][1]-10.)
   k.state='PREPARING';self.assertLessEqual(k.measurement_bounds()[0][1],np.deg2rad(-10.))
-  k.state='TESTING';self.assertAlmostEqual(np.rad2deg(k.measurement_bounds()[0][1]),c['lower_deg'][1]-6.)
+  k.state='TESTING';self.assertAlmostEqual(np.rad2deg(k.measurement_bounds()[0][1]),c['lower_deg'][1]-c['measurement_angle_tolerance_deg'])
  def test_exact_time_reverse(self):
   c,b,k,_=make('reciprocal');f=k.trial.forward;r=k.trial.reverse
   for t in np.linspace(0,f.duration,61):

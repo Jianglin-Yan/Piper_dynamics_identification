@@ -99,7 +99,7 @@ class TestMultisine(unittest.TestCase):
         self.assertEqual(k.state,'FAULT');self.assertEqual(len(b.stops),1)
         c,b,k,e=self.make()
         for n in range(25):
-            s=b.snapshot();s['q'][5]+=np.deg2rad(26.);tick(k,n*.01,s)
+            s=b.snapshot();s['q'][5]+=np.deg2rad(36.);tick(k,n*.01,s)
         self.assertEqual(k.state,'BRAKING');self.assertEqual(len(b.stops),0)
 
     def test_real_feedback_failure_not_downgraded_to_warning(self):

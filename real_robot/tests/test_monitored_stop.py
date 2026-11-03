@@ -52,15 +52,15 @@ class TestMonitors(unittest.TestCase):
         self.assertNotEqual(monitor.update(.06,v)['level'],'emergency')
 
     def test_current_transient_sustained_and_emergency(self):
-        m=CurrentMonitor(config());v=np.zeros(6);v[4]=1.6
+        m=CurrentMonitor(config());v=np.zeros(6);v[4]=2.6
         self.assertEqual(m.update(0,v)['level'],'warning')
-        self.assertNotEqual(m.update(.19,v)['level'],'stop')
-        self.assertEqual(m.update(.2,v)['level'],'stop')
-        v[4]=0;m.update(.21,v);v[4]=1.6
-        self.assertNotEqual(m.update(.22,v)['level'],'stop')
-        v[4]=3.1
+        self.assertNotEqual(m.update(.29,v)['level'],'stop')
+        self.assertEqual(m.update(.3,v)['level'],'stop')
+        v[4]=0;m.update(.31,v);v[4]=2.6
+        self.assertNotEqual(m.update(.32,v)['level'],'stop')
+        v[4]=3.9
         level=None
-        for n in range(6):level=m.update(.23+n*.01,v)['level']
+        for n in range(6):level=m.update(.33+n*.01,v)['level']
         self.assertEqual(level,'emergency')
 
     def test_invalid_threshold_order_refused(self):
@@ -102,19 +102,19 @@ class TestControlledStop(unittest.TestCase):
     def test_sustained_tracking_error_uses_controlled_stop(self):
         c,b,k,events=self.make()
         for n in range(25):
-            s=b.snapshot();s['q'][5]+=np.deg2rad(26.);tick(k,1+n*.01,s)
+            s=b.snapshot();s['q'][5]+=np.deg2rad(36.);tick(k,1+n*.01,s)
         self.assertEqual(k.state,'BRAKING');self.assertEqual(b.stops,[])
 
     def test_sustained_emergency_current_uses_controlled_stop(self):
         c,b,k,events=self.make()
-        for n in range(8):
-            t=1+n*.01;b.q=k.last_target.copy();s=b.snapshot();s['qd'][:]=0;s['current_A']=np.zeros(6);s['current_A'][4]=3.1;tick(k,t,s)
+        for n in range(35):
+            t=1+n*.01;b.q=k.last_target.copy();s=b.snapshot();s['qd'][:]=0;s['current_A']=np.zeros(6);s['current_A'][4]=2.6;tick(k,t,s)
         self.assertEqual(k.state,'BRAKING');self.assertEqual(b.stops,[])
 
     def test_current_limit_uses_return_when_feedback_healthy(self):
         c,b,k,events=self.make()
-        for n in range(21):
-            t=1+n*.01;b.q=k.last_target.copy();s=b.snapshot();s['qd'][:]=0;s['current_A']=np.zeros(6);s['current_A'][4]=1.6;tick(k,t,s)
+        for n in range(35):
+            t=1+n*.01;b.q=k.last_target.copy();s=b.snapshot();s['qd'][:]=0;s['current_A']=np.zeros(6);s['current_A'][4]=2.6;tick(k,t,s)
         self.assertEqual(k.state,'BRAKING');self.assertEqual(b.stops,[])
 
     def test_bad_hold_path_falls_back_instead_of_issuing_out_of_bounds_target(self):
