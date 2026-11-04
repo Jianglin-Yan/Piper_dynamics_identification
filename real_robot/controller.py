@@ -93,6 +93,10 @@ class Controller(Shutdown):
             self.reference_plan['torque_estimate_caps_Nm']=list(cfg['mit_joint_torque_estimate_caps_Nm'])
             self.reference_plan['estimate_velocity_limit_rad_s']=float(cfg['mit_estimate_velocity_limit_rad_s'])
             self.reference_plan['budget_exceed_duration_s']=float(cfg['mit_budget_exceed_duration_s'])
+        elif cfg.get('trajectory')=='friction':
+            from .friction import FrictionTrial
+            self.trial=FrictionTrial(self.start,cfg,self.lower,self.upper)
+            self.test=self.trial.reference;self.nominal_test=self.test;self.reference_plan=self.trial.plan
         elif cfg.get('trajectory') in ('static','reciprocal','payload'):
             from .validation_trials import ValidationTrial
             self.trial=ValidationTrial(self.start,cfg,self.lower,self.upper)

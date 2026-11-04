@@ -4,7 +4,7 @@
 """
 import sys
 
-TRIALS=('static','reciprocal','payload','pilot','multisine')
+TRIALS=('static','reciprocal','payload','friction','pilot','multisine')
 
 
 def _pop(args,name):

@@ -18,7 +18,7 @@ def serializable(x):
 def validate_config(c):
     validate_speed_limits(c)
     c.setdefault('trajectory','pilot')
-    if c['trajectory'] not in ('pilot','multisine','static','reciprocal','payload','gravity','mit'):raise ValueError('Unknown trajectory')
+    if c['trajectory'] not in ('pilot','multisine','static','reciprocal','payload','friction','gravity','mit'):raise ValueError('Unknown trajectory')
     c.setdefault('trajectory_scale',1.)
     c.setdefault('trajectory_speed_scale',1.)
     if not np.isfinite(c['trajectory_speed_scale']) or not 0<c['trajectory_speed_scale']<=1:raise ValueError('trajectory_speed_scale must be in (0, 1]')
@@ -72,6 +72,18 @@ def validate_config(c):
             if not np.isfinite(c[key]) or c[key]<=0:raise ValueError('Invalid '+key)
         if c['validation_move_velocity_rad_s']>.12 or c['validation_move_acceleration_rad_s2']>.12:raise ValueError('Validation paths exceed slow profile')
         if not 1<=c['validation_settle_s']<=30 or not 2<=c['validation_capture_s']<=60:raise ValueError('Invalid diagnostic dwell')
+    if c['trajectory']=='friction':
+        if not c.get('standing_start') or c.get('current_pose_only'):raise ValueError('Friction collection requires --standing')
+        if c.get('passive_wrist') or c.get('hold_start_wrist') or c.get('release_gripper'):raise ValueError('Friction collection uses six enabled joints and no gripper')
+        if c['trajectory_scale']!=1 or c['trajectory_speed_scale']!=1:raise ValueError('Friction collection uses fixed paths')
+        joints=[int(j) for j in c['friction_joints']]
+        if sorted(set(joints))!=joints or any(not 1<=j<=6 for j in joints):raise ValueError('Invalid friction joint list')
+        strokes=np.asarray(c['friction_stroke_deg'],float)
+        if strokes.shape!=(6,) or not np.isfinite(strokes).all() or np.any(strokes<2) or np.any(strokes>40):raise ValueError('Invalid friction stroke')
+        speeds=np.asarray(c['friction_speeds_rad_s'],float)
+        if speeds.size<2 or not np.isfinite(speeds).all() or np.any(speeds<.002) or np.any(speeds>.25) or np.any(np.diff(speeds)<=0):raise ValueError('Invalid friction speeds')
+        if not .5<=c['friction_dwell_s']<=10 or not 1<=c['friction_repeats']<=5:raise ValueError('Invalid friction dwell/repeats')
+        if not np.isfinite(c['friction_move_acceleration_rad_s2']) or not 0<c['friction_move_acceleration_rad_s2']<=.5:raise ValueError('Invalid friction acceleration')
     if c['trajectory']=='mit':
         if not c.get('standing_start') or c.get('current_pose_only') or c['trajectory_scale']!=1 or c['trajectory_speed_scale']!=1:raise ValueError('MIT uses its fixed standing path without multisine scaling')
         if not np.isfinite(c['mit_ff_scale']) or not 0<=c['mit_ff_scale']<=1 or c['mit_ff_ramp_s']!=3.:raise ValueError('MIT FF fraction/ramp invalid')
@@ -89,7 +101,7 @@ def main():
     ap.add_argument('--config',type=Path,default=BASE/'config.json');ap.add_argument('--pad',type=Path,default=BASE/'g8.json')
     ap.add_argument('--standing',action='store_true',help='LB+X performs boundary entry then moves to a fixed standing test pose')
     ap.add_argument('--from-current',action='store_true',help='J6-only trial anchored at actual startup pose; limited parked J2/J3 exceptions')
-    ap.add_argument('--trajectory',choices=['pilot','multisine','static','reciprocal','payload','gravity','mit'],help='pilot/multisine diagnostics or unified MIT PD/FF trial')
+    ap.add_argument('--trajectory',choices=['pilot','multisine','static','reciprocal','payload','friction','gravity','mit'],help='pilot/multisine diagnostics or unified MIT PD/FF trial')
     ap.add_argument('--ff-scale',type=float,help='MIT-only trial: gravity feedforward fraction 0..1, default0')
     ap.add_argument('--mit-gain-scale',type=float,help='MIT-only trial: protocol PD gain fraction 0.5..1, default1')
     ap.add_argument('--gravity-model',choices=['nominal','identified'],help='gravity/MIT: official nominal or corrected balanced-v2 identification')
@@ -97,6 +109,9 @@ def main():
     ap.add_argument('--gravity-seconds',type=float,help='gravity only: test duration 10..120s, default30')
     ap.add_argument('--gravity-stiffness',type=float,help='gravity only: final weak position gain fraction 0..1; 0 gives gravity+damping')
     ap.add_argument('--reciprocal-speeds',type=float,nargs='+',help='reciprocal only: paired speed caps in rad/s; default 0.04 0.12')
+    ap.add_argument('--friction-joints',type=int,nargs='+',help='friction only: joint order, default 1 6 4 5 2 3')
+    ap.add_argument('--friction-speeds',type=float,nargs='+',help='friction only: speed levels in rad/s')
+    ap.add_argument('--friction-repeats',type=int,help='friction only: repeats per speed')
     ap.add_argument('--capture-seconds',type=float,help='validation only: stationary recording duration, default 6')
     ap.add_argument('--settle-seconds',type=float,help='validation only: extra stable time before recording, default 2')
     ap.add_argument('--payload-point-m',type=float,nargs=3,help='optional hanging point xyz in link6 coordinates, metres; do not guess')
@@ -107,7 +122,7 @@ def main():
     ap.add_argument('--scale',type=float,help='test displacement fraction (0,1]; preparation, return, time and frequency unchanged')
     ap.add_argument('--preflight-only',action='store_true',help='validate the hardware session without reading button actions or enabling motors')
     ap.add_argument('--headless',action='store_true',help='simulation only: skip the preview window for automated checks')
-    ap.add_argument('--viewer',action='store_true');ap.add_argument('--scripted',choices=['normal','abort','speed-stop'],help='simulation only; speed-stop injects speed feedback to preview a controlled stop')
+    ap.add_argument('--viewer',action='store_true');ap.add_argument('--auto',action='store_true',help='自动 PREPARE→START，跑完自行回位失能；不需要手柄');ap.add_argument('--scripted',choices=['normal','abort','speed-stop'],help='simulation only; speed-stop injects speed feedback to preview a controlled stop')
     ap.add_argument('--output',type=Path,default=BASE.parent/'runs');ap.add_argument('--max-seconds',type=float,default=120)
     a=ap.parse_args()
     if a.headless:
@@ -151,6 +166,13 @@ def main():
         from .gravity import configure
         configure(cfg,a.gravity_model or 'identified',a.gravity_fit or 'sg21_LS',30. if a.gravity_seconds is None else a.gravity_seconds,1. if a.gravity_stiffness is None else a.gravity_stiffness)
     elif selected!='mit' and any(x is not None for x in (a.gravity_model,a.gravity_fit,a.gravity_seconds,a.gravity_stiffness)):ap.error('Gravity options require --trajectory gravity/mit')
+    if selected=='friction':
+        from .friction import configure as friction_configure
+        friction_configure(cfg)
+        if a.friction_joints is not None:cfg['friction_joints']=a.friction_joints
+        if a.friction_speeds is not None:cfg['friction_speeds_rad_s']=a.friction_speeds
+        if a.friction_repeats is not None:cfg['friction_repeats']=a.friction_repeats
+    elif any(x is not None for x in (a.friction_joints,a.friction_speeds,a.friction_repeats)):ap.error('--friction-* options require --trajectory friction')
     if selected in ('static','reciprocal','payload'):
         from .validation_trials import configure
         configure(cfg)
@@ -267,7 +289,7 @@ def main():
                 samples.write(json.dumps(s,default=serializable)+'\n');result.update(completed=True,state='READ_ONLY');return
             b.preflight(info)
             (path/'effective_config.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))
-        if not a.scripted and not a.preflight_only:pad=Gamepad(a.pad)
+        if not a.scripted and not a.preflight_only and not a.auto:pad=Gamepad(a.pad)
         if a.viewer:
             if not a.sim:raise ValueError('viewer is for simulation only')
             import mujoco.viewer
@@ -303,7 +325,7 @@ def main():
             result.update(completed=True,state='PREFLIGHT_ONLY')
             return
         recorder=TestRecorder(path,cfg,'sim' if a.sim else 'hardware')
-        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False;last_rx_dropped=0;last_tick_duration=0.;last_tick_state=ctrl.state;last_status=-1e9;last_step=-1
+        dt=1/cfg['command_hz'];deadline=time.monotonic();start_wall=deadline;step=0;last_wall=deadline;scripted_started=False;scripted_aborted=False;timeout_handled=False;input_failed=False;viewer_closed=False;last_rx_dropped=0;last_tick_duration=0.;last_tick_state=ctrl.state;last_status=-1e9;last_step=-1;last_friction_key=None
         while not ctrl.finished:
             now=step*dt if a.sim else time.monotonic()
             if viewer and not viewer.is_running() and not viewer_closed:
@@ -313,6 +335,9 @@ def main():
                 try:action=pad.poll(time.monotonic())
                 except OSError as e:
                     input_failed=True;action='STOP';emit('INPUT_STOP：'+str(e))
+            if a.auto:
+                if step==10:action='PREPARE'
+                elif ctrl.state=='READY' and not scripted_started:action='START';scripted_started=True
             if a.scripted:
                 if step==10:action='PREPARE'
                 elif ctrl.state=='READY' and not scripted_started:action='START';scripted_started=True
@@ -320,7 +345,7 @@ def main():
                 elif a.scripted=='abort' and ctrl.state=='TESTING' and now-ctrl.path_t>=5.2 and not scripted_aborted:
                     action='ABORT';scripted_aborted=True
             if ctrl.shutdown_phase and action in ('PREPARE','START'):action=None
-            if action:ui.event('手柄：'+action)
+            if action:ui.event(('自动：' if a.auto else '手柄：')+action)
             if a.sim:b.advance(dt)
             s=b.snapshot()
             dropped=s.get('can_rx_dropped_total',0)
@@ -339,7 +364,14 @@ def main():
                 ctrl.fault(f'Control loop late: gap={loop_gap*1000:.1f} ms, threshold={cfg["loop_watchdog_s"]*1000:.1f} ms, previous_state={last_tick_state}, previous_tick={last_tick_duration*1000:.1f} ms')
             last_wall=time.monotonic();tick_started=last_wall;last_tick_state=ctrl.state
             ctrl.tick(now,s,action);last_tick_duration=time.monotonic()-tick_started
-            if ctrl.state=='TESTING' and getattr(ctrl.test,'ends',None) is not None:
+            if ctrl.state=='TESTING' and ctrl.trial and getattr(ctrl.trial,'kind',None)=='friction':
+                lab=ctrl.trial.reference.labels[max(ctrl.trial.last_index,0)]
+                if lab['phase']=='forward':
+                    key=(lab['joint'],lab['speed'],lab['repeat'])
+                    if key!=last_friction_key:
+                        last_friction_key=key
+                        ui.status(f"摩擦采集 J{lab['joint']} {lab['speed']:g} rad/s 第{lab['repeat']}次 正向")
+            elif ctrl.state=='TESTING' and getattr(ctrl.test,'ends',None) is not None:
                 idx=min(int(np.searchsorted(ctrl.test.ends,max(0.,now-ctrl.path_t),side='right')),len(ctrl.test.parts)-1)
                 if idx!=last_step:
                     last_step=idx;ui.status(f'移动到期望位置 {idx+1}/{len(ctrl.test.parts)}')
@@ -420,7 +452,11 @@ def main():
         if recorder:
             try:
                 result['test_data']=export_test_data(path)
-                if ctrl and ctrl.trial:
+                if ctrl and ctrl.trial and ctrl.trial.kind=='friction':
+                    plan=ctrl.trial.plan
+                    result['friction_protocol']={'kind':'friction','joints':plan['joint_order'],'speeds_rad_s':plan['speeds_rad_s'],'repeats':plan['repeats'],'segments':plan['segments'],'planned_duration_s':plan['duration_s'],'automatic_sequence_completed':ctrl.trial.completed,'torque_calibrated':False}
+                    emit('FRICTION_SAVED：'+str(plan['segments'])+'段，计划'+f"{plan['duration_s']:.0f}"+'秒；标签（关节／速度档／方向／重复）已写入 test_signals.npz，详见 reference_plan.json。')
+                elif ctrl and ctrl.trial:
                     from .validation_trials import summarize
                     report=summarize(path)
                     result['validation_protocol']={'kind':ctrl.trial.kind,'automatic_sequence_completed':ctrl.trial.phase=='complete','complete_captures':sum(x['complete'] for x in report['captures']),'partial_captures':sum(not x['complete'] for x in report['captures']),'passive_joints':ctrl.trial.passive_joints,'torque_calibrated':False}

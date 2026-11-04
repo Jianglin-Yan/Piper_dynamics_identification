@@ -13,6 +13,7 @@ MOVE J 与 MIT 是两个入口，共用 `controller`／`monitoring`／`test_data
 | `bash real_robot/test_static.sh ...` | `python -m real_robot.run_movej --trial static` | 静态 8 姿态 |
 | `bash real_robot/test_reciprocal.sh ...` | `run_movej --trial reciprocal` | 正反两档 |
 | `bash real_robot/test_payload.sh ...` | `run_movej --trial payload` | 负载循环 |
+| `bash real_robot/test_friction.sh ...` | `run_movej --trial friction` | 六轴低速摩擦采集（自动） |
 | `bash real_robot/pilot.sh ...` | `python -m real_robot.run` | sim／pad／read／recover |
 
 `.sh` 现在只做转发（模式映射 + 默认超时），不再包含参数过滤；拒绝 `--trajectory`、`--trial` 越界的规则集中在 `run_mit.py`／`run_movej.py`，参数合法性仍由 `run.validate_config` 统一检查。
@@ -92,10 +93,16 @@ MIT线上前馈按官方旧固件协议为关节Nm÷b÷c；不再额外乘减速
 | `test_static.sh` | 8个差异明显的姿态，再回P1复测；到位稳定后每处采集6秒，自动回位失能 | 六轴受控，不下发夹爪命令 |
 | `test_reciprocal.sh` | 同一路径每档均正向、反向；默认0.04与0.12rad/s两档，自动结束 | 六轴受控，不下发夹爪命令 |
 | `test_payload.sh` | 姿态循环、持续记录；LB+Y仅切姿态，挂载／更换／等待由操作员安排 | J6全程使能、保持启动角度；仅夹爪可手动调整 |
+| `test_friction.sh` | 六轴依次单轴小行程、六档速度（0.005–0.2 rad/s）正反往复、换向驻留3秒、每档2次；`--auto`自动准备、开始、跑完回位失能 | 六轴受控；其余五轴保持站立位；不下发夹爪 |
 
 仍是三个独立运行脚本、分别保存run，共用原有G8及回位失能流程。仿真只预览动作、交互和标签，不是实机负载／力矩证据。
 
 ```bash
+# 六轴低速摩擦采集：预计约87分钟，全自动；可按关节拆分
+bash real_robot/test_friction.sh sim --friction-joints 6 --friction-speeds 0.05 0.1 --friction-repeats 1
+bash real_robot/test_friction.sh hardware
+bash real_robot/test_friction.sh hardware --friction-joints 1
+
 # 仿真，逐个运行
 bash real_robot/test_static.sh sim
 bash real_robot/test_reciprocal.sh sim

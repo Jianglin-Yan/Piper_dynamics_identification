@@ -160,7 +160,7 @@ def export_test_data(path):
             acc_valid[:,j]=np.convolve(trustworthy.astype(int),np.ones(11,dtype=int),mode='same')==11
             qdd[~acc_valid[:,j],j]=np.nan
     labels={}
-    if manifest['configuration'].get('trajectory') in ('static','reciprocal','payload'):
+    if manifest['configuration'].get('trajectory') in ('static','reciprocal','payload','friction'):
         tags=[r.get('trial',{}) for r in rows]
         labels={
             'trial_phase':np.array([r.get('phase','') for r in tags],dtype=str),
@@ -172,6 +172,8 @@ def export_test_data(path):
             'trial_capture_id':np.array([r.get('capture_id',0) for r in tags],int),
             'trial_steady_candidate':np.array([r.get('steady_candidate',False) for r in tags],bool),
             'trial_pair_time_s':np.array([np.nan if r.get('pair_time_s') is None else r['pair_time_s'] for r in tags]),
+            'trial_joint':np.array([r.get('joint',0) for r in tags],int),
+            'trial_repeat':np.array([r.get('repeat',0) for r in tags],int),
             'gripper_position_raw':np.array([r.get('feedback',{}).get('gripper',{}).get('gripper_position_raw',np.nan) for r in rows]),
         }
     if manifest['configuration'].get('trajectory')=='gravity':
