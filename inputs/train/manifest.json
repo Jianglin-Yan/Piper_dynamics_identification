@@ -1,0 +1,25 @@
+{
+  "description": "Training data: one whole real acquisition used for fitting.",
+  "rule": "Trajectory-level split: one whole real acquisition is used for fitting, a different whole real acquisition is used only for held-out validation.",
+  "split_rule_file": "raw/standard_piper/splits.json",
+  "split_rule_sha256": "8156995b65074259816fd138380eb1a0993b355288e6dd7df5987571f644a717",
+  "variant": "sg41",
+  "trajectory": "balanced_v2",
+  "file": "balanced_v2_sg41.npz",
+  "sha256": "5142e3056299c1bb7e53f5b91df66b5b38937e786032bbe5ca2b34765a6a64ec",
+  "source": "raw/standard_piper/balanced_v2/sg41.npz",
+  "source_sha256": "c356bc0f9e52f047b89d142ce2ff8fbc708e8e60b04645a3db43eeea32653f9a",
+  "n_samples": 3911,
+  "cycles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ]
+}

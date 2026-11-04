@@ -6,21 +6,54 @@
 
 | 路径 | 内容 |
 | --- | --- |
-| `inputs/standard_piper/` | 8 条标准 PiPER 轨迹、元数据、文件清单及整周期划分 |
+| `inputs/raw/standard_piper/` | 原始输入数据：8 条标准 PiPER 真机轨迹的 `raw`/`sg21`/`sg41`、元数据、文件清单及轨迹划分规则 |
+| `inputs/train/` | 训练数据：`splits.json` 指定的整条 `balanced_v2` 的 `sg41`，附 `manifest.json` |
+| `inputs/validation/` | 验证数据：`splits.json` 指定的整条 `balanced_v1` 的 `sg41`，附 `manifest.json` |
 | `models/standard_piper/` | 标准 PiPER URDF、名义惯性 JSON 和用于回归器的 MuJoCo XML |
-| `src/piper_dynamics/standard_piper.py` | 标准 PiPER 回归矩阵重建与 CAD 尺度化 SVD 拟合入口 |
-| `src/piper_dynamics/reference/regressor.py` | 唯一的 60 列刚体回归器实现，标准 PiPER 和旧流程共用 |
-| `outputs/standard_piper/` | 标准 PiPER 的回归矩阵、拟合参数和评估报告 |
-| `inputs/experiment_20261029/`, `inputs/splits/` | 旧实验原始记录和划分 |
+| `src/piper_dynamics/` | 源码包，职责划分见下方“代码结构” |
+| `outputs/standard_piper/` | 标准 PiPER 的回归矩阵、拟合参数（`.npz` / `_parameters.csv` / `.md`）和评估报告 `.json` |
 | `models/piper_x.urdf`, `models/nominal_x.json` | 旧 PiPER X 复算所需模型 |
-| `src/piper_dynamics/minimum_base_svd.py`, `physical_constraint_fit.py` | 旧实验的最小基和物理约束复算 |
+| `src/piper_dynamics/legacy/` | 旧 PiPER X 复算代码（原始数据已清理，仅保留代码供追溯） |
 | `outputs/minimum_base/`, `outputs/physical_constraints/`, `outputs/reference/` | 旧实验数值结果及保留的原 PDF |
 
-旧输入的采集清单曾把机型标为 PiPER X，后来核对确认实际为标准 PiPER。旧流程及其保存的数值结果仍使用 PiPER X 模型，因此仅作历史对照；不要把这些结果当作标准 PiPER 的参数。`outputs/reference/piper_identification_report.pdf` 保留原文件字节。
+旧输入的采集清单曾把机型标为 PiPER X，后来核对确认实际为标准 PiPER。旧流程及其保存的数值结果仍使用 PiPER X 模型，因此仅作历史对照；不要把这些结果当作标准 PiPER 的参数。`outputs/reference/piper_identification_report.pdf` 保留原文件字节。旧复算所需的 222 MB 原始 CAN 记录（原 `inputs/experiment_20261029/`）与旧划分（原 `inputs/splits/`）已从 `inputs/` 删除，避免与当前标准 PiPER 数据混淆；需要复算时从 git 历史恢复。
+
+## 代码结构
+
+```
+src/piper_dynamics/
+├── __main__.py / cli.py            # 命令行入口：split / regressor / fit / show
+├── paths.py                        # 仓库路径（inputs、models、outputs）
+├── core/                           # 可复用底层模块
+│   ├── dataset_io.py               # 读取并校验测量 npz
+│   ├── rigid_body_regressor.py     # 60 列刚体回归器（mj_inverse 有限差分）
+│   ├── regression_model.py         # 摩擦特征、参数缩放、误差指标
+│   ├── svd_fit.py                  # 缩放截断 SVD 最小二乘与力矩预测
+│   ├── parameter_schema.py         # 78 维参数名、分组与单位
+│   └── parameter_report.py         # 参数表、CSV、Markdown 报告与物理检查
+├── pipeline/                       # 标准 PiPER 业务流程
+│   ├── trajectory_split.py         # 整条轨迹训练/验证划分与物化
+│   └── standard_piper_pipeline.py  # 端到端拟合编排与输出落盘
+├── utils/                          # 通用工具
+│   └── hashing.py                  # 文件 SHA256
+└── legacy/                         # 旧 PiPER X 代码（仅存档，当前不可运行）
+```
 
 ## 标准 PiPER 数据
 
-每条轨迹目录包含 `raw.npz`、`sg21.npz`、`sg41.npz` 和 `metadata.json`。前者不平滑；后两者使用 21 点或 41 点、三阶居中 Savitzky-Golay 处理。数据由 100 Hz 处理链抽样至约 20 Hz。`npz` 包含 `t`、六轴 `q`、`qd`、`qdd`、实测 `current_A`、候选力矩 `target_Nm` 和周期号 `cycle`。`manifest.json` 记录来源与哈希，`splits.json` 指定偶数周期训练、奇数周期留出。
+每条轨迹目录包含 `raw.npz`、`sg21.npz`、`sg41.npz` 和 `metadata.json`。前者不平滑；后两者使用 21 点或 41 点、三阶居中 Savitzky-Golay 处理。数据由 100 Hz 处理链抽样至约 20 Hz。`npz` 包含 `t`、六轴 `q`、`qd`、`qdd`、实测 `current_A`、候选力矩 `target_Nm` 和周期号 `cycle`。`manifest.json` 记录来源与哈希。
+
+## 训练 / 验证划分
+
+`splits.json` 采用**整条轨迹划分**：`balanced_v2` 整条用于拟合，`balanced_v1` 整条只用于留出验证。两者是同一台标准 PiPER 上独立采集的两组真机数据（实验 EXP-20261030-002 与 EXP-20261030-001，CAN 时间戳相隔约 2.7 小时），激励幅值分别为 1.0 和 0.8。
+
+不使用同一条轨迹的奇数/偶数周期划分，是因为同一段激励内的划分只能检验插值，无法检验“换一组真机数据”后的泛化；跨轨迹划分更严格，也更接近实际部署。
+
+`inputs/train/` 与 `inputs/validation/` 是 `splits.json` 在 `sg41` 上的物化副本，拟合只读训练文件，验证文件不参与求解。它们由下面命令生成，不要手工修改；其余 6 条轨迹保留在 `raw/` 作为备用数据，不参与当前拟合与验证：
+
+```bash
+PYTHONPATH=src .venv/bin/python -m piper_dynamics split
+```
 
 | 轨迹 | 来源 | 时长档位 |
 | --- | --- | --- |
@@ -28,7 +61,7 @@
 | `old_slow_0`, `old_slow_1234`, `old_slow_1111` | 2026-10-29 原激励及独立目标 | 约 240 s |
 | `balanced_v1`, `balanced_v2` | 2026-10-30 修改激励 | 约 120 s、240 s |
 
-`target_Nm` 由电流按 `[4.725, 4.725, 4.725, 0.7787701152, 0.7787701152, 0.7787701152]` N·m/A 换算；这些系数没有针对本机做力矩标定。原完整 CAN 记录仍在实验目录，不在此压缩数据集中。
+`target_Nm` 由电流按 `[4.725, 4.725, 4.725, 0.7787701152, 0.7787701152, 0.7787701152]` N·m/A 换算；这些系数没有针对本机做力矩标定。
 
 ## 运行
 
@@ -37,11 +70,14 @@
 ```bash
 python3.10 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-PYTHONPATH=src .venv/bin/python -m piper_dynamics.standard_piper regressor inputs/standard_piper/old_fast_0/sg41.npz
-PYTHONPATH=src .venv/bin/python -m piper_dynamics.standard_piper fit inputs/standard_piper/old_fast_0/sg41.npz
+PYTHONPATH=src .venv/bin/python -m piper_dynamics split
+PYTHONPATH=src .venv/bin/python -m piper_dynamics fit
+PYTHONPATH=src .venv/bin/python -m piper_dynamics show
 ```
 
-`regressor` 在 `outputs/standard_piper/` 生成 `*_Y.npz`，其中 `Y` 为 `(N, 6, 60)` 的刚体回归矩阵。`fit` 在刚体矩阵后追加每轴 `qd`、`tanh(qd/0.02)`、常数三列，共 78 列；在偶数周期上用 CAD 尺度化截断 SVD 求解，未辨识方向取名义参数，并将 `*_fit.npz` 与同名 JSON 评估报告写入 `outputs/standard_piper/`。该秩来自所选训练数据，并非独立验证的结构最小基。两个命令都支持 `--out`，默认数据为 `old_fast_0/sg41.npz`。
+`fit` 会写出四份文件：`*_fit.npz`（原始数组）、`*_fit.json`（指标与参数）、`*_fit_parameters.csv`（逐项参数表）和 `*_fit.md`（可直接阅读的中文报告，含分关节误差与物理一致性检查）。`show` 不需要重新拟合，直接读取 npz 并打印连杆参数与摩擦项。
+
+`regressor` 在 `outputs/standard_piper/` 生成 `*_Y.npz`，其中 `Y` 为 `(N, 6, 60)` 的刚体回归矩阵。`fit` 在刚体矩阵后追加每轴 `qd`、`tanh(qd/0.02)`、常数三列，共 78 列；在整条训练轨迹上用 CAD 尺度化截断 SVD 求解，未辨识方向取名义参数，再在整条验证轨迹上评估，将 `*_fit.npz` 与同名 JSON 报告写入 `outputs/standard_piper/`。该秩来自所选训练数据，并非独立验证的结构最小基。当前 `balanced_v2 -> balanced_v1` 的秩为 54/78，训练误差 5.84%，跨轨迹验证误差 8.91%。两个命令都支持 `--out`；`fit` 还支持 `--validation` 指定其他留出文件。
 
 标准 PiPER 模型中的关节阻尼、转子惯量、摩擦损失、重力补偿和接触在构造刚体回归器时关闭。名义参数来自官方模型，不是真机质量或惯量真值。截断 SVD 拟合的 78 维结果是一组力矩预测候选，不是唯一可辨识的逐连杆物理参数，也未施加旧 PiPER X 流程的几何与伪惯量约束。
 
@@ -50,9 +86,9 @@ PYTHONPATH=src .venv/bin/python -m piper_dynamics.standard_piper fit inputs/stan
 旧 PiPER X 代码和输出依赖固定源码快照及模型哈希。需要复算旧 PDF 数值时，按顺序运行：
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m piper_dynamics.minimum_base_svd
-PYTHONPATH=src .venv/bin/python -m piper_dynamics.physical_constraint_fit
-PYTHONPATH=src .venv/bin/python -m piper_dynamics.robust_estimator_comparison
+PYTHONPATH=src .venv/bin/python -m piper_dynamics.legacy.minimum_base_svd
+PYTHONPATH=src .venv/bin/python -m piper_dynamics.legacy.physical_constraint_fit
+PYTHONPATH=src .venv/bin/python -m piper_dynamics.legacy.robust_estimator_comparison
 ```
 
 旧结果的结构秩为 54/78；最小基 OLS 训练/留出/全量残差范数比分别为 7.0587% / 7.0764% / 7.3325%。旧 PDF 和 JSON 数值均保留，但模型机型与已核实的标准 PiPER 不符，不应用于控制或当作 CAD 校准结果。

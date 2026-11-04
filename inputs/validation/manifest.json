@@ -1,0 +1,25 @@
+{
+  "description": "Held-out data: an independent real acquisition used only for validation.",
+  "rule": "Trajectory-level split: one whole real acquisition is used for fitting, a different whole real acquisition is used only for held-out validation.",
+  "split_rule_file": "raw/standard_piper/splits.json",
+  "split_rule_sha256": "8156995b65074259816fd138380eb1a0993b355288e6dd7df5987571f644a717",
+  "variant": "sg41",
+  "trajectory": "balanced_v1",
+  "file": "balanced_v1_sg41.npz",
+  "sha256": "ac09fce3e156d28a801368b9b636ff778fafc18a3c0518924829b6ce8eb8dcb4",
+  "source": "raw/standard_piper/balanced_v1/sg41.npz",
+  "source_sha256": "8ef7726e1432b5287d7482a51831d1f7cba9ab66d4470e1f347f349d38f27970",
+  "n_samples": 1912,
+  "cycles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ]
+}
