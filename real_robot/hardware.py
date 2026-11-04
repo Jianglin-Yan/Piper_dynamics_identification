@@ -162,9 +162,23 @@ class Hardware:
                 with self.rx_lock:g=self.latest.get(0x2a8,{}).get('gripper_position_raw',0)
                 self._send_locked(0x159,list(struct.pack('>iHBB',g,0,0,0))) # gripper disable only
             # Passive wrist is released before any position target can reach it.
-            # Seed position before selecting position mode and enabling the six arm motors.
-            self._pose_locked(q)
+            # Select MOVE J first: on S-V1.7 the arm may still be in MOVE_MIT from the
+            # previous run, and a position target sent before the mode switch can leave
+            # joints in a state where the enable is ignored (arm_status=5).
             self._send_locked(0x151,[1,1,self.c['move_speed_percent'],0,0,0,0,0])
+            status={}
+            deadline=time.monotonic()+float(self.c.get('movej_mode_wait_s',.5))
+            while time.monotonic()<deadline:
+                latest=getattr(self,'latest',None);rx_lock=getattr(self,'rx_lock',None)
+                if latest is None or rx_lock is None:break
+                with rx_lock:status=dict(latest.get(0x2a1,{}))
+                if not status:break
+                if status.get('motion_mode')==1 and status.get('arm_status',0)==0 and status.get('error_code',0)==0:break
+                self.heartbeat=time.monotonic();time.sleep(.01)
+            if status and (status.get('motion_mode')!=1 or status.get('arm_status',0)!=0 or status.get('error_code',0)!=0):
+                raise RuntimeError('Arm did not enter MOVE J cleanly before enable: motion_mode=%s, arm_status=%s, error_code=%s; if it was left in MIT mode, power-cycle the arm or switch mode in the vendor app' % (status.get('motion_mode'),status.get('arm_status'),status.get('error_code')))
+            # Seed position only after the arm reports MOVE J.
+            self._pose_locked(q)
             self._pose_locked(q)
             for j in range(1,6 if self.c.get('passive_wrist',False) else 7):self._send_locked(0x471,[j,2,0,0,0,0,0,0])
     def begin_native_move(self,q):

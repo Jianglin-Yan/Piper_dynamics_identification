@@ -40,10 +40,10 @@ class TestHardwarePackets(unittest.TestCase):
             msg=PiperMessage();msg.type_=getattr(ArmMsgType,msgtype)
             for j,value in enumerate(np.rint(np.rad2deg(q)*1000).astype(int),1):setattr(msg.arm_joint_ctrl,'joint_'+str(j),int(value))
             frame=can.Message();parser.EncodeMessage(msg,frame);expected.append((frame.arbitration_id,bytes(frame.data)))
-        self.assertEqual(self.frames[:3],expected);self.assertEqual(self.frames[4:7],expected)
         msg=PiperMessage();msg.type_=ArmMsgType.PiperMsgMotionCtrl_2
         msg.arm_motion_ctrl_2.ctrl_mode=1;msg.arm_motion_ctrl_2.move_mode=1;msg.arm_motion_ctrl_2.move_spd_rate_ctrl=10;msg.arm_motion_ctrl_2.mit_mode=0;msg.arm_motion_ctrl_2.residence_time=0;msg.arm_motion_ctrl_2.installation_pos=0
-        frame=can.Message();parser.EncodeMessage(msg,frame);self.assertEqual(self.frames[3],(frame.arbitration_id,bytes(frame.data)))
+        frame=can.Message();parser.EncodeMessage(msg,frame);self.assertEqual(self.frames[0],(frame.arbitration_id,bytes(frame.data)))
+        self.assertEqual(self.frames[1:4],expected);self.assertEqual(self.frames[4:7],expected)
         for j in range(1,7):
             msg=PiperMessage();msg.type_=ArmMsgType.PiperMsgMotorEnableDisableConfig;msg.arm_motor_enable.motor_num=j;msg.arm_motor_enable.enable_flag=2
             frame=can.Message();parser.EncodeMessage(msg,frame);self.assertEqual(self.frames[6+j],(frame.arbitration_id,bytes(frame.data)))
