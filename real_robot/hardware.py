@@ -10,7 +10,7 @@ class Hardware:
         self.rx_lock=threading.Lock();self.tx_lock=threading.Lock();self.stopped=False;self.active=False;self.motion_closed=False;self.disable_acknowledged=False;self.motion_started=False
         self.heartbeat=time.monotonic();self.done=threading.Event();self.raw=(run_dir/'raw_can.jsonl').open('w',buffering=65536)
         self.rx_dropped=0;self.raw_log_dropped=0;self.log_done=threading.Event();self.raw_queue=queue.Queue(maxsize=32768)
-        self.tx_log=(run_dir/'tx_can.jsonl').open('w',buffering=1)
+        self.tx_log=(run_dir/'tx_can.jsonl').open('w',buffering=65536)
         self.sock=socket.socket(socket.AF_CAN,socket.SOCK_RAW,socket.CAN_RAW)
         try:
             self.sock.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,4*1024*1024)
