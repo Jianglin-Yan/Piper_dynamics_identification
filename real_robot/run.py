@@ -114,7 +114,7 @@ def main():
     ap.add_argument('--friction-joints',type=int,nargs='+',help='friction only: joint order, default 1 6 4 5 2 3')
     ap.add_argument('--friction-speeds',type=float,nargs='+',help='friction only: speed levels in rad/s')
     ap.add_argument('--friction-repeats',type=int,help='friction only: repeats per speed')
-    ap.add_argument('--friction-start',choices=['current','standing'],default='current',help='friction only: start and return at the measured pose (default) or at the standing pose')
+    ap.add_argument('--friction-start',choices=['current','standing'],default='standing',help='friction only: start and return at the measured pose (default) or at the standing pose')
     ap.add_argument('--capture-seconds',type=float,help='validation only: stationary recording duration, default 6')
     ap.add_argument('--settle-seconds',type=float,help='validation only: extra stable time before recording, default 2')
     ap.add_argument('--payload-point-m',type=float,nargs=3,help='optional hanging point xyz in link6 coordinates, metres; do not guess')

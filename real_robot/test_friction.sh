@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 python="${PIPER_PYTHON:-/home/shin/anaconda3/envs/lerobot/bin/python}"
 case "${1:-sim}" in
-  sim) shift; exec env -u LD_PRELOAD "$python" -m real_robot.run_movej --sim --trial friction --auto --friction-start current --max-seconds 7200 "$@" ;;
-  hardware) shift; exec env -u LD_PRELOAD "$python" -m real_robot.run_movej --hardware --trial friction --auto --friction-start current --max-seconds 7200 "$@" ;;
+  sim) shift; exec env -u LD_PRELOAD "$python" -m real_robot.run_movej --sim --trial friction --max-seconds 7200 "$@" ;;
+  hardware) shift; exec env -u LD_PRELOAD "$python" -m real_robot.run_movej --hardware --trial friction --max-seconds 7200 "$@" ;;
   *) printf '%s\n' 'Usage: bash real_robot/test_friction.sh [sim|hardware]'; exit 2 ;;
 esac
