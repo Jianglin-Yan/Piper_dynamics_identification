@@ -38,7 +38,7 @@ def configure(c):
         friction_repeats=2,
         friction_move_acceleration_rad_s2=.08,
         feedback_stop_policy='stop',
-        loop_watchdog_s=.5,
+        loop_watchdog_s=.5,raw_can_enabled=False,export_csv=False,
         passive_wrist=False, hold_start_wrist=False, release_gripper=False,
         trajectory_scale=1., trajectory_speed_scale=1.,
     )

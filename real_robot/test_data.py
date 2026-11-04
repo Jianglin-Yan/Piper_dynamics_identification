@@ -110,8 +110,9 @@ class TestRecorder:
 def extract_test_frames(path,manifest):
     """Use receive timestamps, not cached snapshots, to isolate full-rate raw test frames."""
     path=Path(path);count=0;stats={};windows=[w for w in manifest['windows'] if w['end_monotonic_s'] is not None]
+    if not (path/'raw_can.jsonl').is_file():return 0,{}
     with (path/'test_raw_can.jsonl').open('w') as dst:
-        if (path/'raw_can.jsonl').is_file():
+        if True:
             with (path/'raw_can.jsonl').open() as src:
                 for line in src:
                     r=json.loads(line);t=r['t_monotonic_s']
@@ -190,13 +191,15 @@ def export_test_data(path):
         t_command_monotonic_s=np.array([r['t_command_monotonic_s'] for r in rows]),
         valid_measurement=valid,**fields,**labels,t_uniform_monotonic_s=grid,
         qd_uniform=qd_grid,qdd_est=qdd,qdd_est_valid=acc_valid)
-    with (path/'test_signals.csv').open('w',newline='') as f:
-        writer=csv.writer(f);keys=list(fields)
-        writer.writerow(['t_monotonic_s','t_test_s','valid_measurement']+[f'{key}_J{j}' for key in keys for j in range(1,7)]+list(labels))
-        for i in range(len(rows)):writer.writerow([t[i],elapsed[i],bool(valid[i])]+[x for key in keys for x in fields[key][i]]+[labels[key][i] for key in labels])
-    with (path/'test_acceleration.csv').open('w',newline='') as f:
-        writer=csv.writer(f);writer.writerow(['t_monotonic_s']+[f'qdd_est_J{j}' for j in range(1,7)]+[f'qdd_est_valid_J{j}' for j in range(1,7)])
-        for i,tt in enumerate(grid):writer.writerow([tt,*qdd[i],*acc_valid[i]])
+    cfg=manifest['configuration']
+    if cfg.get('export_csv',True):
+        with (path/'test_signals.csv').open('w',newline='') as f:
+            writer=csv.writer(f);keys=list(fields)
+            writer.writerow(['t_monotonic_s','t_test_s','valid_measurement']+[f'{key}_J{j}' for key in keys for j in range(1,7)]+list(labels))
+            for i in range(len(rows)):writer.writerow([t[i],elapsed[i],bool(valid[i])]+[x for key in keys for x in fields[key][i]]+[labels[key][i] for key in labels])
+        with (path/'test_acceleration.csv').open('w',newline='') as f:
+            writer=csv.writer(f);writer.writerow(['t_monotonic_s']+[f'qdd_est_J{j}' for j in range(1,7)]+[f'qdd_est_valid_J{j}' for j in range(1,7)])
+            for i,tt in enumerate(grid):writer.writerow([tt,*qdd[i],*acc_valid[i]])
     raw_count,frame_stats=extract_test_frames(path,manifest)
     test_dropped=0
     if (path/'test_raw_can.jsonl').is_file():

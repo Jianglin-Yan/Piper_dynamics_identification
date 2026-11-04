@@ -8,8 +8,10 @@ class Hardware:
     def __init__(self,cfg,run_dir):
         self.c=cfg;self.latest={};self.limits={};self.acc={};self.firmware=bytearray();self.error=None
         self.rx_lock=threading.Lock();self.tx_lock=threading.Lock();self.stopped=False;self.active=False;self.motion_closed=False;self.disable_acknowledged=False;self.motion_started=False
-        self.heartbeat=time.monotonic();self.done=threading.Event();self.raw=(run_dir/'raw_can.jsonl').open('w',buffering=65536)
-        self.rx_dropped=0;self.raw_log_dropped=0;self.log_done=threading.Event();self.raw_queue=queue.Queue(maxsize=32768)
+        self.heartbeat=time.monotonic();self.done=threading.Event()
+        self.raw_enabled=bool(cfg.get('raw_can_enabled',True))
+        self.raw=(run_dir/'raw_can.jsonl').open('w',buffering=65536) if self.raw_enabled else None
+        self.rx_dropped=0;self.raw_log_dropped=0;self.log_done=threading.Event();self.raw_queue=queue.Queue(maxsize=32768) if self.raw_enabled else None
         self.tx_log=(run_dir/'tx_can.jsonl').open('w',buffering=65536)
         self.sock=socket.socket(socket.AF_CAN,socket.SOCK_RAW,socket.CAN_RAW)
         try:
@@ -17,15 +19,18 @@ class Hardware:
             self.sock.setsockopt(socket.SOL_SOCKET,40,1) # SO_RXQ_OVFL
             self.sock.bind((cfg['channel'],));self.sock.settimeout(.02)
             self.receive_buffer_bytes=self.sock.getsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF)
-            self.writer=threading.Thread(target=self._write_raw,daemon=True);self.writer.start()
+            if self.raw_enabled:
+                self.writer=threading.Thread(target=self._write_raw,daemon=True);self.writer.start()
             self.reader=threading.Thread(target=self._receive,daemon=True);self.reader.start()
             self.guard=threading.Thread(target=self._watchdog,daemon=True);self.guard.start()
         except Exception:
             self.done.set()
             if hasattr(self,'reader'):self.reader.join()
             self.log_done.set()
-            if hasattr(self,'writer'):self.writer.join()
-            self.sock.close();self.raw.close();self.tx_log.close();raise
+            if getattr(self,'writer',None) is not None:self.writer.join()
+            self.sock.close()
+            if self.raw is not None:self.raw.close()
+            self.tx_log.close();raise
     def _write_raw(self):
         # Disk/JSON work must not block the receiver that also confirms shutdown.
         while not self.log_done.is_set() or not self.raw_queue.empty():
@@ -61,7 +66,8 @@ class Hardware:
                     if cid==0x473 and decoded:self.limits[data[0]]={'time':now,**decoded}
                     if cid==0x47c and decoded:self.acc[data[0]]={'time':now,**decoded}
                     if cid==0x4af:self.firmware.extend(data)
-                try:self.raw_queue.put_nowait(row)
+                try:
+                    if self.raw_queue is not None:self.raw_queue.put_nowait(row)
                 except queue.Full:
                     self.raw_log_dropped+=1;self.error='CAN raw logging queue full'
                     # Preserve live feedback for stop/disarm, even when data recording fails.
@@ -246,4 +252,8 @@ class Hardware:
         if self.active:self.quick_stop('closing while active')
         if getattr(self,'motion_started',False) and not getattr(self,'disable_acknowledged',False) and not allow_unconfirmed_power_off:
             raise RuntimeError('Refusing adapter close before confirmed disable')
-        self.done.set();self.reader.join();self.guard.join();self.log_done.set();self.writer.join();self.sock.close();self.raw.close();self.tx_log.close()
+        self.done.set();self.reader.join();self.guard.join();self.log_done.set()
+        if getattr(self,'writer',None) is not None:self.writer.join()
+        self.sock.close()
+        if self.raw is not None:self.raw.close()
+        self.tx_log.close()

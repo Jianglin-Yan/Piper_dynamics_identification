@@ -125,7 +125,9 @@ def main():
     ap.add_argument('--scale',type=float,help='test displacement fraction (0,1]; preparation, return, time and frequency unchanged')
     ap.add_argument('--preflight-only',action='store_true',help='validate the hardware session without reading button actions or enabling motors')
     ap.add_argument('--headless',action='store_true',help='simulation only: skip the preview window for automated checks')
-    ap.add_argument('--viewer',action='store_true');ap.add_argument('--auto',action='store_true',help='自动 PREPARE→START，跑完自行回位失能；不需要手柄');ap.add_argument('--scripted',choices=['normal','abort','speed-stop'],help='simulation only; speed-stop injects speed feedback to preview a controlled stop')
+    ap.add_argument('--viewer',action='store_true');ap.add_argument('--auto',action='store_true',help='自动 PREPARE→START，跑完自行回位失能；不需要手柄')
+    ap.add_argument('--raw-can',action='store_true',help='merge: also log every CAN frame to raw_can.jsonl (large)')
+    ap.add_argument('--csv',action='store_true',help='merge: also export test_signals.csv and test_acceleration.csv');ap.add_argument('--scripted',choices=['normal','abort','speed-stop'],help='simulation only; speed-stop injects speed feedback to preview a controlled stop')
     ap.add_argument('--output',type=Path,default=BASE.parent/'runs');ap.add_argument('--max-seconds',type=float,default=120)
     a=ap.parse_args()
     if a.headless:
@@ -197,6 +199,9 @@ def main():
     if a.standing:
         from .standing import STANDING_DEG
         cfg['start_deg']=cfg.get('standing_start_deg',STANDING_DEG)
+    if a.raw_can:cfg['raw_can_enabled']=True
+    if a.csv:cfg['export_csv']=True
+    cfg.setdefault('raw_can_enabled',True);cfg.setdefault('export_csv',True)
     if selected=='friction' and cfg.get('friction_start')=='current':
         cfg['standing_start']=False;cfg['start_deg']=None
     if a.candidate:
@@ -472,7 +477,8 @@ def main():
                     report=summarize(path)
                     result['validation_protocol']={'kind':ctrl.trial.kind,'automatic_sequence_completed':ctrl.trial.phase=='complete','complete_captures':sum(x['complete'] for x in report['captures']),'partial_captures':sum(not x['complete'] for x in report['captures']),'passive_joints':ctrl.trial.passive_joints,'torque_calibrated':False}
                     emit('VALIDATION_SAVED：'+str(sum(x['complete'] for x in report['captures']))+'段完整静态采集（另含'+str(sum(not x['complete'] for x in report['captures']))+'段中断记录）；标签／姿态／温度和夹爪信息已保存，详见validation_summary.json。')
-                emit('DATA_SAVED：'+str(result['test_data']['sample_count'])+' 条测试快照；test_signals.csv / test_signals.npz，详见 test_quality.json。')
+                csv_note='test_signals.csv / ' if (path/'test_signals.csv').exists() else ''
+                emit('DATA_SAVED：'+str(result['test_data']['sample_count'])+' 条测试快照；'+csv_note+'test_signals.npz，详见 test_quality.json。')
             except Exception as e:
                 result['data_export_error']=str(e);result['completed']=False;emit('DATA_EXPORT_FAILED：'+str(e))
         if lease:lease.close()
