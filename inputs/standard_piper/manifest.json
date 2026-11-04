@@ -2,9 +2,9 @@
   "name": "standard_piper",
   "robot": "standard PiPER (not PiPER X)",
   "model_files": [
-    "model/piper.urdf",
-    "model/nominal_piper.json",
-    "model/piper.xml"
+    "models/standard_piper/piper.urdf",
+    "models/standard_piper/nominal_piper.json",
+    "models/standard_piper/piper.xml"
   ],
   "torque_coefficients_Nm_per_A": [
     4.725,

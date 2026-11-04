@@ -1,0 +1,87 @@
+{
+  "robot": "standard PiPER",
+  "method": "CAD-scaled truncated-SVD least squares; unresolved directions set by nominal prior",
+  "dataset": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/inputs/standard_piper/old_fast_0/sg41.npz",
+  "dataset_sha256": "77731c88be51e068fc871da27c7bb402b994744d989b572724ba49e1ea07f903",
+  "model": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/models/standard_piper/piper.xml",
+  "model_sha256": "9103f778a7fb5c4e72b64f6a17036f64a5f0fe6a3d43bec531d5d9abcc87e568",
+  "parameter_file": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/old_fast_0_sg41_fit.npz",
+  "rank": 54,
+  "rank_tolerance": 1e-08,
+  "train_samples": 955,
+  "test_samples": 957,
+  "train": {
+    "rmse_Nm": [
+      0.09108934555919201,
+      0.2527857787246489,
+      0.22693398389891567,
+      0.03127859840610477,
+      0.03736370305625184,
+      0.034889544054300656
+    ],
+    "target_rms_Nm": [
+      0.5380152199165367,
+      1.4022904670326362,
+      4.579927487742304,
+      0.09804664377530152,
+      0.9098841397144165,
+      0.0775389672574201
+    ],
+    "rmse_over_target_rms": [
+      0.16930626158368323,
+      0.18026634614408008,
+      0.04954968927047004,
+      0.31901753289778617,
+      0.04106424260563451,
+      0.4499614231186694
+    ],
+    "r2_per_joint": [
+      0.9713297510425026,
+      0.9674913330723057,
+      0.9192594301337117,
+      0.8971969363954798,
+      0.9323934882110927,
+      0.7962930359413924
+    ],
+    "relative_error_norm_ratio": 0.07271273668663802,
+    "squared_error_sum_Nm2": 121.56064084465382
+  },
+  "held_out": {
+    "rmse_Nm": [
+      0.08993419732307267,
+      0.2540782538919174,
+      0.22812120689278315,
+      0.031442812914728877,
+      0.03663418647557275,
+      0.03365888102829048
+    ],
+    "target_rms_Nm": [
+      0.5341790551857796,
+      1.4042137610382799,
+      4.577965416328988,
+      0.09844562938841506,
+      0.9087673746070349,
+      0.07767301868038474
+    ],
+    "rmse_over_target_rms": [
+      0.1683596472942858,
+      0.18093986894420633,
+      0.04983025998385777,
+      0.3193926750234076,
+      0.04031195166025182,
+      0.4333407095556925
+    ],
+    "r2_per_joint": [
+      0.9716533198097956,
+      0.9672494196113899,
+      0.9186028060178897,
+      0.8970244997507248,
+      0.9346195115134535,
+      0.8109280388599054
+    ],
+    "relative_error_norm_ratio": 0.07298567072736994,
+    "squared_error_sum_Nm2": 122.63652430853445
+  },
+  "torque_calibrated": false,
+  "parameter_interpretation": "Torque-prediction candidate, not uniquely identified link inertias"
+}

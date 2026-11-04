@@ -11,7 +11,7 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-from .minimum_base_svd import metrics, sha256
+from .regression import metrics, sha256
 from .paths import INPUT_RUN, OUTPUTS, REFERENCE, SPLIT
 from .split import load_validated_split
 

@@ -5,9 +5,9 @@
   "source_run": "20261029_114614_130196",
   "robot": "standard PiPER",
   "model": {
-    "urdf": "model/piper.urdf",
-    "nominal": "model/nominal_piper.json",
-    "mjcf": "model/piper.xml"
+    "urdf": "models/standard_piper/piper.urdf",
+    "nominal": "models/standard_piper/nominal_piper.json",
+    "mjcf": "models/standard_piper/piper.xml"
   },
   "plan": {
     "source_sha256": "8f480e65f56b711c5b05acd2a2042d239170a2951225307a303a5321717d7246",

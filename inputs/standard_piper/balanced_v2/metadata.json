@@ -5,9 +5,9 @@
   "source_run": "20261030_132842_448131",
   "robot": "standard PiPER",
   "model": {
-    "urdf": "model/piper.urdf",
-    "nominal": "model/nominal_piper.json",
-    "mjcf": "model/piper.xml"
+    "urdf": "models/standard_piper/piper.urdf",
+    "nominal": "models/standard_piper/nominal_piper.json",
+    "mjcf": "models/standard_piper/piper.xml"
   },
   "plan": {
     "base_frequency_hz": 0.05,

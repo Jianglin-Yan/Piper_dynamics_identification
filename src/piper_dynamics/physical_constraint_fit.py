@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 import platform
 import sys
@@ -23,9 +22,10 @@ import numpy as np
 import scipy
 
 from .geometry_bounds import derive_link_geometry, MESH_ROOT
-from .minimum_base_svd import metrics, param_names, sha256
+from .minimum_base_svd import param_names
 from .model_alignment import model_alignment_audit
 from .paths import INPUT_RUN, MODELS, OUTPUTS, REFERENCE, SPLIT
+from .regression import metrics, sha256
 from .split import load_validated_split
 
 SNAPSHOT = REFERENCE
