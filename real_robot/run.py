@@ -275,7 +275,8 @@ def main():
                 result['previous_controller_session']=history
                 if history:
                     emit('STARTUP_HISTORY：'+history['reason']+' 记录：'+history['run'])
-                notice=None if a.preflight_only else recovery_notice(history)
+                pending=path.parent/'.recovery_pending'
+                notice=None if a.preflight_only else ('上次控制会话以故障/电子急停结束，未记录到成功恢复。' if pending.exists() else recovery_notice(history))
                 if notice:
                     ui.warn(notice)
                     if sys.stdin.isatty():
@@ -290,6 +291,7 @@ def main():
                 b.reset_once();time.sleep(1.);s=b.snapshot()
                 if np.any(s['enabled']) or s['status'].get('arm_status')!=0 or s['status'].get('error_code')!=0:
                     raise RuntimeError('恢复未确认成功：六轴仍使能或故障码未清零；不自动重试，请断电重启后再运行')
+                (path.parent/'.recovery_pending').unlink(missing_ok=True)
                 emit('RECOVERED：已按确认发送一次重置，六轴失能、故障码为零；继续本次任务。')
             if a.recover:
                 if 'S-V1.7-3250618' not in info['firmware']:raise ValueError('Recovery not reviewed for this firmware')
@@ -299,6 +301,7 @@ def main():
                 b.reset_supported();time.sleep(1.);after=b.snapshot();result['after']=after
                 if np.any(after['enabled']) or after['status'].get('arm_status')!=0 or after['status'].get('error_code')!=0 or any(after['faults']):
                     raise RuntimeError('恢复未确认成功；不自动重试。')
+                (path.parent/'.recovery_pending').unlink(missing_ok=True)
                 emit('RECOVERED：六轴已失能、故障码为零。恢复命令结束；运动需要另行运行并由手柄触发。')
                 result.update(completed=True,state='RECOVERED');return
             if a.read_only:
@@ -483,6 +486,7 @@ def main():
                 result['data_export_error']=str(e);result['completed']=False;emit('DATA_EXPORT_FAILED：'+str(e))
         if lease:lease.close()
         for s,h in old_handlers.items():signal.signal(s,h)
+        if result.get('state')=='FAULT':(path.parent/'.recovery_pending').write_text(str(path)+'\n')
         samples.close();events.close();(path/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2,default=serializable));print('Run files:',path,flush=True)
     if result.get('state') in ('FAULT','PREFLIGHT_REJECTED') or result.get('log_error') or result.get('data_export_error'):raise SystemExit(2)
 if __name__=='__main__':main()
