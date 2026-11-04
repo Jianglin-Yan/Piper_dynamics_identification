@@ -92,6 +92,16 @@ PYTHONPATH=src .venv/bin/python -m piper_dynamics show
 - `*_fit.npz` 保存的仍是 78 维 `theta`，零空间方向被钉在名义值；真正由数据确定的只有 54 个自由度。
 - 当前的 54 维基底来自训练矩阵的 SVD，是数据相关的；若需要与数据无关的结构最小基，应对通用状态堆叠的回归矩阵做列主元 QR。
 
+## 伺服控制逻辑
+
+PiPER 单关节的三环控制（位置 → 速度 → 电流/FOC）与 MIT 力矩前馈结构见
+`docs/piper_servo_control_logic.png`（SVG 同名），由
+`scripts/render_control_diagram.py` 生成：
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/render_control_diagram.py
+```
+
 ## 历史复算
 
 旧 PiPER X 代码和输出依赖固定源码快照及模型哈希。需要复算旧 PDF 数值时，按顺序运行：
