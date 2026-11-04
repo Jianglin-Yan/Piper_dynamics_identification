@@ -73,7 +73,9 @@ def validate_config(c):
         if c['validation_move_velocity_rad_s']>.12 or c['validation_move_acceleration_rad_s2']>.12:raise ValueError('Validation paths exceed slow profile')
         if not 1<=c['validation_settle_s']<=30 or not 2<=c['validation_capture_s']<=60:raise ValueError('Invalid diagnostic dwell')
     if c['trajectory']=='friction':
-        if not c.get('standing_start') or c.get('current_pose_only'):raise ValueError('Friction collection requires --standing')
+        if c.get('friction_start','current')=='current':
+            if c.get('standing_start') or c.get('current_pose_only'):raise ValueError('Current-pose friction collection must not use --standing/--from-current')
+        elif not c.get('standing_start') or c.get('current_pose_only'):raise ValueError('Standing friction collection requires --standing')
         if c.get('passive_wrist') or c.get('hold_start_wrist') or c.get('release_gripper'):raise ValueError('Friction collection uses six enabled joints and no gripper')
         if c['trajectory_scale']!=1 or c['trajectory_speed_scale']!=1:raise ValueError('Friction collection uses fixed paths')
         joints=[int(j) for j in c['friction_joints']]
@@ -112,6 +114,7 @@ def main():
     ap.add_argument('--friction-joints',type=int,nargs='+',help='friction only: joint order, default 1 6 4 5 2 3')
     ap.add_argument('--friction-speeds',type=float,nargs='+',help='friction only: speed levels in rad/s')
     ap.add_argument('--friction-repeats',type=int,help='friction only: repeats per speed')
+    ap.add_argument('--friction-start',choices=['current','standing'],default='current',help='friction only: start and return at the measured pose (default) or at the standing pose')
     ap.add_argument('--capture-seconds',type=float,help='validation only: stationary recording duration, default 6')
     ap.add_argument('--settle-seconds',type=float,help='validation only: extra stable time before recording, default 2')
     ap.add_argument('--payload-point-m',type=float,nargs=3,help='optional hanging point xyz in link6 coordinates, metres; do not guess')
@@ -172,6 +175,7 @@ def main():
         if a.friction_joints is not None:cfg['friction_joints']=a.friction_joints
         if a.friction_speeds is not None:cfg['friction_speeds_rad_s']=a.friction_speeds
         if a.friction_repeats is not None:cfg['friction_repeats']=a.friction_repeats
+        cfg['friction_start']=a.friction_start
     elif any(x is not None for x in (a.friction_joints,a.friction_speeds,a.friction_repeats)):ap.error('--friction-* options require --trajectory friction')
     if selected in ('static','reciprocal','payload'):
         from .validation_trials import configure
@@ -193,6 +197,8 @@ def main():
     if a.standing:
         from .standing import STANDING_DEG
         cfg['start_deg']=cfg.get('standing_start_deg',STANDING_DEG)
+    if selected=='friction' and cfg.get('friction_start')=='current':
+        cfg['standing_start']=False;cfg['start_deg']=None
     if a.candidate:
         if selected!='multisine' or a.seed is not None:
             ap.error('--candidate requires --trajectory multisine; cannot combine with --seed')

@@ -28,6 +28,10 @@ class Controller(Shutdown):
         self.start=self.home.copy() if cfg['start_deg'] is None else np.deg2rad(cfg['start_deg'])
         self.lower=np.deg2rad(cfg['lower_deg'])+np.deg2rad(cfg['margin_deg'])
         self.upper=np.deg2rad(cfg['upper_deg'])-np.deg2rad(cfg['margin_deg'])
+        if cfg.get('trajectory')=='friction' and cfg.get('friction_start')=='current':
+            pad=np.deg2rad(np.asarray(cfg['friction_stroke_deg'],float))/2+np.deg2rad(1.)
+            self.lower=np.minimum(self.lower,self.home-pad)
+            self.upper=np.maximum(self.upper,self.home+pad)
         if self.standing_start:
             if cfg.get('passive_wrist',False) or cfg.get('hold_start_wrist',False):
                 cfg['standing_start_deg']=list(cfg.get('standing_start_deg',[0.,45.,-60.,0.,0.,0.]))
@@ -111,6 +115,11 @@ class Controller(Shutdown):
         outbound_start=self.boundary_goal if self.standing_start else self.home
         self.outbound=transit(outbound_start,self.start,self.vmax,self.amax)
         self.inbound=transit(self.start,self.return_home,self.vmax,self.amax)
+        if cfg.get('trajectory')=='friction' and cfg.get('friction_start')=='current':
+            # Start and finish at the measured park: hold instead of moving to a
+            # legal boundary or the standing pose.
+            self.start=self.home.copy();self.return_home=self.home.copy()
+            self.outbound=Segment(self.start,self.start,.5);self.inbound=Segment(self.return_home,self.return_home,.5)
         for p in (self.outbound,self.inbound):self.check(p)
         if self.mit:
             self.outbound=transit(self.home,self.start,self.vmax,self.amax);self.check(self.outbound)
