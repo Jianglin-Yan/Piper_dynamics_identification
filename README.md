@@ -76,7 +76,7 @@ PYTHONPATH=src .venv/bin/python -m piper_dynamics fit
 PYTHONPATH=src .venv/bin/python -m piper_dynamics show
 ```
 
-`fit` 会写出四份数据/报告文件：`*_fit.npz`（原始数组）、`*_fit.json`（指标与参数）、`*_fit_parameters.csv`（逐项参数表）和 `*_fit.md`（可直接阅读的中文报告，含分关节误差与物理一致性检查），并顺手画两张一页六关节横排的力矩对比图：`*_torque_train.png` 和 `*_torque_validation.png`（黑线实测、红线预测，标题带各关节 RMSE）。`show` 不需要重新拟合，直接读取 npz 并打印连杆参数与摩擦项；`fit --no-plots` 可跳过画图（无 matplotlib 环境时）。
+`fit` 会写出四份数据/报告文件：`*_fit.npz`（原始数组）、`*_fit.json`（指标与参数）、`*_fit_parameters.csv`（逐项参数表）和 `*_fit.md`（可直接阅读的中文报告，含分关节误差与物理一致性检查），并顺手画两张一页六行竖排（共享时间轴）的力矩对比图：`*_torque_train.png` 和 `*_torque_validation.png`（黑线实测、红线预测，纵轴标注各关节 RMSE）。`show` 不需要重新拟合，直接读取 npz 并打印连杆参数与摩擦项；`fit --no-plots` 可跳过画图（无 matplotlib 环境时）。
 
 `regressor` 在 `outputs/standard_piper/` 生成 `*_Y.npz`，其中 `Y` 为 `(N, 6, 60)` 的刚体回归矩阵。`fit` 在刚体矩阵后追加每轴 `qd`、`tanh(qd/0.02)`、常数三列，共 78 列；在整条训练轨迹上用 CAD 尺度化截断 SVD 求解，未辨识方向取名义参数，再在整条验证轨迹上评估，将 `*_fit.npz` 与同名 JSON 报告写入 `outputs/standard_piper/`。该秩来自所选训练数据，并非独立验证的结构最小基。当前 `balanced_v2 -> balanced_v1` 的秩为 54/78，训练误差 5.84%，跨轨迹验证误差 8.91%。两个命令都支持 `--out`；`fit` 还支持 `--validation` 指定其他留出文件。
 

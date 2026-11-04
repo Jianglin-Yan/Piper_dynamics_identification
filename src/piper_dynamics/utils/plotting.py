@@ -18,12 +18,12 @@ def plot_torque_comparison(
     *,
     title: str = "",
     joint_labels: Sequence[str] = JOINT_LABELS,
-    figure_size: tuple[float, float] = (26.0, 4.6),
+    figure_size: tuple[float, float] = (14.0, 16.0),
     dpi: int = 150,
     line_width: float = 0.9,
     annotate_rmse: bool = True,
 ) -> Path:
-    """Plot measured vs predicted torque for all six joints on one row.
+    """Plot measured vs predicted torque for all six joints, stacked vertically.
 
     Args:
         time_s: Time vector of shape ``(N,)``.
@@ -31,11 +31,11 @@ def plot_torque_comparison(
         predicted_Nm: Predicted torque of shape ``(N, 6)``.
         output_path: PNG destination; parent directories are created.
         title: Optional figure title.
-        joint_labels: Subplot titles, one per joint.
-        figure_size: Figure size in inches; the default is one wide row.
+        joint_labels: Y-axis labels, one per joint.
+        figure_size: Figure size in inches; six rows share one time axis.
         dpi: Raster resolution.
         line_width: Curve line width.
-        annotate_rmse: Append the per-joint RMSE to each subplot title.
+        annotate_rmse: Append the per-joint RMSE to each y-axis label.
 
     Returns:
         The written PNG path.
@@ -61,26 +61,27 @@ def plot_torque_comparison(
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    figure, axes = plt.subplots(1, 6, figsize=figure_size)
+    figure, axes = plt.subplots(6, 1, figsize=figure_size, sharex=True)
     for joint, axis in enumerate(axes):
         axis.plot(time, measured[:, joint], color="black", lw=line_width,
                   label="measured (target)")
         axis.plot(time, predicted[:, joint], color="tab:red", lw=line_width,
                   alpha=0.85, label="predicted")
-        subtitle = joint_labels[joint]
+        label = joint_labels[joint]
         if annotate_rmse:
             rmse = float(np.sqrt(np.mean((predicted[:, joint] - measured[:, joint]) ** 2)))
-            subtitle = f"{subtitle}  RMSE {rmse:.3f} N·m"
-        axis.set_title(subtitle, fontsize=9)
+            label = f"{label}  RMSE {rmse:.3f} N·m"
+        axis.set_ylabel(label, fontsize=10)
+        axis.set_xlim(float(time[0]), float(time[-1]))
         axis.grid(alpha=0.25, lw=0.5)
-        axis.tick_params(labelsize=7)
-        axis.set_xlabel("time (s)", fontsize=8)
+        axis.tick_params(labelsize=8)
         if joint == 0:
-            axis.set_ylabel("torque (N·m)", fontsize=9)
-            axis.legend(fontsize=7, loc="upper right")
+            axis.legend(fontsize=8, loc="upper right")
+        if joint == len(axes) - 1:
+            axis.set_xlabel("time (s)", fontsize=10)
     if title:
-        figure.suptitle(title, fontsize=12)
-    figure.tight_layout(rect=(0, 0, 1, 0.94) if title else (0, 0, 1, 1))
+        figure.suptitle(title, fontsize=13)
+    figure.tight_layout(rect=(0, 0, 1, 0.97) if title else (0, 0, 1, 1))
     figure.savefig(output_path, dpi=dpi)
     plt.close(figure)
     return output_path
