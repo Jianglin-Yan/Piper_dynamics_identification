@@ -48,6 +48,10 @@ def build_parser() -> argparse.ArgumentParser:
     fitted.add_argument("--validation", type=Path, help="held-out npz")
     fitted.add_argument("--out", type=Path)
     fitted.add_argument("--rank-tolerance", type=float, default=1e-8)
+    fitted.add_argument(
+        "--no-plots", action="store_true",
+        help="skip the per-joint torque comparison PNGs",
+    )
 
     return parser
 
@@ -62,5 +66,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         dataset = args.dataset or raw_dataset_path(load_split_rule()["train"])
         build_regressor(dataset, args.out)
     else:
-        fit(args.dataset, args.validation, args.out, args.rank_tolerance)
+        fit(
+            args.dataset, args.validation, args.out,
+            args.rank_tolerance, make_plots=not args.no_plots,
+        )
     return 0

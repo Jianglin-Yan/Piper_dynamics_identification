@@ -11,7 +11,7 @@
 | `inputs/validation/` | 验证数据：`splits.json` 指定的整条 `balanced_v1` 的 `sg41`，附 `manifest.json` |
 | `models/standard_piper/` | 标准 PiPER URDF、名义惯性 JSON 和用于回归器的 MuJoCo XML |
 | `src/piper_dynamics/` | 源码包，职责划分见下方“代码结构” |
-| `outputs/standard_piper/` | 标准 PiPER 的回归矩阵、拟合参数（`.npz` / `_parameters.csv` / `.md`）和评估报告 `.json` |
+| `outputs/standard_piper/` | 标准 PiPER 的回归矩阵、拟合参数（`.npz` / `_parameters.csv` / `.md`）、评估报告 `.json` 和力矩对比图 `_torque_*.png` |
 | `models/piper_x.urdf`, `models/nominal_x.json` | 旧 PiPER X 复算所需模型 |
 | `src/piper_dynamics/legacy/` | 旧 PiPER X 复算代码（原始数据已清理，仅保留代码供追溯） |
 | `outputs/minimum_base/`, `outputs/physical_constraints/`, `outputs/reference/` | 旧实验数值结果及保留的原 PDF |
@@ -35,7 +35,8 @@ src/piper_dynamics/
 │   ├── trajectory_split.py         # 整条轨迹训练/验证划分与物化
 │   └── standard_piper_pipeline.py  # 端到端拟合编排与输出落盘
 ├── utils/                          # 通用工具
-│   └── hashing.py                  # 文件 SHA256
+│   ├── hashing.py                  # 文件 SHA256
+│   └── plotting.py                 # 六关节实测/预测力矩对比图
 └── legacy/                         # 旧 PiPER X 代码（仅存档，当前不可运行）
 ```
 
@@ -75,11 +76,21 @@ PYTHONPATH=src .venv/bin/python -m piper_dynamics fit
 PYTHONPATH=src .venv/bin/python -m piper_dynamics show
 ```
 
-`fit` 会写出四份文件：`*_fit.npz`（原始数组）、`*_fit.json`（指标与参数）、`*_fit_parameters.csv`（逐项参数表）和 `*_fit.md`（可直接阅读的中文报告，含分关节误差与物理一致性检查）。`show` 不需要重新拟合，直接读取 npz 并打印连杆参数与摩擦项。
+`fit` 会写出四份数据/报告文件：`*_fit.npz`（原始数组）、`*_fit.json`（指标与参数）、`*_fit_parameters.csv`（逐项参数表）和 `*_fit.md`（可直接阅读的中文报告，含分关节误差与物理一致性检查），并顺手画两张一页六关节横排的力矩对比图：`*_torque_train.png` 和 `*_torque_validation.png`（黑线实测、红线预测，标题带各关节 RMSE）。`show` 不需要重新拟合，直接读取 npz 并打印连杆参数与摩擦项；`fit --no-plots` 可跳过画图（无 matplotlib 环境时）。
 
 `regressor` 在 `outputs/standard_piper/` 生成 `*_Y.npz`，其中 `Y` 为 `(N, 6, 60)` 的刚体回归矩阵。`fit` 在刚体矩阵后追加每轴 `qd`、`tanh(qd/0.02)`、常数三列，共 78 列；在整条训练轨迹上用 CAD 尺度化截断 SVD 求解，未辨识方向取名义参数，再在整条验证轨迹上评估，将 `*_fit.npz` 与同名 JSON 报告写入 `outputs/standard_piper/`。该秩来自所选训练数据，并非独立验证的结构最小基。当前 `balanced_v2 -> balanced_v1` 的秩为 54/78，训练误差 5.84%，跨轨迹验证误差 8.91%。两个命令都支持 `--out`；`fit` 还支持 `--validation` 指定其他留出文件。
 
 标准 PiPER 模型中的关节阻尼、转子惯量、摩擦损失、重力补偿和接触在构造刚体回归器时关闭。名义参数来自官方模型，不是真机质量或惯量真值。截断 SVD 拟合的 78 维结果是一组力矩预测候选，不是唯一可辨识的逐连杆物理参数，也未施加旧 PiPER X 流程的几何与伪惯量约束。
+
+## 最小参数集
+
+标准 PiPER 的 78 列回归器结构秩为 **54/78**（6000 组随机状态，1e-6～1e-10 阈值下稳定），其中纯刚体部分为 36/60；本次训练数据的数值秩同样是 54。因此能独立影响力矩的参数组合只有 54 个，另外 24 个方向属于零空间。
+
+需要区分三件事：
+
+- “最小参数集”指 **54 个相互独立的参数组合**，不是 54 个单独的物理量，且基底不唯一。
+- `*_fit.npz` 保存的仍是 78 维 `theta`，零空间方向被钉在名义值；真正由数据确定的只有 54 个自由度。
+- 当前的 54 维基底来自训练矩阵的 SVD，是数据相关的；若需要与数据无关的结构最小基，应对通用状态堆叠的回归矩阵做列主元 QR。
 
 ## 历史复算
 

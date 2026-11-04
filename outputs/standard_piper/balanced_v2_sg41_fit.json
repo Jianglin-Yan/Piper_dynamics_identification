@@ -719,5 +719,7 @@
     }
   ],
   "parameters_csv": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit_parameters.csv",
-  "report_markdown": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit.md"
+  "report_markdown": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit.md",
+  "torque_plot_train": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit_torque_train.png",
+  "torque_plot_validation": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit_torque_validation.png"
 }

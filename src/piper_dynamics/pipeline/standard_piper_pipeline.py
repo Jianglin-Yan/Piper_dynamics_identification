@@ -31,6 +31,7 @@ from ..core.rigid_body_regressor import RegressorBuilder, ground_truth_theta
 from ..core.svd_fit import predict_torque, solve_truncated_svd
 from ..paths import STANDARD_MODELS, STANDARD_OUTPUTS
 from ..utils.hashing import sha256
+from ..utils.plotting import plot_torque_comparison
 from .trajectory_split import default_dataset_paths, load_split_rule, output_stem
 
 MODEL_PATH = STANDARD_MODELS / "piper.xml"
@@ -80,6 +81,7 @@ def fit(
     validation_dataset: Path | None = None,
     out: Path | None = None,
     rank_tolerance: float = 1e-8,
+    make_plots: bool = True,
 ) -> Path:
     """Fit on one whole real acquisition and evaluate on a different acquisition."""
     rule = load_split_rule()
@@ -159,6 +161,25 @@ def fit(
     report["parameters"] = rows
     report["parameters_csv"] = str(csv_path)
     report["report_markdown"] = str(markdown_path)
+
+    if make_plots:
+        try:
+            train_plot = plot_torque_comparison(
+                train_data["t"], train_data["target_Nm"], predicted_train,
+                out.with_name(f"{out.stem}_torque_train.png"),
+                title=f"Torque comparison: {rule['train']} (training)",
+            )
+            validation_plot = plot_torque_comparison(
+                validation_data["t"], validation_data["target_Nm"],
+                predicted_validation,
+                out.with_name(f"{out.stem}_torque_validation.png"),
+                title=f"Torque comparison: {rule['validation']} (held-out)",
+            )
+            report["torque_plot_train"] = str(train_plot)
+            report["torque_plot_validation"] = str(validation_plot)
+        except ImportError as error:  # matplotlib is optional at run time
+            print(f"warning: skipping torque plots ({error})")
+
     report_path = out.with_suffix(".json")
     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
     write_markdown_report(markdown_path, report, rows)
