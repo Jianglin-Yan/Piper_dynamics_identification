@@ -101,7 +101,12 @@ class Hardware:
         # Keep workspace/protection metadata truthful; never mark unchecked facts as confirmed.
         multisine=self.c.get('trajectory')=='multisine'
         if multisine and (not standing or current_pose):raise ValueError('Multisine requires the standing preparation session')
-        if current_pose or standing:
+        friction_current = self.c.get('trajectory') == 'friction' and self.c.get('friction_start') == 'current'
+        if friction_current:
+            # One joint at a time, a few degrees around the measured park; there is no
+            # separate start pose, so the general workspace assertion does not apply.
+            pass
+        elif current_pose or standing:
             if not multisine and (self.c['joint']!=6 or (self.c['start_deg'] is not None and not standing) or self.c['amplitude_deg']>5 or self.c['frequency_hz']>.1):
                 raise ValueError('Invalid current-pose J6 pilot profile')
         else:
@@ -185,6 +190,17 @@ class Hardware:
         self.native_speed_percent=2
         self.command(q)
     def finish_native_move(self):self.native_speed_percent=None
+    def reset_once(self):
+        """Send one recovery/reset frame; the session may arm afterward.
+
+        Only called after the operator explicitly confirms support and no e-stop
+        at the startup prompt. Unlike reset_supported() this does not latch the
+        instance, so the normal arm/enable sequence can follow.
+        """
+        with self.tx_lock:
+            if self.active or self.stopped:raise RuntimeError('Cannot reset an active or stopped session')
+            self._send_locked(0x150,[2,0,0,0,0,0,0,0])
+
     def reset_supported(self):
         """Explicit recovery CLI only; never called by arming or fault recovery."""
         with self.tx_lock:

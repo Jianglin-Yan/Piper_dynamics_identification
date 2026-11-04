@@ -281,6 +281,11 @@ def main():
                     else:ui.warn('非交互运行：不等待确认，请自行核实')
             b=Hardware(cfg,path);info=b.discover();(path/'hardware.json').write_text(json.dumps(info,ensure_ascii=False,indent=2));emit('只读查询完成：'+next((x for x in info['firmware'].split('\x00') if x.startswith('S-V')),'未知固件')+'；详细参数已保存 hardware.json')
             s=b.snapshot();b.check(s,False)
+            if result.get('operator_confirmed_after_recovery_warning') and history and history.get('requires_recovery'):
+                b.reset_once();time.sleep(1.);s=b.snapshot()
+                if np.any(s['enabled']) or s['status'].get('arm_status')!=0 or s['status'].get('error_code')!=0:
+                    raise RuntimeError('恢复未确认成功：六轴仍使能或故障码未清零；不自动重试，请断电重启后再运行')
+                emit('RECOVERED：已按确认发送一次重置，六轴失能、故障码为零；继续本次任务。')
             if a.recover:
                 if 'S-V1.7-3250618' not in info['firmware']:raise ValueError('Recovery not reviewed for this firmware')
                 if np.max(np.abs(s['qd']))>.1:raise ValueError('Robot moving: recovery refused')
