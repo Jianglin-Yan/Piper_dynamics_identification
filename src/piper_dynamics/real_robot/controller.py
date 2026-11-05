@@ -327,7 +327,8 @@ class Controller(MitControl, Shutdown):
 
     def _initialize_mode(self, cfg, snapshot, now):
         """Capture existing MIT state without importing the trial controller."""
-        self.mit = cfg.get("trajectory") == "mit"
+        self.mit = cfg.get("trajectory") in ("mit", "drag")
+        self.drag = cfg.get("trajectory") == "drag"
         if self.mit:
             self.mit_sample = snapshot
             self.mit_time = now
@@ -372,6 +373,11 @@ class Controller(MitControl, Shutdown):
                 cfg["standing_start_deg"][5] = float(np.rad2deg(self.home[5]))
             self.start, self.boundary_goal, self.lower, self.upper = standing_plan(cfg, self.home)
             self.return_home = self.home.copy() if self.mit else self.boundary_goal.copy()
+        if cfg.get("trajectory") == "drag":
+            # The drag reference follows the measured pose anywhere inside the
+            # firmware range; the standing interior is too narrow for a hand push.
+            self.lower = np.deg2rad(cfg["lower_deg"]) + np.deg2rad(1.0)
+            self.upper = np.deg2rad(cfg["upper_deg"]) - np.deg2rad(1.0)
         if self.current_pose_only:
             self.lower, self.upper = current_pose_bounds(cfg, self.home)
             self.emit("当前姿态模式：J1–J5 保持启动目标，仅 J6 运动")
@@ -601,6 +607,9 @@ class Controller(MitControl, Shutdown):
 
     def _handle_actions(self, now, s, action):
         """Handle operator actions before dispatching the resulting state."""
+        if self.drag and action == "PREPARE" and self.state in ("TESTING", "READY"):
+            self.request_stop(s, now, "Drag test completed")
+            return True
         if action == "STOP":
             self.request_stop(s, now, "operator/input stop")
             if self.state in ("DONE", "FAULT"):

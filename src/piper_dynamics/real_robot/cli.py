@@ -52,6 +52,7 @@ def add_control_options(ap):
             "friction",
             "gravity",
             "mit",
+            "drag",
         ],
         help="pilot/multisine diagnostics or unified MIT PD/FF trial",
     )

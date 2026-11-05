@@ -73,6 +73,24 @@ def configure(c, ff_scale=0.0, gain_scale=1.0, model="nominal", fit="sg21_LS"):
     )
 
 
+DRAG_KP = 5.0
+
+
+def configure_drag(c, model="identified", fit="sg21_LS"):
+    """Low-stiffness drag: Kp 5/100% FF at test, 10/0 during prepare and return."""
+    configure(c, 1.0, 1.0, model, fit)
+    c.update(
+        mit_kp=[DRAG_KP] * 6,
+        mit_kd=[0.8] * 6,
+        mit_prepare_kp=[MIT_KP[0]] * 6,
+        mit_prepare_kd=[MIT_KD[0]] * 6,
+        mit_return_kp=[MIT_KP[0]] * 6,
+        mit_return_kd=[MIT_KD[0]] * 6,
+        mit_test_offsets_deg=[],
+        mit_test_minimum_segment_s=1.0,
+    )
+
+
 MitController = Controller
 
 __all__ = [

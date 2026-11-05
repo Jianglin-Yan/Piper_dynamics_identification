@@ -21,6 +21,7 @@ def validate_common_options(c):
         "friction",
         "gravity",
         "mit",
+        "drag",
     ):
         raise ValueError("Unknown trajectory")
     c.setdefault("trajectory_scale", 1.0)
@@ -254,7 +255,7 @@ def validate_friction(c):
 
 def validate_mit(c):
     "Validate mit."
-    if c["trajectory"] == "mit":
+    if c["trajectory"] in ("mit", "drag"):
         if (
             not c.get("standing_start")
             or c.get("current_pose_only")
@@ -299,7 +300,16 @@ def validate_config(c):
 
 
 def configure_mit(cfg, a, ap, selected):
-    "Apply mit trial overrides."
+    "Apply mit/drag trial overrides."
+    if selected == "drag":
+        if not (a.sim or a.hardware):
+            ap.error("Drag trial is sim/hardware only")
+        if a.ff_scale is not None or a.mit_gain_scale is not None:
+            ap.error("Drag uses a fixed Kp 5 and 100% feedforward")
+        from piper_dynamics.real_robot.control.mit_trial import configure_drag
+
+        configure_drag(cfg, a.gravity_model or "identified", a.gravity_fit or "sg21_LS")
+        return
     if selected == "mit":
         if not (a.sim or a.hardware):
             ap.error("MIT trial is sim/hardware only")

@@ -117,6 +117,18 @@ def _configure_friction(controller, cfg):
     controller.reference_plan = controller.trial.plan
 
 
+def _configure_drag(controller, cfg):
+    """Build the open-ended low-stiffness drag trial."""
+    from piper_dynamics.real_robot.trials.drag import DragTrial
+
+    controller.trial = DragTrial(controller.start, cfg)
+    controller.test = controller.trial.reference
+    controller.nominal_test = controller.test
+    controller.reference_plan = controller.trial.plan
+    if controller.gravity is not None:
+        controller.reference_plan["gravity_model"] = controller.gravity.provenance
+
+
 def _configure_diagnostic(controller, cfg):
     """Build the existing diagnostic trial and provenance."""
     from piper_dynamics.real_robot.trials.validation import ValidationTrial
@@ -170,6 +182,8 @@ def configure_trial(controller, cfg):
         _configure_gravity(controller, cfg)
     elif cfg.get("trajectory") == "mit":
         _configure_mit(controller, cfg)
+    elif cfg.get("trajectory") == "drag":
+        _configure_drag(controller, cfg)
     elif cfg.get("trajectory") == "friction":
         _configure_friction(controller, cfg)
     elif cfg.get("trajectory") in ("static", "reciprocal", "payload"):

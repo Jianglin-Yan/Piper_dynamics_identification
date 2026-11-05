@@ -75,7 +75,7 @@ class MitControl:
             self.mit_kd = (1 - f) * np.array(self.config["mit_prepare_kd"]) + f * np.array(
                 self.config["mit_kd"]
             )
-        if self.state == "TESTING" and now - self.path_t >= self.test.duration:
+        if self.state == "TESTING" and (not self.drag) and now - self.path_t >= self.test.duration:
             self.request_stop(s, now, "MIT trial completed")
         if self.state == "FF_RAMP_OUT":
             f = float(smooth((now - self.ff_phase_t) / self.config["mit_ff_ramp_s"])[0])
@@ -155,7 +155,7 @@ class MitControl:
             return
         if not self.active:
             return self._request_stop_base(s, now, reason)
-        if reason == "MIT trial completed":
+        if reason in ("MIT trial completed", "Drag test completed"):
             self.stop_reason = reason
             self.state = "FF_RAMP_OUT"
             self.ff_phase_t = now

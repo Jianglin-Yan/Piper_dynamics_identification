@@ -89,7 +89,15 @@ class Session:
 
     def print_header(self):
         "Describe the selected trial once at session startup."
-        if self.selected == "mit":
+        if self.selected == "drag":
+            self.ui.header(
+                "MIT 零力拖动 · 重力补偿",
+                [
+                    "控制方式：MIT（Kp 5，前馈 100%）",
+                    "任务：LB+X 准备到站立位，LB+Y 开始记录；先静置，再手推；LB+X 结束并回位",
+                ],
+            )
+        elif self.selected == "mit":
             self.ui.header(
                 "MIT 固定轨迹 · 重力前馈验证",
                 [
@@ -142,7 +150,7 @@ class Session:
             from piper_dynamics.real_robot.backends.validation_simulation import (
                 ValidationSimulation as Simulation,
             )
-        elif self.selected == "mit":
+        elif self.selected in ("mit", "drag"):
             from piper_dynamics.real_robot.control.mit_trial import MitSimulation as Simulation
         elif self.selected == "gravity":
             from piper_dynamics.real_robot.control.gravity_hold import (
@@ -156,7 +164,7 @@ class Session:
 
     def hardware_type(self):
         "Select the current hardware command implementation."
-        if self.selected == "mit":
+        if self.selected in ("mit", "drag"):
             from piper_dynamics.real_robot.control.mit_trial import MitHardware as Hardware
         elif self.selected == "gravity":
             from piper_dynamics.real_robot.control.gravity_hold import GravityHardware as Hardware
@@ -311,7 +319,7 @@ class Session:
         s = self.backend.snapshot()
         now = 0.0 if self.args.sim else time.monotonic()
         ctrl_type = Controller
-        if self.selected == "mit":
+        if self.selected in ("mit", "drag"):
             from piper_dynamics.real_robot.control.mit_trial import MitController
 
             ctrl_type = MitController
@@ -325,7 +333,7 @@ class Session:
 
     def save_reference(self):
         "Save the existing reference plan and trajectory metadata."
-        if self.selected in ("gravity", "mit"):
+        if self.selected in ("gravity", "mit", "drag"):
             (self.path / "reference_plan.json").write_text(
                 json.dumps(self.controller.reference_plan, ensure_ascii=False, indent=2)
             )
@@ -384,7 +392,7 @@ class Session:
                     if self.config["trajectory"] == "pilot"
                     else None,
                     "moving_joints": [1, 2, 3, 4, 5, 6]
-                    if self.config["trajectory"] in ("multisine", "mit", "gravity")
+                    if self.config["trajectory"] in ("multisine", "mit", "drag", "gravity")
                     else [self.config["joint"]],
                     "shutdown": "park_then_confirm_six_axis_disabled",
                     "park_release_tolerance_deg": self.config["park_release_tolerance_deg"],
