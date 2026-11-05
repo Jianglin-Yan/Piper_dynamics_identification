@@ -20,8 +20,25 @@ def load_npz(path):
 
 
 def original_modules():
+    """Reuse main's regressor and retain the archived solver for existing trials."""
+    from importlib import import_module
     import real_robot
+
     root = Path(real_robot.__file__).resolve().parent.parent
+    package_root = root / 'src' / 'piper_dynamics'
+    if (package_root / 'core' / 'rigid_body_regressor.py').is_file():
+        # Existing real_robot entry points run from the repository root without
+        # PYTHONPATH=src. Load the source package without changing sys.path.
+        if 'piper_dynamics' not in sys.modules:
+            spec = importlib.util.spec_from_file_location(
+                'piper_dynamics', package_root / '__init__.py',
+                submodule_search_locations=[str(package_root)])
+            package = importlib.util.module_from_spec(spec)
+            sys.modules['piper_dynamics'] = package
+            spec.loader.exec_module(package)
+        return (import_module('piper_dynamics.core.rigid_body_regressor'),
+                import_module('piper_dynamics.legacy.snapshot.identify'),
+                package_root / 'legacy' / 'snapshot')
     # The 2026-11-03 repository layout moved the frozen reference solver into
     # src/piper_dynamics/reference. Keep the legacy root layout working for
     # older checkouts, then fall back to the packaged reference snapshot.

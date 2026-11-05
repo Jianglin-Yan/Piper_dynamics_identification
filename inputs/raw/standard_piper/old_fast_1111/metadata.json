@@ -1,0 +1,433 @@
+{
+  "label": "old_fast_1111",
+  "source_experiment": "EXP-20261029-001",
+  "source_subdir": "validation/data/seed1111",
+  "source_run": null,
+  "robot": "standard PiPER",
+  "model": {
+    "urdf": "models/standard_piper/piper.urdf",
+    "nominal": "models/standard_piper/nominal_piper.json",
+    "mjcf": "models/standard_piper/piper.xml"
+  },
+  "plan": {
+    "source_sha256": "8f480e65f56b711c5b05acd2a2042d239170a2951225307a303a5321717d7246",
+    "base_frequency_hz": 0.1,
+    "harmonics": 5,
+    "amplitude_fraction": 0.6,
+    "seed": 1111,
+    "source_sample_dt_s": 0.002,
+    "generation_lower_deg": [
+      -150,
+      0,
+      -170,
+      -89,
+      -70,
+      -120
+    ],
+    "generation_upper_deg": [
+      150,
+      180,
+      0,
+      89,
+      70,
+      120
+    ],
+    "source_center_rad": [
+      0.0,
+      1.5707963267948966,
+      -1.4835298641951802,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "execution_anchor_rad": [
+      0.0,
+      0.7853981633974483,
+      -1.0471975511965976,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "adaptation": "q_anchor + scale * C2_envelope * (q_source - q_source_center)",
+    "duration_s": 120.0,
+    "ramp_s": 10.0,
+    "time_scale": 2.0,
+    "scale": 0.5,
+    "speed_scale": 0.5,
+    "source_duration_s": 60.0,
+    "source_ramp_s": 5.0,
+    "source_base_frequency_hz": 0.2,
+    "moving_joints": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "q_min_deg": [
+      -22.509122307633533,
+      30.8005108007273,
+      -77.0042990109984,
+      -14.577397830846675,
+      -9.641490464381015,
+      -19.157628327008656
+    ],
+    "q_max_deg": [
+      27.36279091684146,
+      61.06281163571682,
+      -47.222394325694175,
+      11.406126432504244,
+      10.903390731651745,
+      17.00861234840513
+    ],
+    "max_velocity_per_joint_rad_s": [
+      0.8001237736899192,
+      0.6046548216083019,
+      0.6894078196684563,
+      0.5192820903847358,
+      0.380241482235408,
+      0.6037761923349787
+    ],
+    "max_acceleration_per_joint_rad_s2": [
+      1.9314049033527654,
+      1.4344634256242235,
+      1.916588023334782,
+      1.2306421623044006,
+      0.9090986963043203,
+      1.6776388963806461
+    ],
+    "test_velocity_limit_rad_s": 3.0,
+    "test_acceleration_limit_rad_s2": 20.0,
+    "reference_lower_deg": [
+      -145.0,
+      5.0,
+      -165.00000000000003,
+      -84.0,
+      -65.0,
+      -115.0
+    ],
+    "reference_upper_deg": [
+      145.0,
+      175.0,
+      -5.0,
+      84.0,
+      65.0,
+      115.0
+    ],
+    "sampled_brake_endpoints_within_bounds": true,
+    "braking_check_note": "Dense sampled reference and monotonic stop endpoints; no collision or tracking-error certificate.",
+    "reference_sha256": "f7a6acb7a8b0ac408513a7d78e0cfeaa16e600f0e6972f0ba2819f87adb9fc8d",
+    "constraint_violations": [],
+    "hard_violations": [],
+    "warnings": [],
+    "reference_limit_policy": "warn; not an emergency-stop criterion",
+    "trajectory_generator": "excitation.py:swevers_trajectory"
+  },
+  "quality": {
+    "sample_count": 12000,
+    "valid_measurement_count": 11998,
+    "raw_test_frame_count": 364827,
+    "raw_frame_stats": {
+      "0x2a4": {
+        "count": 24002,
+        "first": 169379.941933075,
+        "last": 169499.948971794,
+        "max_gap_s": 0.005700738984160125,
+        "observed_hz": 199.9966023343073
+      },
+      "0x2a5": {
+        "count": 24002,
+        "first": 169379.941949891,
+        "last": 169499.949096679,
+        "max_gap_s": 0.00575108002522029,
+        "observed_hz": 199.99642223312082
+      },
+      "0x2a6": {
+        "count": 24002,
+        "first": 169379.94213338,
+        "last": 169499.949222501,
+        "max_gap_s": 0.005742850014939904,
+        "observed_hz": 199.99651833738912
+      },
+      "0x2a7": {
+        "count": 24002,
+        "first": 169379.94236625,
+        "last": 169499.949369868,
+        "max_gap_s": 0.005765289010014385,
+        "observed_hz": 199.99666083155748
+      },
+      "0x2a8": {
+        "count": 24002,
+        "first": 169379.94261165,
+        "last": 169499.949470296,
+        "max_gap_s": 0.0057806799886748195,
+        "observed_hz": 199.996902433715
+      },
+      "0x251": {
+        "count": 24002,
+        "first": 169379.942775897,
+        "last": 169499.949595265,
+        "max_gap_s": 0.005754997982876375,
+        "observed_hz": 199.9969678923241
+      },
+      "0x252": {
+        "count": 24002,
+        "first": 169379.942849311,
+        "last": 169499.949720399,
+        "max_gap_s": 0.005984197021462023,
+        "observed_hz": 199.99688169855023
+      },
+      "0x253": {
+        "count": 24002,
+        "first": 169379.942975727,
+        "last": 169499.949945665,
+        "max_gap_s": 0.0058499189908616245,
+        "observed_hz": 199.99671696069404
+      },
+      "0x263": {
+        "count": 4801,
+        "first": 169379.94307663,
+        "last": 169499.944997741,
+        "max_gap_s": 0.025733901013154536,
+        "observed_hz": 39.999359639921614
+      },
+      "0x254": {
+        "count": 24002,
+        "first": 169379.943248032,
+        "last": 169499.95007156,
+        "max_gap_s": 0.005871759000001475,
+        "observed_hz": 199.99696095951492
+      },
+      "0x255": {
+        "count": 24002,
+        "first": 169379.943337139,
+        "last": 169499.950222779,
+        "max_gap_s": 0.005841861013323069,
+        "observed_hz": 199.99685744698237
+      },
+      "0x256": {
+        "count": 24002,
+        "first": 169379.943462874,
+        "last": 169499.950369981,
+        "max_gap_s": 0.005786547000752762,
+        "observed_hz": 199.99682167129487
+      },
+      "0x2a1": {
+        "count": 24001,
+        "first": 169379.946237377,
+        "last": 169499.948597104,
+        "max_gap_s": 0.005933576001552865,
+        "observed_hz": 199.99606719901928
+      },
+      "0x2a2": {
+        "count": 24001,
+        "first": 169379.94638656,
+        "last": 169499.948746879,
+        "max_gap_s": 0.005857034004293382,
+        "observed_hz": 199.99606621238974
+      },
+      "0x2a3": {
+        "count": 24001,
+        "first": 169379.946485127,
+        "last": 169499.948846298,
+        "max_gap_s": 0.005701357003999874,
+        "observed_hz": 199.9960647924212
+      },
+      "0x262": {
+        "count": 4801,
+        "first": 169379.947484842,
+        "last": 169499.949845227,
+        "max_gap_s": 0.025771373009774834,
+        "observed_hz": 39.99921322047632
+      },
+      "0x261": {
+        "count": 4800,
+        "first": 169379.953070151,
+        "last": 169499.929694362,
+        "max_gap_s": 0.02580099701299332,
+        "observed_hz": 39.9994584908465
+      },
+      "0x266": {
+        "count": 4800,
+        "first": 169379.953727033,
+        "last": 169499.930444262,
+        "max_gap_s": 0.02570586997899227,
+        "observed_hz": 39.99942747925068
+      },
+      "0x265": {
+        "count": 4800,
+        "first": 169379.957823344,
+        "last": 169499.935198405,
+        "max_gap_s": 0.025737956020748243,
+        "observed_hz": 39.99920816370984
+      },
+      "0x264": {
+        "count": 4800,
+        "first": 169379.963277239,
+        "last": 169499.940123435,
+        "max_gap_s": 0.025741346005816013,
+        "observed_hz": 39.99938448257351
+      }
+    },
+    "max_control_gap_s": 0.010388605995103717,
+    "valid_measurement_ratio": 0.9998333333333334,
+    "test_duration_s": 120.00993090998963,
+    "trajectory_scale": 0.5,
+    "trajectory_speed_scale": 0.5,
+    "torque_calibrated": false,
+    "qdd_est_method": "11-sample cubic Savitzky-Golay derivative of velocity interpolated by per-axis receive timestamps; preview only; edges and gaps masked",
+    "qdd_est_valid_per_joint": [
+      11987,
+      11987,
+      11987,
+      11987,
+      11987,
+      11987
+    ],
+    "units": {
+      "q": "rad",
+      "qd": "rad/s",
+      "qdd": "rad/s^2",
+      "current": "A",
+      "torque_candidate": "Nm",
+      "time": "s"
+    },
+    "note": "Snapshot vectors are asynchronous; receive timestamps retained. qdd_est is estimated, qdd_ref is planned. No measured inertia matrix or calibrated torque is invented."
+  },
+  "sources": {
+    "test_raw_can.jsonl": "0dcc06fdfb0e3542299504cd57e4968831e92003168b36756b87b37026b68017",
+    "test_signals.npz": "931926e837adfc063b710af4188e609d592699f3c602ba066b386ca031d7d825",
+    "test_manifest.json": "31e72339d29f8e2b08855c33ea117edc980a233b4239b5c58b64cb8850b8e646",
+    "reference_plan.json": "e38d804aa92c344339a0fb043777b37fa759528a287858dc14cef0c30aa47c28",
+    "hardware.json": "c7fcaf5f9eff88629cf12082008269d5ba21cc231d2b0771c00f62345308042f"
+  },
+  "limit_audit": {
+    "source_reference": "experiments/EXP-20261029-001/validation/data/seed1111",
+    "firmware_text": "H-V1.2-1\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000ARM_MC\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000030AH\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000S-V1.7-3250618\u0000\u000015\u0000\u0000\u001aF\u0000\u0000\u0000\u0000\u0000\u0000",
+    "reported_lower_deg": [
+      -150.0,
+      0.0,
+      -170.0,
+      -100.0,
+      -70.0,
+      -120.0
+    ],
+    "reported_upper_deg": [
+      150.0,
+      180.0,
+      0.0,
+      100.0,
+      70.0,
+      120.0
+    ],
+    "measured_min_deg": [
+      -22.541,
+      30.729,
+      -73.001,
+      -13.651000000000002,
+      -9.697,
+      -19.158
+    ],
+    "measured_max_deg": [
+      21.165,
+      57.793,
+      -48.851,
+      11.025,
+      10.914,
+      14.044
+    ],
+    "measured_max_violation_deg": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "commanded_max_violation_deg": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "measurements_outside_0p1deg_per_joint": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "raw_test_snapshots": 12000,
+    "valid_snapshots": 11998,
+    "hardware_json_sha256": "c7fcaf5f9eff88629cf12082008269d5ba21cc231d2b0771c00f62345308042f"
+  },
+  "preprocessing": {
+    "raw": "no smoothing; archived selected-cycle grid",
+    "sg21": "21-point Savitzky-Golay, order 3, centered",
+    "sg41": "41-point Savitzky-Golay, order 3, centered"
+  },
+  "files": {
+    "raw": {
+      "file": "raw.npz",
+      "n_samples": 1952,
+      "sample_interval_s": 0.05,
+      "keys": [
+        "t",
+        "q",
+        "qd",
+        "qdd",
+        "current_A",
+        "target_Nm",
+        "cycle"
+      ],
+      "sha256": "f11104fefe80ce050d1867777d6eae2871a746eb78656d937b4d59a5f0c0723b"
+    },
+    "sg21": {
+      "file": "sg21.npz",
+      "n_samples": 1952,
+      "sample_interval_s": 0.05,
+      "keys": [
+        "t",
+        "q",
+        "qd",
+        "qdd",
+        "current_A",
+        "target_Nm",
+        "cycle"
+      ],
+      "sha256": "4570ae340d678045e07c7930c2f9085219c75adb8b925f0d7df3ca85929d7f7a"
+    },
+    "sg41": {
+      "file": "sg41.npz",
+      "n_samples": 1912,
+      "sample_interval_s": 0.05,
+      "keys": [
+        "t",
+        "q",
+        "qd",
+        "qdd",
+        "current_A",
+        "target_Nm",
+        "cycle"
+      ],
+      "sha256": "3bb4bcc02909d5583ddb90cb32b2b266d1bb78a9506db1e0802a66cc30346c8e"
+    }
+  },
+  "cycles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "sample_interval_s": 0.05
+}

@@ -1,0 +1,531 @@
+{
+  "label": "balanced_v2",
+  "source_experiment": "EXP-20261030-002",
+  "source_subdir": "data",
+  "source_run": "20261030_132842_448131",
+  "robot": "standard PiPER",
+  "model": {
+    "urdf": "models/standard_piper/piper.urdf",
+    "nominal": "models/standard_piper/nominal_piper.json",
+    "mjcf": "models/standard_piper/piper.xml"
+  },
+  "plan": {
+    "base_frequency_hz": 0.05,
+    "harmonics": 5,
+    "amplitude_fraction": 0.6,
+    "seed": null,
+    "source_sample_dt_s": 0.002,
+    "generation_lower_deg": [
+      -150,
+      0,
+      -170,
+      -89,
+      -70,
+      -120
+    ],
+    "generation_upper_deg": [
+      150,
+      180,
+      0,
+      89,
+      70,
+      120
+    ],
+    "source_center_rad": [
+      0.0,
+      1.5707963267948966,
+      -1.4835298641951802,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "execution_anchor_rad": [
+      0.0,
+      0.7853981633974483,
+      -1.0471975511965976,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "adaptation": "q_anchor + scale * C2_envelope * (q_source - q_source_center)",
+    "duration_s": 240.0,
+    "ramp_s": 20.0,
+    "time_scale": 4.0,
+    "legacy_formula_source_sha256": "8f480e65f56b711c5b05acd2a2042d239170a2951225307a303a5321717d7246",
+    "source_sha256": "6db273deeefc685614e2f83ab9c09ff55c7e93440f52a4d2631eed83620be197",
+    "candidate": {
+      "id": "balanced-v2",
+      "bank_sha256": "56f63446fc5372d42651f7badd32ae6e0baad130ef6505ec350dd80d49584e9f",
+      "motion_sha256": "23a1ca92a828c5f5fc9398a99f69890ec654f1d80a8ad04371e5b9842a8a08ca",
+      "bank_reference": "trajectories/candidates-v2.json",
+      "design_status": "offline_screened_pending_operator_simulation_review"
+    },
+    "coefficients_source_rad": [
+      [
+        [
+          -0.03715947140888945,
+          0.002322370190827173,
+          -0.040368737607496125,
+          -0.03910431380585851,
+          0.09894569603333925
+        ],
+        [
+          0.2513506428900744,
+          -0.0760523818723258,
+          0.05069830143970046,
+          -0.027787862635497665,
+          -0.04374483400970333
+        ],
+        [
+          0.10161224038684823,
+          -0.05842933020378975,
+          -0.11136805536588856,
+          -0.003950040472751471,
+          0.020578235508595125
+        ],
+        [
+          -0.0049027116618918665,
+          0.022857250861486565,
+          -0.1692288357829867,
+          -0.07784815298949051,
+          -0.011980538603521685
+        ],
+        [
+          0.032586152205251476,
+          -0.06741771708523099,
+          -0.08213392231050844,
+          0.02958841347491835,
+          -0.032717208109805926
+        ],
+        [
+          -0.024920124903448818,
+          0.024695397607613842,
+          -0.03376664753742425,
+          -0.016642645336064653,
+          -0.13041160206264174
+        ]
+      ],
+      [
+        [
+          0.01651713127544752,
+          -0.016081202126465497,
+          -0.0012617100352044024,
+          0.006218034040324182,
+          -0.08550425301090474
+        ],
+        [
+          -0.20087206574169023,
+          0.13430781179820303,
+          0.0589517256224416,
+          0.020571414149897122,
+          -0.027553611312081096
+        ],
+        [
+          -0.022292572581558485,
+          0.06447132074818407,
+          -0.11341462168195837,
+          0.08800214991119885,
+          0.009145339229178215
+        ],
+        [
+          -0.15056496822567952,
+          0.15491950823737524,
+          -0.01773666994924569,
+          0.01054379196794151,
+          0.047877119344140136
+        ],
+        [
+          0.04209995124487243,
+          -0.0765854776794085,
+          -0.10311109120771318,
+          -0.023377177649530942,
+          0.01403896552092907
+        ],
+        [
+          -0.04414481711600938,
+          -0.07619130045898724,
+          0.02804886462238648,
+          -0.022237174949323275,
+          -0.08124881982917194
+        ]
+      ]
+    ],
+    "scale": 1.0,
+    "speed_scale": 0.25,
+    "source_duration_s": 60.0,
+    "source_ramp_s": 5.0,
+    "source_base_frequency_hz": 0.2,
+    "moving_joints": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "q_min_deg": [
+      -11.906420649397466,
+      18.2816383567354,
+      -78.12203352216032,
+      -18.65762831234753,
+      -12.97865682506324,
+      -16.38056587056218
+    ],
+    "q_max_deg": [
+      11.188758925030074,
+      71.73116205961202,
+      -44.01234553512756,
+      21.915545454126526,
+      12.227744591427543,
+      13.570908166104317
+    ],
+    "max_velocity_per_joint_rad_s": [
+      0.2497528761302374,
+      0.24975336352831096,
+      0.24975984180241223,
+      0.29970010519224005,
+      0.21201047114094596,
+      0.2997097881902025
+    ],
+    "max_acceleration_per_joint_rad_s2": [
+      0.3783200582936013,
+      0.26601970182162543,
+      0.2906308170517071,
+      0.3585819303228713,
+      0.22726067188488447,
+      0.44884130347227896
+    ],
+    "test_velocity_limit_rad_s": 3.0,
+    "test_acceleration_limit_rad_s2": 20.0,
+    "reference_lower_deg": [
+      -145.0,
+      5.0,
+      -165.00000000000003,
+      -84.0,
+      -65.0,
+      -115.0
+    ],
+    "reference_upper_deg": [
+      145.0,
+      175.0,
+      -5.0,
+      84.0,
+      65.0,
+      115.0
+    ],
+    "sampled_brake_endpoints_within_bounds": true,
+    "braking_check_note": "Dense sampled reference and monotonic stop endpoints; no collision or tracking-error certificate.",
+    "reference_sha256": "224d3016cc29a61a8e5fb079af5ffceec0226ab9231b016af20d6cd290281c66",
+    "constraint_violations": [],
+    "hard_violations": [],
+    "warnings": [],
+    "reference_limit_policy": "warn; not an emergency-stop criterion",
+    "trajectory_generator": "designed_trajectory.py:fourier / frozen candidate coefficients"
+  },
+  "quality": {
+    "sample_count": 24000,
+    "valid_measurement_count": 23998,
+    "raw_test_frame_count": 729623,
+    "raw_frame_stats": {
+      "0x251": {
+        "count": 48002,
+        "first": 246834.530521278,
+        "last": 247074.538442542,
+        "max_gap_s": 0.00610200097435154,
+        "observed_hz": 199.99756569369242
+      },
+      "0x261": {
+        "count": 9601,
+        "first": 246834.530541422,
+        "last": 247074.533552416,
+        "max_gap_s": 0.025744175974978134,
+        "observed_hz": 39.999498173962806
+      },
+      "0x252": {
+        "count": 48002,
+        "first": 246834.530758459,
+        "last": 247074.538651472,
+        "max_gap_s": 0.005961730988929048,
+        "observed_hz": 199.9975892351324
+      },
+      "0x253": {
+        "count": 48002,
+        "first": 246834.530781419,
+        "last": 247074.538670011,
+        "max_gap_s": 0.005872520006960258,
+        "observed_hz": 199.99759291909956
+      },
+      "0x254": {
+        "count": 48002,
+        "first": 246834.531188996,
+        "last": 247074.538796839,
+        "max_gap_s": 0.005863639002200216,
+        "observed_hz": 199.99782686638753
+      },
+      "0x255": {
+        "count": 48002,
+        "first": 246834.531420722,
+        "last": 247074.538921566,
+        "max_gap_s": 0.005807044013636187,
+        "observed_hz": 199.9979160284497
+      },
+      "0x256": {
+        "count": 48002,
+        "first": 246834.531663305,
+        "last": 247074.539251309,
+        "max_gap_s": 0.005783098022220656,
+        "observed_hz": 199.99784339818885
+      },
+      "0x266": {
+        "count": 9601,
+        "first": 246834.53168519,
+        "last": 247074.534257834,
+        "max_gap_s": 0.02570053600356914,
+        "observed_hz": 39.999571230599784
+      },
+      "0x2a1": {
+        "count": 48001,
+        "first": 246834.534494276,
+        "last": 247074.537575892,
+        "max_gap_s": 0.0067406719899736345,
+        "observed_hz": 199.99743201965208
+      },
+      "0x2a2": {
+        "count": 48001,
+        "first": 246834.534515314,
+        "last": 247074.537595012,
+        "max_gap_s": 0.006714802992064506,
+        "observed_hz": 199.99743361794492
+      },
+      "0x2a3": {
+        "count": 48001,
+        "first": 246834.534705872,
+        "last": 247074.537745937,
+        "max_gap_s": 0.006790864979848266,
+        "observed_hz": 199.9974666445904
+      },
+      "0x2a4": {
+        "count": 48001,
+        "first": 246834.534738965,
+        "last": 247074.53779823,
+        "max_gap_s": 0.00667560999863781,
+        "observed_hz": 199.99745064499643
+      },
+      "0x2a5": {
+        "count": 48001,
+        "first": 246834.534853159,
+        "last": 247074.537948344,
+        "max_gap_s": 0.006555077008670196,
+        "observed_hz": 199.99742071245012
+      },
+      "0x2a6": {
+        "count": 48001,
+        "first": 246834.534979338,
+        "last": 247074.538206058,
+        "max_gap_s": 0.0064356249931734055,
+        "observed_hz": 199.99731110281766
+      },
+      "0x2a7": {
+        "count": 48001,
+        "first": 246834.53523431,
+        "last": 247074.53822484,
+        "max_gap_s": 0.006314617989119142,
+        "observed_hz": 199.9975079227043
+      },
+      "0x2a8": {
+        "count": 48001,
+        "first": 246834.535252736,
+        "last": 247074.538382762,
+        "max_gap_s": 0.006195469002705067,
+        "observed_hz": 199.99739167902794
+      },
+      "0x265": {
+        "count": 9601,
+        "first": 246834.535953734,
+        "last": 247074.539231605,
+        "max_gap_s": 0.025705587991978973,
+        "observed_hz": 39.99945369562781
+      },
+      "0x264": {
+        "count": 9600,
+        "first": 246834.540952993,
+        "last": 247074.518896957,
+        "max_gap_s": 0.025699669000459835,
+        "observed_hz": 39.99950929424033
+      },
+      "0x263": {
+        "count": 9600,
+        "first": 246834.545749338,
+        "last": 247074.523768882,
+        "max_gap_s": 0.02570289297727868,
+        "observed_hz": 39.999496696569715
+      },
+      "0x262": {
+        "count": 9600,
+        "first": 246834.550644229,
+        "last": 247074.528678603,
+        "max_gap_s": 0.025866814015898854,
+        "observed_hz": 39.999494224707526
+      }
+    },
+    "max_control_gap_s": 0.010447264998219907,
+    "valid_measurement_ratio": 0.9999166666666667,
+    "test_duration_s": 240.0099716980185,
+    "trajectory_scale": 1.0,
+    "trajectory_speed_scale": 0.25,
+    "torque_calibrated": false,
+    "qdd_est_method": "11-sample cubic Savitzky-Golay derivative of velocity interpolated by per-axis receive timestamps; preview only; edges and gaps masked",
+    "qdd_est_valid_per_joint": [
+      23987,
+      23987,
+      23987,
+      23987,
+      23987,
+      23987
+    ],
+    "units": {
+      "q": "rad",
+      "qd": "rad/s",
+      "qdd": "rad/s^2",
+      "current": "A",
+      "torque_candidate": "Nm",
+      "time": "s"
+    },
+    "note": "Snapshot vectors are asynchronous; receive timestamps retained. qdd_est is estimated, qdd_ref is planned. No measured inertia matrix or calibrated torque is invented."
+  },
+  "sources": {
+    "test_raw_can.jsonl": "91fd01a9a9c233cf2442ea93e35fe612dc4241bebcb3390fbead66f85b45e381",
+    "test_signals.npz": "08fc0df2fc6d7692f57623ddb1edc5be2c57c8e4a3de8171dde0fedb97e70e8c",
+    "test_manifest.json": "d9657dfb5b090cbc82a120f5914e6c754f94ac03f921efe55635bc1cd22a4d95",
+    "reference_plan.json": "04769d3f9fcd5bbf7bc870f311fa8f5d64ca9ddd907b7fd2aa275c49b67eb8cc",
+    "hardware.json": "6d6888410a49cb2f870f3f2308c75c657269bbe07157d967b365559f3e99a867"
+  },
+  "limit_audit": {
+    "source_reference": "experiments/EXP-20261030-002/data",
+    "firmware_text": "H-V1.2-1\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000ARM_MC\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000030AH\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000S-V1.7-3250618\u0000\u000015\u0000\u0000\u001aF\u0000\u0000\u0000\u0000\u0000\u0000",
+    "reported_lower_deg": [
+      -150.0,
+      0.0,
+      -170.0,
+      -100.0,
+      -70.0,
+      -120.0
+    ],
+    "reported_upper_deg": [
+      150.0,
+      180.0,
+      0.0,
+      100.0,
+      70.0,
+      120.0
+    ],
+    "measured_min_deg": [
+      -11.907,
+      18.257,
+      -78.139,
+      -18.681000000000004,
+      -13.043,
+      -16.408
+    ],
+    "measured_max_deg": [
+      11.196,
+      71.737,
+      -44.018,
+      21.906,
+      12.269000000000002,
+      13.564
+    ],
+    "measured_max_violation_deg": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "commanded_max_violation_deg": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "measurements_outside_0p1deg_per_joint": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "raw_test_snapshots": 24000,
+    "valid_snapshots": 23998,
+    "hardware_json_sha256": "6d6888410a49cb2f870f3f2308c75c657269bbe07157d967b365559f3e99a867"
+  },
+  "preprocessing": {
+    "raw": "no smoothing; archived selected-cycle grid",
+    "sg21": "21-point Savitzky-Golay, order 3, centered",
+    "sg41": "41-point Savitzky-Golay, order 3, centered"
+  },
+  "files": {
+    "raw": {
+      "file": "raw.npz",
+      "n_samples": 3953,
+      "sample_interval_s": 0.05,
+      "keys": [
+        "t",
+        "q",
+        "qd",
+        "qdd",
+        "current_A",
+        "target_Nm",
+        "cycle"
+      ],
+      "sha256": "3fb779907bd2b569d1d5c94a15dfc81a7611bb503d71e5a7c78247fbf0fdd2c7"
+    },
+    "sg21": {
+      "file": "sg21.npz",
+      "n_samples": 3953,
+      "sample_interval_s": 0.05,
+      "keys": [
+        "t",
+        "q",
+        "qd",
+        "qdd",
+        "current_A",
+        "target_Nm",
+        "cycle"
+      ],
+      "sha256": "0e443b2fb10e4376bdcd8bbd054424a47a6f2939db51aba1576c7b5b0a477bd4"
+    },
+    "sg41": {
+      "file": "sg41.npz",
+      "n_samples": 3911,
+      "sample_interval_s": 0.05,
+      "keys": [
+        "t",
+        "q",
+        "qd",
+        "qdd",
+        "current_A",
+        "target_Nm",
+        "cycle"
+      ],
+      "sha256": "c356bc0f9e52f047b89d142ce2ff8fbc708e8e60b04645a3db43eeea32653f9a"
+    }
+  },
+  "cycles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "sample_interval_s": 0.05
+}

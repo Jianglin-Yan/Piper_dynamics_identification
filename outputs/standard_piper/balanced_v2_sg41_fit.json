@@ -1,0 +1,725 @@
+{
+  "robot": "standard PiPER",
+  "method": "CAD-scaled truncated-SVD least squares; unresolved directions set by nominal prior",
+  "split": {
+    "rule": "Trajectory-level split: one whole real acquisition is used for fitting, a different whole real acquisition is used only for held-out validation.",
+    "train": "balanced_v2",
+    "validation": "balanced_v1",
+    "variant": "sg41"
+  },
+  "train_dataset": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/inputs/train/balanced_v2_sg41.npz",
+  "train_dataset_sha256": "5142e3056299c1bb7e53f5b91df66b5b38937e786032bbe5ca2b34765a6a64ec",
+  "validation_dataset": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/inputs/validation/balanced_v1_sg41.npz",
+  "validation_dataset_sha256": "ac09fce3e156d28a801368b9b636ff778fafc18a3c0518924829b6ce8eb8dcb4",
+  "model": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/models/standard_piper/piper.xml",
+  "model_sha256": "9103f778a7fb5c4e72b64f6a17036f64a5f0fe6a3d43bec531d5d9abcc87e568",
+  "parameter_file": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit.npz",
+  "rank": 54,
+  "rank_tolerance": 1e-08,
+  "train_samples": 3911,
+  "validation_samples": 1912,
+  "train": {
+    "rmse_Nm": [
+      0.1570091972154593,
+      0.16947338275753773,
+      0.1625386953323973,
+      0.02567875480453929,
+      0.019718016726328922,
+      0.023192914390336994
+    ],
+    "target_rms_Nm": [
+      0.5109610222942014,
+      2.307631653555203,
+      4.197316996052888,
+      0.09119772290620733,
+      0.7828864205759146,
+      0.07705817318929525
+    ],
+    "rmse_over_target_rms": [
+      0.30728214162108136,
+      0.07344039612927054,
+      0.03872442693397876,
+      0.2815723242448577,
+      0.02518630571191126,
+      0.30097929175355664
+    ],
+    "r2_per_joint": [
+      0.9049332252884015,
+      0.9945445491648931,
+      0.9764077427420801,
+      0.9206285572390265,
+      0.9869788245404193,
+      0.9093997111248127
+    ],
+    "relative_error_norm_ratio": 0.0584364193623243,
+    "squared_error_sum_Nm2": 318.26956475005795
+  },
+  "held_out": {
+    "rmse_Nm": [
+      0.2127436955672722,
+      0.22121371554161423,
+      0.2874681668657503,
+      0.03750165624420672,
+      0.04774972530008029,
+      0.04863744126472702
+    ],
+    "target_rms_Nm": [
+      0.5315530019911446,
+      1.8693752041779421,
+      4.312938228520841,
+      0.10088610345913093,
+      0.8066774681047513,
+      0.07680392538917284
+    ],
+    "rmse_over_target_rms": [
+      0.40023044695515875,
+      0.1183356423297018,
+      0.06665251196151259,
+      0.37172271460953665,
+      0.059193081730999506,
+      0.6332676489941946
+    ],
+    "r2_per_joint": [
+      0.839201520938854,
+      0.9857170292705394,
+      0.9159420105931964,
+      0.8617049220190879,
+      0.911202981752285,
+      0.5983710586875237
+    ],
+    "relative_error_norm_ratio": 0.08908360104630815,
+    "squared_error_sum_Nm2": 349.6767817213513
+  },
+  "torque_calibrated": false,
+  "parameter_interpretation": "Torque-prediction candidate, not uniquely identified link inertias",
+  "parameters": [
+    {
+      "group": "link",
+      "name": "link1.mass",
+      "unit": "kg",
+      "nominal": 0.71,
+      "identified": 0.7099999994436565,
+      "delta": -5.563434157807023e-10
+    },
+    {
+      "group": "link",
+      "name": "link1.com_x",
+      "unit": "m",
+      "nominal": 0.00032,
+      "identified": 0.0003199999955640375,
+      "delta": -4.435962502272878e-12
+    },
+    {
+      "group": "link",
+      "name": "link1.com_y",
+      "unit": "m",
+      "nominal": -0.00041,
+      "identified": -0.0004100000017860227,
+      "delta": -1.7860227186083932e-12
+    },
+    {
+      "group": "link",
+      "name": "link1.com_z",
+      "unit": "m",
+      "nominal": -0.003479999999999997,
+      "identified": -0.003480000004935841,
+      "delta": -4.935843834347198e-12
+    },
+    {
+      "group": "link",
+      "name": "link1.Ixx",
+      "unit": "kg*m^2",
+      "nominal": 0.0005002700000000006,
+      "identified": 0.000500270000017429,
+      "delta": 1.7428441502487235e-14
+    },
+    {
+      "group": "link",
+      "name": "link1.Iyy",
+      "unit": "kg*m^2",
+      "nominal": 0.00040879000000000056,
+      "identified": 0.0004087900000860183,
+      "delta": 8.601772722924284e-14
+    },
+    {
+      "group": "link",
+      "name": "link1.Izz",
+      "unit": "kg*m^2",
+      "nominal": 0.00045802000000000055,
+      "identified": 0.000446675357064846,
+      "delta": -1.1344642935154543e-05
+    },
+    {
+      "group": "link",
+      "name": "link1.Ixy",
+      "unit": "kg*m^2",
+      "nominal": 7.800000000000146e-07,
+      "identified": 7.79999912424878e-07,
+      "delta": -8.757513653381057e-14
+    },
+    {
+      "group": "link",
+      "name": "link1.Ixz",
+      "unit": "kg*m^2",
+      "nominal": 6.260000000000042e-06,
+      "identified": 6.26000001012826e-06,
+      "delta": 1.0128218589874373e-14
+    },
+    {
+      "group": "link",
+      "name": "link1.Iyz",
+      "unit": "kg*m^2",
+      "nominal": 4.619999999999949e-06,
+      "identified": 4.619999976555425e-06,
+      "delta": -2.3444524350579952e-14
+    },
+    {
+      "group": "link",
+      "name": "link2.mass",
+      "unit": "kg",
+      "nominal": 1.16,
+      "identified": 1.159999998186951,
+      "delta": -1.8130488221856922e-09
+    },
+    {
+      "group": "link",
+      "name": "link2.com_x",
+      "unit": "m",
+      "nominal": 0.21852,
+      "identified": -0.1235565105740201,
+      "delta": -0.3420765105740201
+    },
+    {
+      "group": "link",
+      "name": "link2.com_y",
+      "unit": "m",
+      "nominal": -0.008610000000000003,
+      "identified": -0.010311979558661049,
+      "delta": -0.0017019795586610455
+    },
+    {
+      "group": "link",
+      "name": "link2.com_z",
+      "unit": "m",
+      "nominal": 0.0012600000000000018,
+      "identified": 0.0012599999272496546,
+      "delta": -7.275034719610163e-11
+    },
+    {
+      "group": "link",
+      "name": "link2.Ixx",
+      "unit": "kg*m^2",
+      "nominal": 0.0011191499999999963,
+      "identified": -0.43200758010012485,
+      "delta": -0.43312673010012487
+    },
+    {
+      "group": "link",
+      "name": "link2.Iyy",
+      "unit": "kg*m^2",
+      "nominal": 0.06763251,
+      "identified": 0.4256162999164622,
+      "delta": 0.3579837899164622
+    },
+    {
+      "group": "link",
+      "name": "link2.Izz",
+      "unit": "kg*m^2",
+      "nominal": 0.06755900000000001,
+      "identified": 0.020200445198075945,
+      "delta": -0.047358554801924066
+    },
+    {
+      "group": "link",
+      "name": "link2.Ixy",
+      "unit": "kg*m^2",
+      "nominal": 0.0018291599999999864,
+      "identified": 0.13763495072435422,
+      "delta": 0.13580579072435423
+    },
+    {
+      "group": "link",
+      "name": "link2.Ixz",
+      "unit": "kg*m^2",
+      "nominal": 0.00019233000000000336,
+      "identified": 0.15935302371078777,
+      "delta": 0.15916069371078778
+    },
+    {
+      "group": "link",
+      "name": "link2.Iyz",
+      "unit": "kg*m^2",
+      "nominal": 7.669999999975234e-06,
+      "identified": -0.1259904117674451,
+      "delta": -0.1259980817674451
+    },
+    {
+      "group": "link",
+      "name": "link3.mass",
+      "unit": "kg",
+      "nominal": 0.5,
+      "identified": 1.1711738706262698,
+      "delta": 0.6711738706262698
+    },
+    {
+      "group": "link",
+      "name": "link3.com_x",
+      "unit": "m",
+      "nominal": -0.019990000000000015,
+      "identified": -0.000634255227911645,
+      "delta": 0.01935574477208837
+    },
+    {
+      "group": "link",
+      "name": "link3.com_y",
+      "unit": "m",
+      "nominal": -0.14808,
+      "identified": 0.12932498933232803,
+      "delta": 0.27740498933232804
+    },
+    {
+      "group": "link",
+      "name": "link3.com_z",
+      "unit": "m",
+      "nominal": -0.0005299999999999913,
+      "identified": -0.05788863725225196,
+      "delta": -0.05735863725225197
+    },
+    {
+      "group": "link",
+      "name": "link3.Ixx",
+      "unit": "kg*m^2",
+      "nominal": 0.013476079999999998,
+      "identified": 0.04180075021511625,
+      "delta": 0.02832467021511625
+    },
+    {
+      "group": "link",
+      "name": "link3.Iyy",
+      "unit": "kg*m^2",
+      "nominal": 0.0004637700000000003,
+      "identified": -0.04874971592952148,
+      "delta": -0.04921348592952148
+    },
+    {
+      "group": "link",
+      "name": "link3.Izz",
+      "unit": "kg*m^2",
+      "nominal": 0.013633210000000008,
+      "identified": -0.05476284468600957,
+      "delta": -0.06839605468600958
+    },
+    {
+      "group": "link",
+      "name": "link3.Ixy",
+      "unit": "kg*m^2",
+      "nominal": 0.001610340000000001,
+      "identified": -0.41089328325074526,
+      "delta": -0.41250362325074524
+    },
+    {
+      "group": "link",
+      "name": "link3.Ixz",
+      "unit": "kg*m^2",
+      "nominal": 6.599999999996743e-07,
+      "identified": 0.04729218450611929,
+      "delta": 0.047291524506119294
+    },
+    {
+      "group": "link",
+      "name": "link3.Iyz",
+      "unit": "kg*m^2",
+      "nominal": 1.6199999999982125e-06,
+      "identified": 0.06041234331244753,
+      "delta": 0.06041072331244753
+    },
+    {
+      "group": "link",
+      "name": "link4.mass",
+      "unit": "kg",
+      "nominal": 0.38,
+      "identified": 0.3485644751808603,
+      "delta": -0.03143552481913969
+    },
+    {
+      "group": "link",
+      "name": "link4.com_x",
+      "unit": "m",
+      "nominal": 0.00013000000000002652,
+      "identified": 0.005816198306552145,
+      "delta": 0.005686198306552118
+    },
+    {
+      "group": "link",
+      "name": "link4.com_y",
+      "unit": "m",
+      "nominal": -0.0007599999999999998,
+      "identified": 0.0008640779003528844,
+      "delta": 0.001624077900352884
+    },
+    {
+      "group": "link",
+      "name": "link4.com_z",
+      "unit": "m",
+      "nominal": -0.003940000000000002,
+      "identified": -0.014259451728735332,
+      "delta": -0.01031945172873533
+    },
+    {
+      "group": "link",
+      "name": "link4.Ixx",
+      "unit": "kg*m^2",
+      "nominal": 0.00017843999999999987,
+      "identified": 0.020767959730547736,
+      "delta": 0.020589519730547737
+    },
+    {
+      "group": "link",
+      "name": "link4.Iyy",
+      "unit": "kg*m^2",
+      "nominal": 0.00018913999999999975,
+      "identified": -0.02054878517741701,
+      "delta": -0.020737925177417012
+    },
+    {
+      "group": "link",
+      "name": "link4.Izz",
+      "unit": "kg*m^2",
+      "nominal": 0.00014612999999999977,
+      "identified": -0.01895778912406811,
+      "delta": -0.01910391912406811
+    },
+    {
+      "group": "link",
+      "name": "link4.Ixy",
+      "unit": "kg*m^2",
+      "nominal": 6.199999999999781e-07,
+      "identified": 0.08281170350188413,
+      "delta": 0.08281108350188413
+    },
+    {
+      "group": "link",
+      "name": "link4.Ixz",
+      "unit": "kg*m^2",
+      "nominal": 6.700000000000198e-07,
+      "identified": -0.038522493143244664,
+      "delta": -0.038523163143244665
+    },
+    {
+      "group": "link",
+      "name": "link4.Iyz",
+      "unit": "kg*m^2",
+      "nominal": 4.079999999999999e-06,
+      "identified": 0.030678494474126176,
+      "delta": 0.030674414474126176
+    },
+    {
+      "group": "link",
+      "name": "link5.mass",
+      "unit": "kg",
+      "nominal": 0.383,
+      "identified": 0.35106616523876905,
+      "delta": -0.03193383476123096
+    },
+    {
+      "group": "link",
+      "name": "link5.com_x",
+      "unit": "m",
+      "nominal": 0.00018000000000000391,
+      "identified": 0.0015457507643412318,
+      "delta": 0.0013657507643412279
+    },
+    {
+      "group": "link",
+      "name": "link5.com_y",
+      "unit": "m",
+      "nominal": -0.061039999999999976,
+      "identified": 0.8437373202012992,
+      "delta": 0.9047773202012992
+    },
+    {
+      "group": "link",
+      "name": "link5.com_z",
+      "unit": "m",
+      "nominal": -0.002269999999999995,
+      "identified": 0.009440594959606596,
+      "delta": 0.01171059495960659
+    },
+    {
+      "group": "link",
+      "name": "link5.Ixx",
+      "unit": "kg*m^2",
+      "nominal": 0.00172318,
+      "identified": -0.186345988840956,
+      "delta": -0.18806916884095598
+    },
+    {
+      "group": "link",
+      "name": "link5.Iyy",
+      "unit": "kg*m^2",
+      "nominal": 0.00017936000000000023,
+      "identified": 0.01703507405675714,
+      "delta": 0.01685571405675714
+    },
+    {
+      "group": "link",
+      "name": "link5.Izz",
+      "unit": "kg*m^2",
+      "nominal": 0.0017117200000000008,
+      "identified": -0.2894725053727728,
+      "delta": -0.29118422537277283
+    },
+    {
+      "group": "link",
+      "name": "link5.Ixy",
+      "unit": "kg*m^2",
+      "nominal": 2.5899999999999964e-06,
+      "identified": -0.05825867520729382,
+      "delta": -0.058261265207293814
+    },
+    {
+      "group": "link",
+      "name": "link5.Ixz",
+      "unit": "kg*m^2",
+      "nominal": 9.999999999975436e-08,
+      "identified": 0.015004015998910412,
+      "delta": 0.015003915998910412
+    },
+    {
+      "group": "link",
+      "name": "link5.Iyz",
+      "unit": "kg*m^2",
+      "nominal": 9.899999999999509e-06,
+      "identified": 0.003477409195842822,
+      "delta": 0.0034675091958428226
+    },
+    {
+      "group": "link",
+      "name": "link6.mass",
+      "unit": "kg",
+      "nominal": 0.5565540813300001,
+      "identified": 1.3830224921676746,
+      "delta": 0.8264684108376745
+    },
+    {
+      "group": "link",
+      "name": "link6.com_x",
+      "unit": "m",
+      "nominal": -2.570708624604701e-05,
+      "identified": 0.0010186049643195415,
+      "delta": 0.0010443120505655885
+    },
+    {
+      "group": "link",
+      "name": "link6.com_y",
+      "unit": "m",
+      "nominal": 0.00012132443799021217,
+      "identified": -0.001057731728975135,
+      "delta": -0.001179056166965347
+    },
+    {
+      "group": "link",
+      "name": "link6.com_z",
+      "unit": "m",
+      "nominal": 0.038252915530080804,
+      "identified": 0.1942935123023247,
+      "delta": 0.15604059677224388
+    },
+    {
+      "group": "link",
+      "name": "link6.Ixx",
+      "unit": "kg*m^2",
+      "nominal": 0.0007307130774183916,
+      "identified": -0.054293760050440766,
+      "delta": -0.05502447312785916
+    },
+    {
+      "group": "link",
+      "name": "link6.Iyy",
+      "unit": "kg*m^2",
+      "nominal": 0.000475453461095478,
+      "identified": -0.0434175806119529,
+      "delta": -0.04389303407304838
+    },
+    {
+      "group": "link",
+      "name": "link6.Izz",
+      "unit": "kg*m^2",
+      "nominal": 0.00048175962386078183,
+      "identified": 0.005189537431526923,
+      "delta": 0.004707777807666141
+    },
+    {
+      "group": "link",
+      "name": "link6.Ixy",
+      "unit": "kg*m^2",
+      "nominal": 3.8901658067455396e-07,
+      "identified": -0.04006251003783934,
+      "delta": -0.040062899054420016
+    },
+    {
+      "group": "link",
+      "name": "link6.Ixz",
+      "unit": "kg*m^2",
+      "nominal": 2.439815940479645e-06,
+      "identified": -0.03947855405835919,
+      "delta": -0.03948099387429967
+    },
+    {
+      "group": "link",
+      "name": "link6.Iyz",
+      "unit": "kg*m^2",
+      "nominal": 1.105338296897693e-06,
+      "identified": -0.008684310747078983,
+      "delta": -0.00868541608537588
+    },
+    {
+      "group": "joint",
+      "name": "joint1.viscous_friction",
+      "unit": "N*m/(rad/s)",
+      "nominal": 0.0,
+      "identified": 0.5653140007397215,
+      "delta": 0.5653140007397215
+    },
+    {
+      "group": "joint",
+      "name": "joint1.smooth_coulomb_friction",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": 0.415723306186368,
+      "delta": 0.415723306186368
+    },
+    {
+      "group": "joint",
+      "name": "joint1.offset",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": -0.031219997584060414,
+      "delta": -0.031219997584060414
+    },
+    {
+      "group": "joint",
+      "name": "joint2.viscous_friction",
+      "unit": "N*m/(rad/s)",
+      "nominal": 0.0,
+      "identified": -0.12685962457240615,
+      "delta": -0.12685962457240615
+    },
+    {
+      "group": "joint",
+      "name": "joint2.smooth_coulomb_friction",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": 0.5101941863890037,
+      "delta": 0.5101941863890037
+    },
+    {
+      "group": "joint",
+      "name": "joint2.offset",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": -0.4427739510080953,
+      "delta": -0.4427739510080953
+    },
+    {
+      "group": "joint",
+      "name": "joint3.viscous_friction",
+      "unit": "N*m/(rad/s)",
+      "nominal": 0.0,
+      "identified": 0.17517821832483685,
+      "delta": 0.17517821832483685
+    },
+    {
+      "group": "joint",
+      "name": "joint3.smooth_coulomb_friction",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": 0.6551652817023644,
+      "delta": 0.6551652817023644
+    },
+    {
+      "group": "joint",
+      "name": "joint3.offset",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": -0.23413709497015897,
+      "delta": -0.23413709497015897
+    },
+    {
+      "group": "joint",
+      "name": "joint4.viscous_friction",
+      "unit": "N*m/(rad/s)",
+      "nominal": 0.0,
+      "identified": 0.15118855372633366,
+      "delta": 0.15118855372633366
+    },
+    {
+      "group": "joint",
+      "name": "joint4.smooth_coulomb_friction",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": 0.06872903734576823,
+      "delta": 0.06872903734576823
+    },
+    {
+      "group": "joint",
+      "name": "joint4.offset",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": -0.022508304213455618,
+      "delta": -0.022508304213455618
+    },
+    {
+      "group": "joint",
+      "name": "joint5.viscous_friction",
+      "unit": "N*m/(rad/s)",
+      "nominal": 0.0,
+      "identified": 0.12283092694282723,
+      "delta": 0.12283092694282723
+    },
+    {
+      "group": "joint",
+      "name": "joint5.smooth_coulomb_friction",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": 0.051537145512592517,
+      "delta": 0.051537145512592517
+    },
+    {
+      "group": "joint",
+      "name": "joint5.offset",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": 0.07160294956946339,
+      "delta": 0.07160294956946339
+    },
+    {
+      "group": "joint",
+      "name": "joint6.viscous_friction",
+      "unit": "N*m/(rad/s)",
+      "nominal": 0.0,
+      "identified": 0.08493658791141714,
+      "delta": 0.08493658791141714
+    },
+    {
+      "group": "joint",
+      "name": "joint6.smooth_coulomb_friction",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": 0.06926261391844808,
+      "delta": 0.06926261391844808
+    },
+    {
+      "group": "joint",
+      "name": "joint6.offset",
+      "unit": "N*m",
+      "nominal": 0.0,
+      "identified": 0.008708901310292281,
+      "delta": 0.008708901310292281
+    }
+  ],
+  "parameters_csv": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit_parameters.csv",
+  "report_markdown": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit.md",
+  "torque_plot_train": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit_torque_train.png",
+  "torque_plot_validation": "/home/yjl-10096528/EmbodiedAI/deepseek_grasp/agx_piper_grasp_sim/dynamics_identification/outputs/standard_piper/balanced_v2_sg41_fit_torque_validation.png"
+}

@@ -1,0 +1,21 @@
+{
+  "rule": "Trajectory-level split: one whole real acquisition is used for fitting, a different whole real acquisition is used only for held-out validation.",
+  "variant": "sg41",
+  "train": "balanced_v2",
+  "validation": "balanced_v1",
+  "provenance": {
+    "balanced_v1": {
+      "source_experiment": "EXP-20261030-001",
+      "source_run": "20261030_104822_499096",
+      "duration_s": 120.0,
+      "amplitude_scale": 0.8
+    },
+    "balanced_v2": {
+      "source_experiment": "EXP-20261030-002",
+      "source_run": "20261030_132842_448131",
+      "duration_s": 240.0,
+      "amplitude_scale": 1.0
+    }
+  },
+  "note": "balanced_v1 and balanced_v2 are independent physical acquisitions on the same standard PiPER, recorded about 2.7 hours apart. The other six trajectories stay in inputs/raw as reserve data and are not silently mixed into either set."
+}
