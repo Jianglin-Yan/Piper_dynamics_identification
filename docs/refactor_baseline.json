@@ -1,0 +1,37 @@
+{
+  "commit": "4dc8d1a",
+  "existing_tests": 194,
+  "files": {
+    "real_robot/config.json": "4e7c2edb83ca14260226002f9cab7899d91a43baea40f58ab8ab069528ffbddb",
+    "real_robot/mit_trial.py": "28198a96940a4b818a6eb199388c4f1f231ab7830764280cf95e2153c1c5c11e",
+    "real_robot/controller.py": "cd2a452f1bcf35a37998d3573c861d469742bb3642617d8898de72ab90290e03",
+    "models/standard_piper/piper.urdf": "d9e97fec40ae47d12cf482417acec48706ce4a1398b31b91f328d5b3d75f6183",
+    "models/standard_piper/nominal_piper.json": "9c7995182cfc3ef16589211081408bcd13392639f8b40f9572236f61652d65a8",
+    "inputs/raw/standard_piper/splits.json": "8156995b65074259816fd138380eb1a0993b355288e6dd7df5987571f644a717"
+  },
+  "control_hz": 100,
+  "mit_kp": [
+    10.0,
+    10.0,
+    10.0,
+    10.0,
+    10.0,
+    10.0
+  ],
+  "mit_kd": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+  ],
+  "mit_prepare_tolerance_deg": 8.0,
+  "mit_park_tolerance_deg": 8.0,
+  "train_samples": 3911,
+  "validation_samples": 1912,
+  "rank": 54,
+  "train_relative_error": 0.0584364193623243,
+  "held_out_relative_error": 0.08908360104630815,
+  "scope": "offline, mocked transport and simulation; no new hardware validation"
+}

@@ -20,43 +20,10 @@ def load_npz(path):
 
 
 def original_modules():
-    """Reuse main's regressor and retain the archived solver for existing trials."""
-    from importlib import import_module
-    import real_robot
-
-    root = Path(real_robot.__file__).resolve().parent.parent
-    package_root = root / 'src' / 'piper_dynamics'
-    if (package_root / 'core' / 'rigid_body_regressor.py').is_file():
-        # Existing real_robot entry points run from the repository root without
-        # PYTHONPATH=src. Load the source package without changing sys.path.
-        if 'piper_dynamics' not in sys.modules:
-            spec = importlib.util.spec_from_file_location(
-                'piper_dynamics', package_root / '__init__.py',
-                submodule_search_locations=[str(package_root)])
-            package = importlib.util.module_from_spec(spec)
-            sys.modules['piper_dynamics'] = package
-            spec.loader.exec_module(package)
-        return (import_module('piper_dynamics.core.rigid_body_regressor'),
-                import_module('piper_dynamics.legacy.snapshot.identify'),
-                package_root / 'legacy' / 'snapshot')
-    # The 2026-11-03 repository layout moved the frozen reference solver into
-    # src/piper_dynamics/reference. Keep the legacy root layout working for
-    # older checkouts, then fall back to the packaged reference snapshot.
-    if not (root / '__init__.py').is_file():
-        reference = root / 'src' / 'piper_dynamics' / 'reference'
-        if not (reference / '__init__.py').is_file():
-            raise RuntimeError('Dynamics reference solver is missing from both legacy root and src/piper_dynamics/reference')
-        root = reference
-    name = '_piper_original_identification'
-    if name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(
-            name, root / '__init__.py', submodule_search_locations=[str(root)])
-        package = importlib.util.module_from_spec(spec)
-        sys.modules[name] = package
-        spec.loader.exec_module(package)
-    from importlib import import_module
-    return (import_module(name + '.regressor'),
-            import_module(name + '.identify'), root)
+    """Compatibility API for the shared PiPER regressor and measured-run solver."""
+    from piper_dynamics.core import rigid_body_regressor, least_squares
+    from piper_dynamics.paths import PROJECT_ROOT
+    return rigid_body_regressor, least_squares, PROJECT_ROOT
 
 
 def inertial_model(model_name="piper"):
@@ -297,8 +264,14 @@ def run_analysis(run, output, window=21, fit_hz=20., torque_coefficients=None):
             validation='odd source cycles; same trajectory, not independent motion'),
         source_hashes={name:hashlib.sha256((run/name).read_bytes()).hexdigest() for name in
             ('test_manifest.json','test_raw_can.jsonl','test_signals.npz')},
-        original_code_hashes={name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in
-            ('regressor.py','identify.py','real_robot/identify_offline.py','real_robot/assets/piper.urdf','real_robot/assets/nominal_piper.json')},
+        original_code_hashes={name:hashlib.sha256(path.read_bytes()).hexdigest()
+            for name,path in {
+                'regressor.py':Path(rg.__file__),
+                'identify.py':Path(identification.__file__),
+                'real_robot/identify_offline.py':Path(__file__),
+                'real_robot/assets/piper.urdf':root/'models/standard_piper/piper.urdf',
+                'real_robot/assets/nominal_piper.json':root/'models/standard_piper/nominal_piper.json',
+            }.items()},
         model='Standard PiPER bundled URDF transforms, rigid gripper lumped link6; preview gravcomp/damping/armature/limits disabled',
         regressor_self_check_max_error_Nm=self_check_max,
         velocity_check=dict(correlation=[float(np.corrcoef(qder[:,j],vel[:,j])[0,1]) for j in range(6)],
