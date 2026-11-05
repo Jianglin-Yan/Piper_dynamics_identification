@@ -10,6 +10,7 @@ import numpy as np
 from piper_dynamics.real_robot.app import validate_config
 from piper_dynamics.real_robot.control.mit_trial import configure_drag
 from piper_dynamics.real_robot.controller import Controller
+from piper_dynamics.real_robot.control.mit_trial import MitSimulation
 from piper_dynamics.real_robot.trials.drag import DragTrial
 
 BASE = Path(__file__).resolve().parents[2] / "src/piper_dynamics/real_robot"
@@ -31,7 +32,19 @@ class DragConfigureTests(unittest.TestCase):
         self.assertEqual(list(c["mit_return_kp"]), [10.0] * 6)
         self.assertEqual(c["mit_ff_scale"], 1.0)
         self.assertEqual(c["mit_ff_ramp_s"], 3.0)
-        self.assertEqual(c["gravity_model"], "identified")
+        self.assertEqual(c["gravity_model"], "nominal")
+
+
+class DragStartupTests(unittest.TestCase):
+    def test_parked_pose_outside_j2_j3_limits_is_accepted(self):
+        c = profile()
+        c["simulation_initial_deg"] = [0.0, -3.0, 3.0, 0.0, 20.0, 0.0]
+        validate_config(c)
+        b = MitSimulation(c)
+        k = Controller(b, c, b.snapshot(), 0, lambda m: None)
+        home = b.snapshot()["q"]
+        self.assertTrue(np.all(home >= k.lower - 1e-9))
+        self.assertTrue(np.all(home <= k.upper + 1e-9))
 
 
 class DragTrialTests(unittest.TestCase):

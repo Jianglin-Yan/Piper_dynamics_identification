@@ -844,8 +844,10 @@ class Session:
             self.lease.close()
         for s, h in self.old_handlers.items():
             signal.signal(s, h)
-        if self.result.get("state") == "FAULT":
+        if self.result.get("state") == "FAULT" and not self.args.sim:
             (self.path.parent / ".recovery_pending").write_text(str(self.path) + "\n")
+        elif self.result.get("state") == "DONE" and not self.args.sim:
+            (self.path.parent / ".recovery_pending").unlink(missing_ok=True)
         self.samples.close()
         self.events.close()
         (self.path / "result.json").write_text(

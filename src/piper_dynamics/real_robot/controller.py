@@ -374,10 +374,13 @@ class Controller(MitControl, Shutdown):
             self.start, self.boundary_goal, self.lower, self.upper = standing_plan(cfg, self.home)
             self.return_home = self.home.copy() if self.mit else self.boundary_goal.copy()
         if cfg.get("trajectory") == "drag":
-            # The drag reference follows the measured pose anywhere inside the
-            # firmware range; the standing interior is too narrow for a hand push.
-            self.lower = np.deg2rad(cfg["lower_deg"]) + np.deg2rad(1.0)
-            self.upper = np.deg2rad(cfg["upper_deg"]) - np.deg2rad(1.0)
+            # The drag reference follows the measured pose. Keep the firmware range
+            # and also include the measured park, which may sit a few degrees outside
+            # the nominal J2/J3 limits when the arm is left folded.
+            raw_lower = np.deg2rad(cfg["lower_deg"])
+            raw_upper = np.deg2rad(cfg["upper_deg"])
+            self.lower = np.minimum(raw_lower, self.home - np.deg2rad(1.0))
+            self.upper = np.maximum(raw_upper, self.home + np.deg2rad(1.0))
         if self.current_pose_only:
             self.lower, self.upper = current_pose_bounds(cfg, self.home)
             self.emit("当前姿态模式：J1–J5 保持启动目标，仅 J6 运动")
