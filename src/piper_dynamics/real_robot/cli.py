@@ -110,7 +110,7 @@ def add_trial_options(ap):
         "--friction-start",
         choices=["current", "standing"],
         default="standing",
-        help="friction only: start and return at the measured pose (default) or at the standing pose",
+        help="friction only: start and return at the standing pose (default), or explicitly select the measured current pose",
     )
     ap.add_argument(
         "--capture-seconds",

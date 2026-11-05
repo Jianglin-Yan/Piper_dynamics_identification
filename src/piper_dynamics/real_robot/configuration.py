@@ -216,9 +216,12 @@ def validate_friction(c):
             raise ValueError("Friction collection uses six enabled joints and no gripper")
         if c["trajectory_scale"] != 1 or c["trajectory_speed_scale"] != 1:
             raise ValueError("Friction collection uses fixed paths")
-        joints = [int(j) for j in c["friction_joints"]]
-        if sorted(set(joints)) != joints or any((not 1 <= j <= 6 for j in joints)):
-            raise ValueError("Invalid friction joint list")
+        joints = c["friction_joints"]
+        if (not isinstance(joints, (list, tuple)) or not joints
+                or any(type(joint) is not int for joint in joints)
+                or len(set(joints)) != len(joints)
+                or any(not 1 <= joint <= 6 for joint in joints)):
+            raise ValueError("Friction joints must be unique integers in 1..6; execution order is preserved")
         strokes = np.asarray(c["friction_stroke_deg"], float)
         if (
             strokes.shape != (6,)
