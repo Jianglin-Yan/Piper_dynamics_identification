@@ -74,19 +74,19 @@ def configure(c, ff_scale=0.0, gain_scale=1.0, model="nominal", fit="sg21_LS"):
 
 
 DRAG_KP = 5.0
-DRAG_KD = 0.2
+DRAG_KD = 0.4
 
 
 def configure_drag(c, model="nominal", fit="sg21_LS"):
-    """Low-stiffness drag: Kp 5/100% FF, light Kd, wider hand-push monitors."""
+    """Low-stiffness drag: Kp 5/Kd 0.4 and 100% FF at test.
+
+    Prepare, return and the emergency abort keep the base 10/0.8 gains.  The
+    existing FF ramp interpolates Kp and Kd together with the feedforward.
+    """
     configure(c, 1.0, 1.0, model, fit)
     c.update(
         mit_kp=[DRAG_KP] * 6,
         mit_kd=[DRAG_KD] * 6,
-        mit_prepare_kp=[MIT_KP[0]] * 6,
-        mit_prepare_kd=[MIT_KD[0]] * 6,
-        mit_return_kp=[MIT_KP[0]] * 6,
-        mit_return_kd=[MIT_KD[0]] * 6,
         mit_test_offsets_deg=[],
         mit_test_minimum_segment_s=1.0,
         # A hand push is much faster than a scripted trajectory; keep a stop line

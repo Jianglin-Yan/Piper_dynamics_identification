@@ -1,5 +1,6 @@
 # 项目工作约定
 
+- **准备／回位／急停的 Kp/Kd 是基础设置**：除用户明确说明外不得修改。任务只能改测试段的 Kp/Kd；进入和退出时 Kp、Kd、前馈必须由同一渐变一起过渡，急停接管使用回位基础增益。
 - **限位外扩是公共约定**：`measurement_angle_tolerance_deg` 与 `startup_limit_tolerance_deg` 长期保持 10°，即实测反馈和启动停靠位允许超出配置/固件限位 10°。任何新任务不得用更窄的 `lower/upper` 覆盖它；需要从停靠位启动或返回的 MIT/拖动任务，命令区间必须同时覆盖固件范围和实测停靠位。缩小该范围必须得到明确任务授权。
 - 修改前阅读 `CODING_STANDARD.md`、`README.md` 和 `ARCHITECTURE.md`；具体控制逻辑以当前实现为准，旧会话记忆及 main 的离线流程不能覆盖当前控制行为。
 - 顶层沿用 main 的 src、inputs、models、outputs、scripts、docs 管理方式，src 内按职责组织；项目只支持普通 PiPER。

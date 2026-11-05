@@ -38,7 +38,9 @@ class DragConfigureTests(unittest.TestCase):
 class DragDampingTests(unittest.TestCase):
     def test_drag_uses_light_damping_and_wide_monitors(self):
         c = profile()
-        self.assertEqual(list(c["mit_kd"]), [0.2] * 6)
+        self.assertEqual(list(c["mit_kd"]), [0.4] * 6)
+        self.assertEqual(list(c["mit_prepare_kd"]), [0.8] * 6)
+        self.assertEqual(list(c["mit_return_kd"]), [0.8] * 6)
         self.assertEqual(c["feedback_speed_stop_rad_s"], 2.0)
         self.assertEqual(c["feedback_speed_stop_duration_s"], 0.2)
         self.assertEqual(c["feedback_speed_emergency_rad_s"], 2.8)
