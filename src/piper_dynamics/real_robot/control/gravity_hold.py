@@ -1,27 +1,13 @@
-"""Official-reference MIT gravity test; CAN is opened only by the hardware CLI.
-
-Torque is computed in joint-output Nm; firmware DEFAULT wire torque is Nm/(b*c).
-No extra mechanical gear ratio is applied. Preparations retain the proven MOVE J
-path; normal recovery seeds MOVE J with the measured pose, then returns/disables.
-"""
-from piper_dynamics.paths import LEGACY_ROBOT_ROOT
-import hashlib,json,time
-from pathlib import Path
+"""Existing gravity-hold configuration and control sequence."""
+import time
 import numpy as np
+from piper_dynamics.core.torque import K,B,C,NM_PER_A,WIRE_TO_JOINT
+from piper_dynamics.core.gravity_model import GravityModel,sha
+from piper_dynamics.real_robot.protocol.mit import uint,encode_mit,decode_command
 from piper_dynamics.real_robot.controller import Controller
-from piper_dynamics.real_robot.backends.hardware import Hardware
-from piper_dynamics.real_robot.backends.simulation import Simulation
+from piper_dynamics.paths import LEGACY_ROBOT_ROOT as BASE
+from piper_dynamics.real_robot.backends.gravity import GravityHardware,GravitySimulation
 from piper_dynamics.real_robot.trials.trajectory import Segment,transit
-
-BASE = LEGACY_ROBOT_ROOT
-K=np.array([1.18125]*3+[.9576]*3)
-B=np.array([4.]*3+[1.]*3)
-C=np.array([1.]*3+[.813252]*3)
-NM_PER_A=K*B*C
-WIRE_TO_JOINT=B*C
-
-def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
-
 def configure(c,model='identified',fit='sg21_LS',duration=30.,stiffness=1.):
     c.update(gravity_model=model,gravity_fit=fit,duration_s=float(duration),ramp_s=3.,
         gravity_stiffness=float(stiffness),gravity_entry_ramp_s=3.,gravity_gain_ramp_s=5.,
@@ -35,96 +21,6 @@ def configure(c,model='identified',fit='sg21_LS',duration=30.,stiffness=1.):
     if model not in ('nominal','identified') or not 10<=duration<=120 or not 0<=stiffness<=1:
         raise ValueError('gravity: model nominal/identified, duration 10..120 s, stiffness 0..1 required')
     if not c.get('standing_start') or c.get('current_pose_only'):raise ValueError('gravity requires --standing')
-
-def uint(x,lo,hi,bits):
-    if not np.isfinite(x) or not lo<=x<=hi:raise ValueError('MIT value outside reviewed encoding range')
-    return int((x-lo)*((1<<bits)-1)/(hi-lo))
-
-def encode_mit(joint,q,torque,vel_ref=0.,kp=0.,kd=0.):
-    """Match pinned official DEFAULT driver/parser; gains are protocol values."""
-    if type(joint) is not int or not 1<=joint<=6:raise ValueError('Invalid MIT joint')
-    raw=float(torque)/WIRE_TO_JOINT[joint-1]
-    p=uint(float(q),-12.5,12.5,16);v=uint(float(vel_ref),-45.,45.,12)
-    kp=uint(float(kp),0.,500.,12);kd=uint(float(kd),-5.,5.,12);t=uint(raw,-8.,8.,8)
-    frame=bytearray([p>>8,p&255,v>>4,((v&15)<<4)|(kp>>8),kp&255,kd>>4,((kd&15)<<4)|(t>>4)])
-    frame.append(((t&15)<<4)|(int(np.bitwise_xor.reduce(frame))&15))
-    actual=(t*16./255.-8.)*WIRE_TO_JOINT[joint-1]
-    return bytes(frame),raw,float(actual)
-
-class GravityModel:
-    def __init__(self,c):
-        import mujoco
-        from piper_dynamics.pipeline.measured_run import inertial_model,original_modules
-        self.mj=mujoco;self.model=inertial_model();self.data=mujoco.MjData(self.model)
-        rg,_,_=original_modules();self.theta=rg.ground_truth_theta(self.model).reshape(-1)
-        assets=[BASE/'assets/piper.urdf',BASE/'assets/nominal_piper.json']
-        self.provenance={'model':'piper','gravity_source':c['gravity_model'],'assets':{str(p):sha(p) for p in assets},'friction_included':False,'fit_offset_included':False,'torque_reference':'official k*b*c; no extra ratio','torque_calibrated':False}
-        if c['gravity_model']=='identified':
-            root=BASE.parent.parent/'identification';active=json.loads((root/'active_revision.json').read_text())
-            if active.get('model')!='piper':raise ValueError('Current identified model is not ordinary PiPER')
-            folder=root/active['revision_directory'];summary=json.loads((folder/'summary.json').read_text())
-            for p in assets:
-                if summary['model_fingerprint'][str(p.relative_to(BASE.parent))]!=sha(p):raise ValueError('Identified/model asset hash mismatch')
-            if not np.allclose(summary['candidate_torque_coefficients'],NM_PER_A,rtol=0,atol=1e-12):raise ValueError('Identified torque profile differs from official MIT test profile')
-            source=folder/'training/main_balanced_v2.npz'
-            with np.load(source) as z:self.theta=z[c['gravity_fit']][:60].copy()
-            self.provenance.update(revision=active['revision_id'],training='balanced_v2',method=c['gravity_fit'],parameter_file=str(source),sha256=sha(source))
-        if self.theta.shape!=(60,) or not np.isfinite(self.theta).all():raise ValueError('Invalid gravity parameters')
-        self.bodies=[mujoco.mj_name2id(self.model,mujoco.mjtObj.mjOBJ_BODY,'link'+str(i)) for i in range(1,7)]
-        self.jp=np.zeros((3,6));self.jr=np.zeros((3,6))
-    def __call__(self,q):
-        # Linear gravity wrench permits non-unique base-parameter representatives;
-        # it does not create an invalid negative-mass simulation model.
-        if np.shape(q)!=(6,) or not np.isfinite(q).all():raise ValueError('Invalid gravity state')
-        d=self.data;m=self.model;d.qpos[:]=q;d.qvel[:]=0.;self.mj.mj_kinematics(m,d);self.mj.mj_comPos(m,d)
-        g=m.opt.gravity;result=np.zeros(6)
-        for i,bid in enumerate(self.bodies):
-            self.mj.mj_jacBody(m,d,self.jp,self.jr,bid);th=self.theta[10*i:10*i+10]
-            h_world=d.xmat[bid].reshape(3,3)@th[1:4]
-            result-=self.jp.T@(th[0]*g)+self.jr.T@np.cross(h_world,g)
-        return result
-
-class GravityHardware(Hardware):
-    def command(self,q):
-        if getattr(self,'mit_active',False):self.position_started=time.monotonic()
-        self.mit_active=False
-        super().command(q)
-    def exit_mit(self,q):self.command(q)
-    def command_mit(self,q,torque):
-        frames=[encode_mit(j+1,float(q[j]),float(torque[j]))[0] for j in range(6)]
-        with self.tx_lock:
-            if self.stopped or self.motion_closed:raise RuntimeError('MIT command after stop/disable')
-            if not getattr(self,'mit_active',False):self.mit_started=time.monotonic()
-            self.mit_active=True
-            self._send_locked(0x151,[1,4,0,0xAD,0,0,0,0])
-            for j,frame in enumerate(frames):self._send_locked(0x15a+j,frame)
-    def check(self,s,active):
-        super().check(s,active)
-        if active and getattr(self,'mit_active',False) and time.monotonic()-self.mit_started>1.:
-            if s['status'].get('motion_mode')!=4:raise RuntimeError('MIT mode not confirmed by firmware feedback')
-        if active and not getattr(self,'mit_active',False) and hasattr(self,'position_started') and time.monotonic()-self.position_started>1.:
-            if s['status'].get('motion_mode')!=1:raise RuntimeError('MOVE J return mode not confirmed by firmware feedback')
-
-class GravitySimulation(Simulation):
-    def __init__(self,c):
-        super().__init__(c);self.mit_active=False;self.mit_output=np.zeros(6)
-        self.position_gain=self.model.actuator_gainprm.copy();self.position_bias=self.model.actuator_biasprm.copy();self.position_gravcomp=self.model.body_gravcomp.copy()
-    def exit_mit(self,q):
-        self.data.qfrc_applied[:]=0.;self.mit_output[:]=0.;self.mit_active=False
-        self.model.actuator_gainprm[:]=self.position_gain;self.model.actuator_biasprm[:]=self.position_bias;self.model.body_gravcomp[:]=self.position_gravcomp
-        super().command(q)
-    def command_mit(self,q,torque):
-        if self.stopped or self.motion_closed:raise RuntimeError('MIT command after stop/disable')
-        self.mit_active=True;self.model.body_gravcomp[:]=0.;self.model.actuator_gainprm[:]=0.;self.model.actuator_biasprm[:]=0.
-        self.mit_output=np.array([encode_mit(j+1,float(q[j]),float(torque[j]))[2] for j in range(6)])
-        self.data.qfrc_applied[:]=self.mit_output
-    def snapshot(self):
-        s=super().snapshot();s['status'].update(control_mode=1,motion_mode=4 if self.mit_active else 1)
-        if self.mit_active:
-            s.update(tau_candidate_Nm=self.mit_output.copy(),current_A=self.mit_output/NM_PER_A,torque_source='simulation, explicit gravity and 8-bit MIT torque quantization; not hardware evidence')
-        return s
-    def disable(self):self.data.qfrc_applied[:]=0.;self.mit_output[:]=0.;super().disable()
-    def quick_stop(self,reason):self.data.qfrc_applied[:]=0.;self.mit_output[:]=0.;super().quick_stop(reason)
 
 class GravityController(Controller):
     def __init__(self,b,c,s,now,emit=print):

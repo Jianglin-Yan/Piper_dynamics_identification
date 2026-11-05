@@ -1,3 +1,4 @@
+from piper_dynamics.core.model import inertial_model
 """Offline, exploratory hardware LS using the repository's original solver.
 
 Never opens CAN or supplies simulator-generated torque as a measured target.
@@ -26,18 +27,6 @@ def original_modules():
     return rigid_body_regressor, least_squares, PROJECT_ROOT
 
 
-def inertial_model(model_name="piper"):
-    """Use selected URDF kinematics, with preview-only compensation/passive terms off."""
-    import mujoco
-    from piper_dynamics.real_robot.backends.simulation import model_xml
-    model = mujoco.MjModel.from_xml_string(model_xml(model_name))
-    model.body_gravcomp[:] = 0
-    model.dof_damping[:] = 0
-    model.dof_armature[:] = 0
-    model.dof_frictionloss[:] = 0
-    model.jnt_limited[:] = 0
-    model.opt.disableflags |= int(mujoco.mjtDisableBit.mjDSBL_CONTACT)
-    return model
 
 
 def interpolate_with_gaps(st, values, grid, max_gap=.03):
