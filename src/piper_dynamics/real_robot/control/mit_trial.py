@@ -74,20 +74,30 @@ def configure(c, ff_scale=0.0, gain_scale=1.0, model="nominal", fit="sg21_LS"):
 
 
 DRAG_KP = 5.0
+DRAG_KD = 0.2
 
 
-def configure_drag(c, model="identified", fit="sg21_LS"):
-    """Low-stiffness drag: Kp 5/100% FF at test, 10/0 during prepare and return."""
+def configure_drag(c, model="nominal", fit="sg21_LS"):
+    """Low-stiffness drag: Kp 5/100% FF, light Kd, wider hand-push monitors."""
     configure(c, 1.0, 1.0, model, fit)
     c.update(
         mit_kp=[DRAG_KP] * 6,
-        mit_kd=[0.8] * 6,
+        mit_kd=[DRAG_KD] * 6,
         mit_prepare_kp=[MIT_KP[0]] * 6,
         mit_prepare_kd=[MIT_KD[0]] * 6,
         mit_return_kp=[MIT_KP[0]] * 6,
         mit_return_kd=[MIT_KD[0]] * 6,
         mit_test_offsets_deg=[],
         mit_test_minimum_segment_s=1.0,
+        # A hand push is much faster than a scripted trajectory; keep a stop line
+        # below the firmware 3 rad/s but well above normal hand motion.
+        feedback_speed_warning_rad_s=1.0,
+        feedback_speed_stop_rad_s=2.0,
+        feedback_speed_stop_duration_s=0.2,
+        feedback_speed_emergency_rad_s=2.8,
+        feedback_speed_emergency_duration_s=0.1,
+        max_current_feedback_A=[4.0, 4.0, 4.0, 3.0, 3.0, 3.0],
+        feedback_current_warning_multiplier=0.75,
     )
 
 

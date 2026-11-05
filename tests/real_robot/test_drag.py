@@ -35,6 +35,16 @@ class DragConfigureTests(unittest.TestCase):
         self.assertEqual(c["gravity_model"], "nominal")
 
 
+class DragDampingTests(unittest.TestCase):
+    def test_drag_uses_light_damping_and_wide_monitors(self):
+        c = profile()
+        self.assertEqual(list(c["mit_kd"]), [0.2] * 6)
+        self.assertEqual(c["feedback_speed_stop_rad_s"], 2.0)
+        self.assertEqual(c["feedback_speed_stop_duration_s"], 0.2)
+        self.assertEqual(c["feedback_speed_emergency_rad_s"], 2.8)
+        self.assertEqual(c["max_current_feedback_A"], [4.0, 4.0, 4.0, 3.0, 3.0, 3.0])
+
+
 class DragStartupTests(unittest.TestCase):
     def test_parked_pose_outside_j2_j3_limits_is_accepted(self):
         c = profile()
