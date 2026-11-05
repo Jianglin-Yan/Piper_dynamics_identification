@@ -36,7 +36,9 @@ src/piper_dynamics/
 │   └── standard_piper_pipeline.py  # 端到端拟合编排与输出落盘
 ├── utils/                          # 通用工具
 │   ├── hashing.py                  # 文件 SHA256
+│   ├── validation.py               # 通用数值向量校验
 │   └── plotting.py                 # 六关节实测/预测力矩对比图
+├── zero_force_drag/                # 最终辨识参数的 MIT 重力补偿拖动候选控制器
 └── legacy/                         # 旧 PiPER X 代码（仅存档，当前不可运行）
 ```
 
@@ -93,6 +95,37 @@ PYTHONPATH=src .venv/bin/python -m piper_dynamics show
 - 当前的 54 维基底来自训练矩阵的 SVD，是数据相关的；若需要与数据无关的结构最小基，应对通用状态堆叠的回归矩阵做列主元 QR。
 
 ## 伺服控制逻辑
+
+### MIT 重力补偿拖动
+
+`src/piper_dynamics/zero_force_drag/` 使用当前标准 PiPER 的最终辨识文件
+`outputs/standard_piper/balanced_v2_sg41_fit.npz`。每周期读取六关节位置和速度，
+计算静止姿态的刚体力矩 `Y(q, 0, 0) @ theta[:60]`，乘逐关节补偿比例后作为 MIT
+`t_ref` 下发。MIT 位置目标跟随实测位置，目标速度为零，逐关节 `kp` / `kd` 从配置
+读取。模块检查反馈时效、关节位置与速度、力矩上限及机械臂故障状态。
+
+这实现的是**重力补偿的低阻尼拖动候选控制**，不是力传感器闭环的零力控制；
+没有加入摩擦、惯性或科氏力补偿。当前辨识力矩未经本机标定，真机上的力矩方向、
+比例和拖动效果尚未验证。普通人工拖动记录轨迹可先评估 PiPER 自带拖动示教模式。
+
+在本目录离线查看某姿态的候选重力力矩（弧度输入，不连接机械臂）：
+
+```bash
+PYTHONPATH=src ../.venv/bin/python -m piper_dynamics.zero_force_drag --q 0 1 -1 0 0 0
+```
+
+真机运行需额外安装官方 `piper_sdk`，确认固件版本及 MIT 力矩方向和比例，按
+[`zero_force_drag/README.md`](src/piper_dynamics/zero_force_drag/README.md) 创建六关节配置文件，
+并支撑机械臂后运行：
+
+```bash
+PYTHONPATH=src ../.venv/bin/python -m piper_dynamics.zero_force_drag \
+  --live --config path/to/verified_drag.json --can can0 --protocol v3 \
+  --acknowledge-uncalibrated-torque
+```
+
+`--protocol` 必须与固件匹配；V2 使用 `v2`。参数含义、配置示例和退出行为见模块
+README。真机模式未经过硬件验证。
 
 PiPER 单关节的三环控制（位置 → 速度 → 电流/FOC）与 MIT 力矩前馈结构见
 `docs/piper_servo_control_logic.png`（SVG 同名），由
