@@ -73,12 +73,12 @@ def configure(c, ff_scale=0.0, gain_scale=1.0, model="nominal", fit="sg21_LS"):
     )
 
 
-DRAG_KP = 5.0
-DRAG_KD = 0.4
+DRAG_KP = 2.0
+DRAG_KD = 0.2
 
 
 def configure_drag(c, model="nominal", fit="sg21_LS"):
-    """Low-stiffness drag: Kp 5/Kd 0.4 and 100% FF at test.
+    """Low-stiffness drag: Kp 2/Kd 0.2 and 100% FF at test.
 
     Prepare, return and the emergency abort keep the base 10/0.8 gains.  The
     existing FF ramp interpolates Kp and Kd together with the feedforward.

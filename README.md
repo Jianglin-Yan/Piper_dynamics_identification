@@ -69,7 +69,7 @@ bash scripts/test_drag.sh sim
 bash scripts/pilot.sh sim --help
 ```
 
-`scripts/test_static.sh`、`test_reciprocal.sh`、`test_payload.sh` 继续选择对应 MOVE J 任务。`test_drag.sh` 为零力拖动：LB+X 准备并渐变到 Kp 5／前馈 100%，LB+Y 开始记录（先静置再手推），再次 LB+X 反向渐变并经 MIT 回到停靠位。实机入口仍需显式选择 hardware，并保留当前的检查、手柄/自动运行、停止回收与失能流程。控制参数取当前实现，整理目录不重置参数。
+`scripts/test_static.sh`、`test_reciprocal.sh`、`test_payload.sh` 继续选择对应 MOVE J 任务。`test_drag.sh` 为零力拖动：LB+X 准备并渐变到 Kp 2／前馈 100%，LB+Y 开始记录（先静置再手推），再次 LB+X 反向渐变并经 MIT 回到停靠位。实机入口仍需显式选择 hardware，并保留当前的检查、手柄/自动运行、停止回收与失能流程。控制参数取当前实现，整理目录不重置参数。
 
 解释器选择依次为 `PIPER_PYTHON`、项目 `.venv/bin/python`、已有 `$HOME/anaconda3/envs/lerobot/bin/python`，最后为 PATH 中的 python3；启动脚本设置本仓库的 src 导入路径。原 `bash real_robot/test_mit.sh ...` 等命令仍兼容。详细使用说明见 [实机运行说明](docs/real_robot.md)。
 

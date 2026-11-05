@@ -93,7 +93,7 @@ class Session:
             self.ui.header(
                 "MIT 零力拖动 · 重力补偿",
                 [
-                    "控制方式：MIT（Kp 5，前馈 100%）",
+                    "控制方式：MIT（Kp 2，前馈 100%）",
                     "任务：LB+X 准备到站立位，LB+Y 开始记录；先静置，再手推；LB+X 结束并回位",
                 ],
             )
