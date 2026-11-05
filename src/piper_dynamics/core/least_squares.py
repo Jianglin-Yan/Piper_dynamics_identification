@@ -3,12 +3,15 @@
 Extracted without changing the existing solve, prior or return semantics.
 The CAD-scaled truncated-SVD workflow remains in svd_fit.py.
 """
+
 from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 
 
-def select_base_parameters(Y_stack: np.ndarray, rel_tol: float = 1e-8
-                           ) -> Tuple[np.ndarray, int, np.ndarray]:
+def select_base_parameters(
+    Y_stack: np.ndarray, rel_tol: float = 1e-8
+) -> Tuple[np.ndarray, int, np.ndarray]:
     """Column-pivoted QR on the column-normalised regressor.
 
     Returns ``(base_indices, rank, column_norms)``.  Columns are normalised
@@ -33,7 +36,7 @@ def select_base_parameters(Y_stack: np.ndarray, rel_tol: float = 1e-8
         _, R, piv = _qr(A_n, mode="economic", pivoting=True)
         diag = np.abs(np.diag(R))
         piv = np.asarray(piv, dtype=int)
-    except Exception:                                        # pragma: no cover
+    except Exception:  # pragma: no cover
         piv, diag = _greedy_pivots(A_n)
 
     if diag is None or diag.size == 0 or diag[0] <= 0.0:
@@ -64,11 +67,14 @@ def _greedy_pivots(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:  # pragma: n
     return np.asarray(chosen, dtype=int), diag
 
 
-def solve_parameters(Y_stack: np.ndarray, tau_stack: np.ndarray,
-                     ridge: float = 0.0,
-                     prior: Optional[np.ndarray] = None,
-                     use_qr: bool = True,
-                     rel_tol: float = 1e-8) -> Dict[str, object]:
+def solve_parameters(
+    Y_stack: np.ndarray,
+    tau_stack: np.ndarray,
+    ridge: float = 0.0,
+    prior: Optional[np.ndarray] = None,
+    use_qr: bool = True,
+    rel_tol: float = 1e-8,
+) -> Dict[str, object]:
     """Least-squares (optionally QR-reduced, optionally Tikhonov-regularised).
 
     ``ridge`` is relative to ``||Y||_F^2 / n_params`` so it is scale free.

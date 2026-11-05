@@ -6,14 +6,16 @@ import signal
 import sys
 import time
 from pathlib import Path
+
 import numpy as np
+
 from piper_dynamics.paths import LEGACY_ROBOT_ROOT as BASE
+from piper_dynamics.real_robot.cli import build_parser, handle_input_only, validate_arguments
+from piper_dynamics.real_robot.configuration import build_config, validate_config
 from piper_dynamics.real_robot.controller import Controller
 from piper_dynamics.real_robot.gamepad import Gamepad
 from piper_dynamics.real_robot.recording import TestRecorder, export_test_data
 from piper_dynamics.real_robot.ui import Printer
-from piper_dynamics.real_robot.configuration import build_config, validate_config
-from piper_dynamics.real_robot.cli import build_parser, validate_arguments, handle_input_only
 from piper_dynamics.utils.serialization import serializable
 
 
@@ -165,7 +167,8 @@ class Session:
     def acquire_channel(self):
         "Hold the existing exclusive CAN session lock."
         if self.args.hardware or self.args.recover:
-            import fcntl, re
+            import fcntl
+            import re
 
             if not re.fullmatch("[A-Za-z0-9_-]+", self.config["channel"]):
                 raise ValueError("Invalid CAN channel name")
@@ -910,3 +913,5 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
+
+__all__ = ["Session", "main", "validate_config", "Path", "serializable"]

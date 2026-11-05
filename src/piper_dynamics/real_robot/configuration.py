@@ -1,8 +1,9 @@
 """Configuration construction and validation for existing PiPER trials."""
 
 import json
-from pathlib import Path
+
 import numpy as np
+
 from piper_dynamics.paths import LEGACY_ROBOT_ROOT as BASE
 from piper_dynamics.real_robot.monitoring import validate_speed_limits
 
@@ -106,9 +107,7 @@ def validate_pilot_profile(c):
     if type(c["joint"]) is not int or c["joint"] not in range(1, 7):
         raise ValueError("joint must be 1..6")
     if c["model"] != "piper":
-        raise ValueError(
-            "Only standard PiPER is supported"
-        )
+        raise ValueError("Only standard PiPER is supported")
     coeff = np.asarray(c.get("torque_candidate_coefficients_Nm_per_A", []), float)
     if coeff.shape != (6,) or not np.all(np.isfinite(coeff)) or np.any(coeff == 0):
         raise ValueError("Six finite nonzero candidate torque coefficients required")
@@ -217,11 +216,16 @@ def validate_friction(c):
         if c["trajectory_scale"] != 1 or c["trajectory_speed_scale"] != 1:
             raise ValueError("Friction collection uses fixed paths")
         joints = c["friction_joints"]
-        if (not isinstance(joints, (list, tuple)) or not joints
-                or any(type(joint) is not int for joint in joints)
-                or len(set(joints)) != len(joints)
-                or any(not 1 <= joint <= 6 for joint in joints)):
-            raise ValueError("Friction joints must be unique integers in 1..6; execution order is preserved")
+        if (
+            not isinstance(joints, (list, tuple))
+            or not joints
+            or any(type(joint) is not int for joint in joints)
+            or len(set(joints)) != len(joints)
+            or any(not 1 <= joint <= 6 for joint in joints)
+        ):
+            raise ValueError(
+                "Friction joints must be unique integers in 1..6; execution order is preserved"
+            )
         strokes = np.asarray(c["friction_stroke_deg"], float)
         if (
             strokes.shape != (6,)
@@ -442,8 +446,6 @@ def build_config(a, ap):
     apply_execution_options(cfg, a, ap, selected)
     validate_config(cfg)
     if a.from_current:
-        from piper_dynamics.real_robot.current_pose import current_pose_bounds
-
         if cfg["joint"] != 6 or cfg["start_deg"] is not None or cfg["frequency_hz"] > 0.1:
             raise ValueError("--from-current requires joint=6, start_deg=null, frequency<=0.1 Hz")
     return cfg

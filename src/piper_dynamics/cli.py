@@ -30,14 +30,10 @@ def build_parser() -> argparse.ArgumentParser:
     split.add_argument("--train-out", type=Path, default=TRAIN_INPUTS)
     split.add_argument("--validation-out", type=Path, default=VALIDATION_INPUTS)
 
-    show = subcommands.add_parser(
-        "show", help="print the fitted parameters readably"
-    )
+    show = subcommands.add_parser("show", help="print the fitted parameters readably")
     show.add_argument("path", nargs="?", type=Path)
 
-    regressor = subcommands.add_parser(
-        "regressor", help="write the 60-column rigid-body regressor"
-    )
+    regressor = subcommands.add_parser("regressor", help="write the 60-column rigid-body regressor")
     regressor.add_argument("dataset", nargs="?", type=Path)
     regressor.add_argument("--out", type=Path)
 
@@ -49,7 +45,8 @@ def build_parser() -> argparse.ArgumentParser:
     fitted.add_argument("--out", type=Path)
     fitted.add_argument("--rank-tolerance", type=float, default=1e-8)
     fitted.add_argument(
-        "--no-plots", action="store_true",
+        "--no-plots",
+        action="store_true",
         help="skip the per-joint torque comparison PNGs",
     )
 
@@ -67,7 +64,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         build_regressor(dataset, args.out)
     else:
         fit(
-            args.dataset, args.validation, args.out,
-            args.rank_tolerance, make_plots=not args.no_plots,
+            args.dataset,
+            args.validation,
+            args.out,
+            args.rank_tolerance,
+            make_plots=not args.no_plots,
         )
     return 0

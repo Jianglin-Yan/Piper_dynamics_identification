@@ -19,25 +19,29 @@ def parameter_table(theta: np.ndarray, nominal: np.ndarray) -> list[dict]:
     rows: list[dict] = []
     for index, (fit_row, prior_row) in enumerate(zip(identified, nominal_links)):
         for key, unit in LINK_UNITS.items():
-            rows.append({
-                "group": "link",
-                "name": f"{LINK_NAMES[index]}.{key}",
-                "unit": unit,
-                "nominal": float(prior_row[key]),
-                "identified": float(fit_row[key]),
-                "delta": float(fit_row[key] - prior_row[key]),
-            })
+            rows.append(
+                {
+                    "group": "link",
+                    "name": f"{LINK_NAMES[index]}.{key}",
+                    "unit": unit,
+                    "nominal": float(prior_row[key]),
+                    "identified": float(fit_row[key]),
+                    "delta": float(fit_row[key] - prior_row[key]),
+                }
+            )
     for joint in range(6):
         for offset, key in enumerate(FRICTION_NAMES):
             index = 60 + 3 * joint + offset
-            rows.append({
-                "group": "joint",
-                "name": f"joint{joint + 1}.{key}",
-                "unit": FRICTION_UNITS[key],
-                "nominal": float(nominal[index]),
-                "identified": float(theta[index]),
-                "delta": float(theta[index] - nominal[index]),
-            })
+            rows.append(
+                {
+                    "group": "joint",
+                    "name": f"joint{joint + 1}.{key}",
+                    "unit": FRICTION_UNITS[key],
+                    "nominal": float(nominal[index]),
+                    "identified": float(theta[index]),
+                    "delta": float(theta[index] - nominal[index]),
+                }
+            )
     return rows
 
 
@@ -47,12 +51,16 @@ def write_parameters_csv(path: Path, rows: list[dict]) -> None:
         writer = csv.writer(handle)
         writer.writerow(["group", "name", "unit", "nominal", "identified", "delta"])
         for row in rows:
-            writer.writerow([
-                row["group"], row["name"], row["unit"],
-                f"{row['nominal']:.12g}",
-                f"{row['identified']:.12g}",
-                f"{row['delta']:.12g}",
-            ])
+            writer.writerow(
+                [
+                    row["group"],
+                    row["name"],
+                    row["unit"],
+                    f"{row['nominal']:.12g}",
+                    f"{row['identified']:.12g}",
+                    f"{row['delta']:.12g}",
+                ]
+            )
 
 
 def physical_consistency_notes(rows: list[dict]) -> list[str]:
@@ -65,11 +73,13 @@ def physical_consistency_notes(rows: list[dict]) -> list[str]:
     notes = []
     for link, value in by_link.items():
         mass = value["mass"]
-        inertia = np.array([
-            [value["Ixx"], value["Ixy"], value["Ixz"]],
-            [value["Ixy"], value["Iyy"], value["Iyz"]],
-            [value["Ixz"], value["Iyz"], value["Izz"]],
-        ])
+        inertia = np.array(
+            [
+                [value["Ixx"], value["Ixy"], value["Ixz"]],
+                [value["Ixy"], value["Iyy"], value["Iyz"]],
+                [value["Ixz"], value["Iyz"], value["Izz"]],
+            ]
+        )
         smallest = float(np.linalg.eigvalsh(inertia).min())
         problems = []
         if mass <= 0:
@@ -180,7 +190,9 @@ def print_parameters(path: Path) -> None:
         report = json.loads(report_path.read_text())
         print(
             "\nrelative error: train %.2f%%, held-out %.2f%%"
-            % (100 * report["train"]["relative_error_norm_ratio"],
-               100 * report["held_out"]["relative_error_norm_ratio"])
+            % (
+                100 * report["train"]["relative_error_norm_ratio"],
+                100 * report["held_out"]["relative_error_norm_ratio"],
+            )
         )
     print("\nnote: identified values are torque-prediction candidates, not physical truth.")

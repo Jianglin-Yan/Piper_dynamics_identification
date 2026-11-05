@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-python="${PIPER_PYTHON:-/home/shin/anaconda3/envs/lerobot/bin/python}"
+source "$(dirname "${BASH_SOURCE[0]}")/python_env.sh"
 case "${1:-sim}" in
-  sim) shift; exec env -u LD_PRELOAD "$python" -m real_robot.run_mit --sim --max-seconds 600 "$@" ;;
-  hardware) shift; exec env -u LD_PRELOAD "$python" -m real_robot.run_mit --hardware --max-seconds 600 "$@" ;;
+  sim) shift; exec env -u LD_PRELOAD "$piper_python" -m piper_dynamics.real_robot.entries.mit --sim --max-seconds 600 "$@" ;;
+  hardware) shift; exec env -u LD_PRELOAD "$piper_python" -m piper_dynamics.real_robot.entries.mit --hardware --max-seconds 600 "$@" ;;
   *) printf '%s\n' 'Usage: bash real_robot/test_mit.sh [sim|hardware] --ff-scale 0..1'; exit 2 ;;
 esac

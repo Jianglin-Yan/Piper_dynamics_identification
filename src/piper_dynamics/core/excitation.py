@@ -29,11 +29,11 @@ import numpy as np
 class Excitation:
     """Sampled excitation trajectory."""
 
-    t: np.ndarray        # (N,)    time [s]
-    q: np.ndarray        # (N, 6)  position [rad]
-    qd: np.ndarray       # (N, 6)  velocity [rad/s]
-    qdd: np.ndarray      # (N, 6)  acceleration [rad/s^2]
-    q0: np.ndarray       # (6,)    mid-range offsets
+    t: np.ndarray  # (N,)    time [s]
+    q: np.ndarray  # (N, 6)  position [rad]
+    qd: np.ndarray  # (N, 6)  velocity [rad/s]
+    qdd: np.ndarray  # (N, 6)  acceleration [rad/s^2]
+    q0: np.ndarray  # (6,)    mid-range offsets
     joint_names: Sequence[str]
     base_freq: float
     harmonics: int
@@ -97,14 +97,14 @@ def swevers_trajectory(
     n = int(round(duration / dt)) + 1
     t = np.arange(n) * dt
 
-    k = np.arange(1, harmonics + 1)[None, :, None]        # (1,K,1)
-    phase = k * w * t[None, None, :]                       # (1,K,N)
-    sin_ph = np.sin(phase)                                 # (1,K,N)
+    k = np.arange(1, harmonics + 1)[None, :, None]  # (1,K,1)
+    phase = k * w * t[None, None, :]  # (1,K,N)
+    sin_ph = np.sin(phase)  # (1,K,N)
     cos_ph = np.cos(phase)
 
-    a3 = a[:, :, None]                                     # (J,K,1)
+    a3 = a[:, :, None]  # (J,K,1)
     b3 = b[:, :, None]
-    kw = (k * w)                                           # (1,K,1)
+    kw = k * w  # (1,K,1)
 
     q = q0[:, None] + np.sum(a3 * sin_ph + b3 * cos_ph, axis=1)
     qd = np.sum(a3 * kw * cos_ph - b3 * kw * sin_ph, axis=1)
@@ -130,6 +130,6 @@ if __name__ == "__main__":  # pragma: no cover - manual smoke test
     lo = [-2.618, 0.0, -2.967, -1.745, -1.222, -2.967]
     hi = [2.618, 3.142, 0.0, 1.745, 1.222, 2.967]
     tr = swevers_trajectory(lo, hi, duration=60.0)
-    print(f"samples={len(tr.t)} dt={tr.t[1]-tr.t[0]:.4f}")
+    print(f"samples={len(tr.t)} dt={tr.t[1] - tr.t[0]:.4f}")
     print("q range   :", np.round(tr.q.min(0), 3), np.round(tr.q.max(0), 3))
     print("|qdd| max :", np.round(np.abs(tr.qdd).max(0), 2), "rad/s^2")

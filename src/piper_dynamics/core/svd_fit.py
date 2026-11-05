@@ -50,6 +50,4 @@ def solve_truncated_svd(
 
 def predict_torque(design: np.ndarray, theta: np.ndarray) -> np.ndarray:
     """Evaluate the torque model for every sample: shape ``(N, 6)``."""
-    return np.einsum(
-        "nij,j->ni", np.asarray(design, dtype=float), np.asarray(theta, dtype=float)
-    )
+    return np.einsum("nij,j->ni", np.asarray(design, dtype=float), np.asarray(theta, dtype=float))
