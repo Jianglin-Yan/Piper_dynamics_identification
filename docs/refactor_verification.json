@@ -1,0 +1,68 @@
+{
+  "baseline_commit": "4dc8d1a",
+  "implementation_commit": "4e9ef75",
+  "tests": {
+    "existing": 194,
+    "new": 12,
+    "total_passed": 206,
+    "subtests_passed": 17
+  },
+  "controller": {
+    "total_ticks": 11258,
+    "cases": {
+      "0.0:None": {
+        "ticks": 4349,
+        "rows_equal": true,
+        "events_equal": true
+      },
+      "0.25:None": {
+        "ticks": 4349,
+        "rows_equal": true,
+        "events_equal": true
+      },
+      "0.25:PREPARING": {
+        "ticks": 341,
+        "rows_equal": true,
+        "events_equal": true
+      },
+      "0.25:TESTING": {
+        "ticks": 2219,
+        "rows_equal": true,
+        "events_equal": true
+      }
+    }
+  },
+  "structure": {
+    "active_module_count": 70,
+    "dependency_cycles": [],
+    "preserved_data_and_shared_meshes": {
+      "inputs/raw/": true,
+      "inputs/train/": true,
+      "inputs/validation/": true,
+      "outputs/standard_piper/": true,
+      "models/collision_meshes/": true
+    }
+  },
+  "friction_estimator_comparison": {
+    "fixture": "synthetic solver comparison, not physical validation",
+    "equal_reports": {
+      "fit_friction_bins": true,
+      "fit_friction_final": true,
+      "fit_low_speed_combined": true
+    }
+  },
+  "offline_fit": {
+    "train_samples": 3911,
+    "validation_samples": 1912,
+    "rank": 54,
+    "train_relative_error": 0.0584364193623243,
+    "validation_relative_error": 0.0890836010463083,
+    "maximum_relative_error_metric_change": 1.5265566588595902e-16
+  },
+  "measured_run_cli": {
+    "run": "20261029_114614_130196",
+    "completed": true,
+    "generated_report_and_arrays": true
+  },
+  "scope": "static checks, synthetic fixtures, recorded-data analysis and simulation; no hardware actions"
+}

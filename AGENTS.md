@@ -1,8 +1,11 @@
 # 项目工作约定
 
-- 修改前阅读根目录 `CODING_STANDARD.md`，后续代码修改和评审持续遵守该规范。
-- 目录和数据管理以 main 合入的 `README.md`“代码结构”及 `src/piper_dynamics/paths.py` 为基准；`ARCHITECTURE.md` 补充当前实机控制链路，历史目录描述需对照实际文件核实。
-- 源码统一向 `src/piper_dynamics/` 收敛，复用已有 `core/`、`pipeline/`、`utils/`；通用工具放 `utils/`，领域算法放 `core/`，不另建平行框架。
-- 用户已批准详细整理计划：以当前实现保持控制行为、以 main 组织顶层结构，src 内按职责解耦；只支持标准 PiPER，删除 X 专用内容。分阶段执行并验证，不需要重复确认。
-- 后续采用渐进修改，保留现有入口、运行记录和历史可追溯性；结构调整不夹带增益、阈值、控制模式或数据口径变更。
-- 验证优先使用现有离线测试与仿真，明确报告验证层级；源码检查或仿真通过不能当作实机验证。硬件操作须符合用户当前任务授权。
+- 修改前阅读 `CODING_STANDARD.md`、`README.md` 和 `ARCHITECTURE.md`；具体控制逻辑以当前实现为准，旧会话记忆及 main 的离线流程不能覆盖当前控制行为。
+- 顶层沿用 main 的 src、inputs、models、outputs、scripts、docs 管理方式，src 内按职责组织；项目只支持普通 PiPER。
+- 产品源码放 `src/piper_dynamics`。core 放领域算法，pipeline 放离线业务编排，real_robot 放运行与控制，utils 放通用工具；依赖保持单向。
+- 函数承担明确职责；优先拆分配置、运行、数值计算和记录输出，不按行数机械切碎连续逻辑。数学惯用符号与已有文件/字段契约可以保留。
+- 当前控制参数和流程的变化必须来自具体任务需求，不借结构整理顺带修改增益、阈值、模式、时序、任务顺序或训练/验证划分。
+- 模型使用 `models/standard_piper`，路径使用 `paths.py`；复用现有运行记录、manifest、实验索引和相邻修订归档，不批量改写历史数据与哈希。
+- 根目录 real_robot、tools、excitation.py 是过渡兼容入口；外围归档工具迁移前保留旧调用，业务实现只能有一份。兼容引导以外的源码不用 sys.path 拼接或动态加载替代正常导入。
+- 本次已批准的整理及验证结果见 `docs/refactor_report.md`；后续按新任务范围继续维护规范。
+- 验证使用 `PYTHONPATH=src:. python -m pytest -q` 和与改动相关的离线/仿真检查。明确报告静态、数值、仿真与实机证据；硬件操作按用户当前任务授权执行。

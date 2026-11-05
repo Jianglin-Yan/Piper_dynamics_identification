@@ -415,7 +415,7 @@ class Controller(MitControl, Shutdown):
         if self.standing_start:
             raw_lower = np.deg2rad(cfg["lower_deg"])
             raw_upper = np.deg2rad(cfg["upper_deg"])
-            excursion = np.rad2deg(
+            excursion = np.rad2deg(  # noqa: F841 - retained startup diagnostic
                 np.maximum(0.0, np.maximum(raw_lower - self.home, self.home - raw_upper))
             )
 
