@@ -9,8 +9,8 @@ def numbers(v):return ' '.join(str(float(x)) for x in v)
 
 def model_xml(model_name="piper"):
     
-    if model_name not in ('piper','piper_x'):raise ValueError('Unsupported model')
-    meta,description=('nominal_piper.json','piper.urdf') if model_name=='piper' else ('nominal_x.json','piper_x.urdf')
+    if model_name != 'piper':raise ValueError('Only standard PiPER is supported')
+    meta,description='nominal_piper.json','piper.urdf'
     nominal=json.loads((ASSETS/meta).read_text());urdf=ET.parse(ASSETS/description).getroot()
     joints=[urdf.find("joint[@name='joint%d']"%i) for i in range(1,7)]
     root=ET.Element('mujoco',model=model_name+' nominal simplified preview')

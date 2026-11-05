@@ -84,7 +84,6 @@ def load_candidate(cfg, name, bank_path):
         if hashlib.sha256(source.read_bytes()).hexdigest() != expected:
             raise ValueError('Candidate model changed; redesign/revalidate: '+relative)
     bank_model=bank.get('model')
-    if bank_model is None and any('piper_x' in name for name in bank['model_sha256']):bank_model='piper_x'
     if bank_model is not None and bank_model!=cfg.get('model','piper'):
         raise ValueError('Trajectory bank model differs from confirmed robot; re-evaluate with the current model')
     ab = np.asarray(candidate['coefficients_source_rad'], float)

@@ -107,7 +107,7 @@ def validate_pilot_profile(c):
         raise ValueError("joint must be 1..6")
     if c["model"] != "piper":
         raise ValueError(
-            "Current real-robot profile is confirmed standard PiPER; legacy X is offline reproduction only"
+            "Only standard PiPER is supported"
         )
     coeff = np.asarray(c.get("torque_candidate_coefficients_Nm_per_A", []), float)
     if coeff.shape != (6,) or not np.all(np.isfinite(coeff)) or np.any(coeff == 0):

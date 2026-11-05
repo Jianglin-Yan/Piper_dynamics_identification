@@ -1,4 +1,4 @@
-"""Nominal PiPER MuJoCo preview (legacy X available explicitly). Simplified visual geometry, not a collision certificate."""
+"""Nominal standard PiPER MuJoCo preview. Simplified visual geometry, not a collision certificate."""
 from piper_dynamics.paths import STANDARD_MODELS
 import json, xml.etree.ElementTree as ET
 from pathlib import Path

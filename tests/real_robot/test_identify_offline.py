@@ -27,7 +27,7 @@ class TestOfflineIdentification(unittest.TestCase):
         np.testing.assert_allclose(pred[:,1],2*v[:,1]+3*np.tanh(v[:,1]/.02)+4)
         np.testing.assert_allclose(pred[:,[0,2,3,4,5]],0)
 
-    def test_x_regressor_matches_inverse_dynamics_and_original_ls_predicts(self):
+    def test_piper_regressor_matches_inverse_dynamics_and_original_ls_predicts(self):
         import mujoco
         rg,identification,_=original_modules()
         nominal=inertial_model();theta=rg.ground_truth_theta(nominal).reshape(-1)
