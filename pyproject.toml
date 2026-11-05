@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "piper-dynamics"
+version = "1.1.0"
+description = "Standard PiPER identification and controller experiments"
+requires-python = ">=3.10"
+dependencies = ["numpy>=2.0", "scipy>=1.12", "mujoco==3.8.1"]
+
+[project.optional-dependencies]
+hardware = ["evdev>=1.6"]
+analysis = ["matplotlib>=3.8", "pin"]
+test = ["pytest", "piper_sdk==0.6.2"]
+
+[project.scripts]
+piper-identify = "piper_dynamics.cli:main"
+piper-run = "piper_dynamics.real_robot.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"piper_dynamics.real_robot" = ["profiles/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests/real_robot", "."]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
