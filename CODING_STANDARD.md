@@ -60,7 +60,7 @@
 - 保留`src/piper_dynamics`、`inputs`、`models`、`outputs`、`scripts`、`docs`、`runs`的现有职责，不为通用目录模板迁移成`source`或制造空层。若后续确需引入新的集中第三方目录，使用用户指定拼写`thidparty`，不并建含义重复目录；已有第三方布局保持。
 - `core`放领域算法和模型；`pipeline`放离线业务编排；`real_robot`放会话、控制、设备和记录；`utils`仅放通用工具。共享业务算法不因“复用”而塞入utils。
 - 模型唯一来源为`models/standard_piper`，路径复用`paths.py`。保留现有manifest、实验索引、修订及历史哈希；相邻`identification`归档不批量改写。
-- 根目录`real_robot/`、`tools/`、`excitation.py`只保留现有兼容转发，业务实现保持一份；不用动态加载或sys.path拼接绕过正常导入。
+- 根目录`real_robot/`只保留已核实的归档模块、pilot.sh及资源别名；无调用方的旧转发、`tools/`和`excitation.py`已于2026-11-06按用户要求清理。业务实现保持一份；不用动态加载或sys.path拼接绕过正常导入，暂不改动耦合较高的外部归档和手柄配置。
 - 准备、回位、急停的基础Kp/Kd保持原约定；测试参数变化来自明确任务。进入/退出时Kp、Kd和前馈按既有渐变协同处理。
 - `measurement_angle_tolerance_deg`与`startup_limit_tolerance_deg`长期保持10°；MIT/拖动命令范围应同时覆盖固件范围和实测停靠位，不用更窄区间覆盖该约定。2026-11-06用户进一步要求本次整理保持现有具体控制逻辑，故当前拖动的1°内缩作为已记录差异保留，不在整理任务中修复；后续调整作为独立行为变更。
 - 数据默认不因制定规范自动公开；前一任务明确授权发布的7组拖动数据保留main现状，不回滚，不改训练/验证划分。后续发布数据按具体任务范围执行。
