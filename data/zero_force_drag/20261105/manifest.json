@@ -1,0 +1,1028 @@
+{
+  "schema_version": 1,
+  "robot": "standard PiPER",
+  "collection_date_local": "2026-11-05",
+  "timezone": "Asia/Shanghai",
+  "published_date_local": "2026-11-06",
+  "purpose": "MIT gravity-compensated hand-drag experiments; preserve measurements and experiment provenance",
+  "selection": "five substantial drag runs plus two short comparison runs discussed during review; command-bound endings are retained",
+  "torque_calibrated": false,
+  "training_split_changed": false,
+  "runs": [
+    {
+      "run_id": "20261105_170928_902588",
+      "archive": "20261105_170928_902588.tar.gz",
+      "archive_bytes": 12717672,
+      "archive_sha256": "bafd9444c0f6dbb703822b6d689785b0998551a961313466fca659c8ab86f75e",
+      "files": [
+        {
+          "path": "config.json",
+          "bytes": 3298,
+          "sha256": "9bc24c8d8a61661d77be92cd6f82e2db895ecd89dfea213a07c83d97b9834314"
+        },
+        {
+          "path": "effective_config.json",
+          "bytes": 3501,
+          "sha256": "c91b0383ae997cd2fa9ed75cff365f85ea982ee52461679b93586966934e4f66"
+        },
+        {
+          "path": "events.jsonl",
+          "bytes": 3844,
+          "sha256": "1acafc55e140399133761974f7acd10b61205c4d933146d350ce09b3732b49e2"
+        },
+        {
+          "path": "hardware.json",
+          "bytes": 1963,
+          "sha256": "873eed26ff296cb66c389d9a991bbbd521078b87d0d9761ca3c77cb6ef0c7fd2"
+        },
+        {
+          "path": "raw_can.jsonl",
+          "bytes": 47481267,
+          "sha256": "b201ce7f9288e892d6966a54f0e4e66932b7a81a3589417c69e7702ad0c2df25"
+        },
+        {
+          "path": "reference_plan.json",
+          "bytes": 1860,
+          "sha256": "31d273f4b6dfda375e0ca64a9a2bac83d40efd5be8cafb8b506820b6c67da9d2"
+        },
+        {
+          "path": "result.json",
+          "bytes": 6923,
+          "sha256": "d06ea0367b3c9ccb2ab61197238f430018d12c60160a97433153ace5054293ba"
+        },
+        {
+          "path": "samples.jsonl",
+          "bytes": 25524808,
+          "sha256": "9dd30b9cdcd5248fd32f821b71e8dadfa78901fd246030d34a4c7737b42ac144"
+        },
+        {
+          "path": "session_policy.json",
+          "bytes": 1671,
+          "sha256": "99df2d3ea3a9b66623cff4c8bf6398a1999fcfb8c3b56e674b1dc64b92b67f09"
+        },
+        {
+          "path": "test_acceleration.csv",
+          "bytes": 492892,
+          "sha256": "f62654ffc07c8b4a27e502eb7bc6e0de6f88a167a94d9baeed6ec3364931c890"
+        },
+        {
+          "path": "test_manifest.json",
+          "bytes": 7566,
+          "sha256": "1474453fb108f1e0ca3a1fd49faa71f0f83288004191fd70406f082813a4483e"
+        },
+        {
+          "path": "test_quality.json",
+          "bytes": 4807,
+          "sha256": "a1a78cb3fff820886b3a65eed5640c87baf5da20a7e3cc03efc1b5d676946a19"
+        },
+        {
+          "path": "test_raw_can.jsonl",
+          "bytes": 15064313,
+          "sha256": "eb22e89caa2a882b0eec94e73ba49fcd44abc81a532d90442bec169c388287b5"
+        },
+        {
+          "path": "test_samples.jsonl",
+          "bytes": 11101105,
+          "sha256": "0084241b22900fef6d0bed8de90171bc0ef4ea05ea9d849229d691acbbd9e43d"
+        },
+        {
+          "path": "test_signals.csv",
+          "bytes": 3108173,
+          "sha256": "eae0e614c4aebb86a08287b12702456377894b15f4ddcd8d6bfbac07f936ca59"
+        },
+        {
+          "path": "test_signals.npz",
+          "bytes": 626425,
+          "sha256": "6b4e5099bbfa85bf33c0f9bf2ee8396a5a5cf3669f0b632715e262b2c1a56391"
+        },
+        {
+          "path": "tx_can.jsonl",
+          "bytes": 5358140,
+          "sha256": "7e78f33747da3ab4e8ac995f09682da127b9571257d32bafb85aa587d0af1fed"
+        },
+        {
+          "path": "validation_summary.json",
+          "bytes": 720,
+          "sha256": "70d888534b8d1c03692ae89ed678a5e149b0bcfda192de72ca35fc55bee307ff"
+        }
+      ],
+      "mode": "hardware",
+      "protocol": "drag",
+      "test_duration_s": 28.830014747043606,
+      "sample_count": 2882,
+      "valid_measurement_count": 2880,
+      "valid_measurement_ratio": 0.9993060374739764,
+      "can_loss_detected": false,
+      "state": "DONE",
+      "completed": true,
+      "aborted": false,
+      "stop_reason": "Drag test completed",
+      "fault_reason": null,
+      "kp_protocol": [
+        5.0,
+        5.0,
+        5.0,
+        5.0,
+        5.0,
+        5.0
+      ],
+      "kd_protocol": [
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4
+      ],
+      "ff_scale": 1.0,
+      "gravity_model": {
+        "model": "piper",
+        "gravity_source": "nominal",
+        "assets": {
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/piper.urdf": "d9e97fec40ae47d12cf482417acec48706ce4a1398b31b91f328d5b3d75f6183",
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/nominal_piper.json": "9c7995182cfc3ef16589211081408bcd13392639f8b40f9572236f61652d65a8"
+        },
+        "friction_included": false,
+        "fit_offset_included": false,
+        "torque_reference": "official k*b*c; no extra ratio",
+        "torque_calibrated": false
+      },
+      "source_sha256_at_collection": {
+        "controller.py": "c22992f3dc862548ae94bcd159ac0956f5bdbe9590bffbf385c9da04a5b40988",
+        "control/mit_mode.py": "adaff5c37681c81b9b5676be0d85e56c47f96c3cc2b9a1ecd0a237054ec15c5e",
+        "trials/drag.py": "f1b727db3893dbe015e05680bd2e4e41c79c1a6532e717b121337650292dc6f5"
+      },
+      "use_note": "substantial drag record; preserve termination and gain labels"
+    },
+    {
+      "run_id": "20261105_171256_417719",
+      "archive": "20261105_171256_417719.tar.gz",
+      "archive_bytes": 15801024,
+      "archive_sha256": "b3ee70ebe5bbc8e34020a598a9fa9d415d9cdb94aa35518102d55387556ce80f",
+      "files": [
+        {
+          "path": "config.json",
+          "bytes": 3298,
+          "sha256": "0cde8af509a11056e028690cfe4ff815b541877c1ebc2db81c3be42027bde682"
+        },
+        {
+          "path": "effective_config.json",
+          "bytes": 3501,
+          "sha256": "d81c90528256ff89ae2ed71b124c23b3fdf19e5e66566e914766a5e9a211c935"
+        },
+        {
+          "path": "events.jsonl",
+          "bytes": 4660,
+          "sha256": "8b6740e77a7503813a5829493f740e09409d464ebc9764d6be1087948c66b4f3"
+        },
+        {
+          "path": "hardware.json",
+          "bytes": 1960,
+          "sha256": "55a7e4b0fe94ba48ff1d66a511e96041e7fa9c6cf78738132c5e12095420a9ec"
+        },
+        {
+          "path": "raw_can.jsonl",
+          "bytes": 58059744,
+          "sha256": "e3445bc45663429ed45f76b94cb7fc3090a2da3c8e7e213117db634a7a13e264"
+        },
+        {
+          "path": "reference_plan.json",
+          "bytes": 1860,
+          "sha256": "5939f0aa1da212f5e1d3f12e9dca426fc1de24aa5b991ea768db05d0d62a7928"
+        },
+        {
+          "path": "result.json",
+          "bytes": 6911,
+          "sha256": "87145683e8fa9d53dc6b9539b79e56ce23df850a9b133104252f6572c7329acd"
+        },
+        {
+          "path": "samples.jsonl",
+          "bytes": 31084062,
+          "sha256": "b355ab8d79ff825536aa6652403a8a44f5d817752d5b33d05ae9e07be3ca2d41"
+        },
+        {
+          "path": "session_policy.json",
+          "bytes": 1676,
+          "sha256": "5a9b6a985878b1325edc45d661b634f944a4e367a69492c8f5ca5d13f9b2b725"
+        },
+        {
+          "path": "test_acceleration.csv",
+          "bytes": 695945,
+          "sha256": "a5994d11fd1174b5d47c931f39953bf3df181b955e5c532e74d7572b75ddbb5a"
+        },
+        {
+          "path": "test_manifest.json",
+          "bytes": 7554,
+          "sha256": "9349cccf29b66b107b1b44b34a9074cd6be96c0a39c4b252f4802a7302efb0ee"
+        },
+        {
+          "path": "test_quality.json",
+          "bytes": 4812,
+          "sha256": "5cbc6faf00689d0abeccfa9a0a2baa8c169c1af366d7f403669ae5be20ddef06"
+        },
+        {
+          "path": "test_raw_can.jsonl",
+          "bytes": 21255168,
+          "sha256": "cab3b0ad4a7f85d54ea1b4020315f466886fcac68073b742ba9122418ea54387"
+        },
+        {
+          "path": "test_samples.jsonl",
+          "bytes": 15649662,
+          "sha256": "d534ecf24048a801092aaf28d8a967959b02a69b42650a8355b162845ed33af1"
+        },
+        {
+          "path": "test_signals.csv",
+          "bytes": 4407839,
+          "sha256": "e0cc0c43d1a8cdc9f27530feb24472c39b0cfb32866594683d30cd86a21f17fa"
+        },
+        {
+          "path": "test_signals.npz",
+          "bytes": 849341,
+          "sha256": "6788005c4be706df3f10dd02ee2f79308d489eb7785b874a8a51cecb87c7b852"
+        },
+        {
+          "path": "tx_can.jsonl",
+          "bytes": 6528987,
+          "sha256": "3068aa6dcf11462fc249d46235b49e2705493db172c46505d8c4ee5534d4cfb0"
+        },
+        {
+          "path": "validation_summary.json",
+          "bytes": 720,
+          "sha256": "70d888534b8d1c03692ae89ed678a5e149b0bcfda192de72ca35fc55bee307ff"
+        }
+      ],
+      "mode": "hardware",
+      "protocol": "drag",
+      "test_duration_s": 40.67982503899839,
+      "sample_count": 4067,
+      "valid_measurement_count": 4065,
+      "valid_measurement_ratio": 0.9995082370297517,
+      "can_loss_detected": false,
+      "state": "DONE",
+      "completed": true,
+      "aborted": true,
+      "stop_reason": "LB+RB",
+      "fault_reason": null,
+      "kp_protocol": [
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0
+      ],
+      "kd_protocol": [
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ],
+      "ff_scale": 1.0,
+      "gravity_model": {
+        "model": "piper",
+        "gravity_source": "nominal",
+        "assets": {
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/piper.urdf": "d9e97fec40ae47d12cf482417acec48706ce4a1398b31b91f328d5b3d75f6183",
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/nominal_piper.json": "9c7995182cfc3ef16589211081408bcd13392639f8b40f9572236f61652d65a8"
+        },
+        "friction_included": false,
+        "fit_offset_included": false,
+        "torque_reference": "official k*b*c; no extra ratio",
+        "torque_calibrated": false
+      },
+      "source_sha256_at_collection": {
+        "controller.py": "c22992f3dc862548ae94bcd159ac0956f5bdbe9590bffbf385c9da04a5b40988",
+        "control/mit_mode.py": "adaff5c37681c81b9b5676be0d85e56c47f96c3cc2b9a1ecd0a237054ec15c5e",
+        "trials/drag.py": "f1b727db3893dbe015e05680bd2e4e41c79c1a6532e717b121337650292dc6f5"
+      },
+      "use_note": "substantial drag record; preserve termination and gain labels"
+    },
+    {
+      "run_id": "20261105_171756_775925",
+      "archive": "20261105_171756_775925.tar.gz",
+      "archive_bytes": 16844865,
+      "archive_sha256": "614b266c61090d68d9fdba83ce59e9415f7af6f268eacb942aeea0adfd03a836",
+      "files": [
+        {
+          "path": "config.json",
+          "bytes": 3298,
+          "sha256": "8647a758b8725f2b84f3f3bebdc5b6e01ec2b28bd18815cccfc29f188f971bce"
+        },
+        {
+          "path": "effective_config.json",
+          "bytes": 3501,
+          "sha256": "4ec0c73402e38f312095220922d67c436154c6c9ff0a6088e9d834527d8a3af1"
+        },
+        {
+          "path": "events.jsonl",
+          "bytes": 5184,
+          "sha256": "a2f2ad044156f5032866d17f1a23f5378c586a3644283b2d04c510dec2549f4f"
+        },
+        {
+          "path": "hardware.json",
+          "bytes": 1962,
+          "sha256": "de8fd686fd3c15948535001abc147e801e939418be104e4d54cfd00c41b1f7f0"
+        },
+        {
+          "path": "raw_can.jsonl",
+          "bytes": 63920853,
+          "sha256": "4412363fad47f144b0bb9e8c9cf22376dabd2b2bc44a617da59bf282bb4812ce"
+        },
+        {
+          "path": "reference_plan.json",
+          "bytes": 1860,
+          "sha256": "d9145d9085906cb3283860da51efde9d5ac03a8da7087e19749c6add4a22eee6"
+        },
+        {
+          "path": "result.json",
+          "bytes": 7021,
+          "sha256": "9061d98e4c87a913a404b985f1ed4774a8adfb40b495fa7f510cc42f6f84efef"
+        },
+        {
+          "path": "samples.jsonl",
+          "bytes": 34233071,
+          "sha256": "c1eb8887db963a9736ca014c5b6e1142e7ef41a5adc3e4e5d1692c0358235066"
+        },
+        {
+          "path": "session_policy.json",
+          "bytes": 1615,
+          "sha256": "1635eaae7a5548d634ab3b9b270e7e06edea59a6f82eecd6e560a2871678515c"
+        },
+        {
+          "path": "test_acceleration.csv",
+          "bytes": 816842,
+          "sha256": "09ddf7a6c9ad1141b07611ef218d5dcebd077fa2a8b3ea6ce5bf8de832cfa5f5"
+        },
+        {
+          "path": "test_manifest.json",
+          "bytes": 7554,
+          "sha256": "0c56de4faac093fac18fc88212c09a84adf3324a07777ff8010cfbaf7d530ded"
+        },
+        {
+          "path": "test_quality.json",
+          "bytes": 4813,
+          "sha256": "ea0eb1b4652d5e78ba35ecbdd2278aadcd8c8e228af04436d4435b01d5624098"
+        },
+        {
+          "path": "test_raw_can.jsonl",
+          "bytes": 24846853,
+          "sha256": "e3e8d3c0087f2a4d4807803813615857f7dc5c9aa59f17534455d5d2d2ca6f35"
+        },
+        {
+          "path": "test_samples.jsonl",
+          "bytes": 18320673,
+          "sha256": "103d8c10206c045f8261a094fc05738c3d516de73c4ce67c7787be9d177341f3"
+        },
+        {
+          "path": "test_signals.csv",
+          "bytes": 5138267,
+          "sha256": "6f52b21c46864eec1ccecaf481a5a3bd9891441d3119d950632dd8d138ae72f5"
+        },
+        {
+          "path": "test_signals.npz",
+          "bytes": 956439,
+          "sha256": "842a04a57192a66068f722dbc6c1b81b74cfd6b54a62b438385de5f5499aaff6"
+        },
+        {
+          "path": "tx_can.jsonl",
+          "bytes": 4859363,
+          "sha256": "c7494e8949a846d0cf09408d581df83f58ad384ea9f13e1412133ad99d25bbe0"
+        },
+        {
+          "path": "validation_summary.json",
+          "bytes": 720,
+          "sha256": "70d888534b8d1c03692ae89ed678a5e149b0bcfda192de72ca35fc55bee307ff"
+        }
+      ],
+      "mode": "hardware",
+      "protocol": "drag",
+      "test_duration_s": 47.549942452053074,
+      "sample_count": 4754,
+      "valid_measurement_count": 4752,
+      "valid_measurement_ratio": 0.9995793016407236,
+      "can_loss_detected": false,
+      "state": "FAULT",
+      "completed": false,
+      "aborted": false,
+      "stop_reason": "Operator confirmed physical support; disable at current pose",
+      "fault_reason": "MIT reference outside command bounds",
+      "kp_protocol": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "kd_protocol": [
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1
+      ],
+      "ff_scale": 1.0,
+      "gravity_model": {
+        "model": "piper",
+        "gravity_source": "nominal",
+        "assets": {
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/piper.urdf": "d9e97fec40ae47d12cf482417acec48706ce4a1398b31b91f328d5b3d75f6183",
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/nominal_piper.json": "9c7995182cfc3ef16589211081408bcd13392639f8b40f9572236f61652d65a8"
+        },
+        "friction_included": false,
+        "fit_offset_included": false,
+        "torque_reference": "official k*b*c; no extra ratio",
+        "torque_calibrated": false
+      },
+      "source_sha256_at_collection": {
+        "controller.py": "c22992f3dc862548ae94bcd159ac0956f5bdbe9590bffbf385c9da04a5b40988",
+        "control/mit_mode.py": "adaff5c37681c81b9b5676be0d85e56c47f96c3cc2b9a1ecd0a237054ec15c5e",
+        "trials/drag.py": "f1b727db3893dbe015e05680bd2e4e41c79c1a6532e717b121337650292dc6f5"
+      },
+      "use_note": "substantial drag record; preserve termination and gain labels"
+    },
+    {
+      "run_id": "20261105_172631_422719",
+      "archive": "20261105_172631_422719.tar.gz",
+      "archive_bytes": 7719907,
+      "archive_sha256": "f4edac17b62e188ce3a54cb6b41240e8e3f5d6284d9da50b7db0509105b45c90",
+      "files": [
+        {
+          "path": "config.json",
+          "bytes": 3298,
+          "sha256": "78dbbf3d3c712fb105b14e9339b9150c3f094979d761503dedd3411794e83c3e"
+        },
+        {
+          "path": "effective_config.json",
+          "bytes": 3501,
+          "sha256": "ce759fb80e451ec8a5e617872dfb1dde3b60ff9d4b359b40ecdc9c867fe7c069"
+        },
+        {
+          "path": "events.jsonl",
+          "bytes": 4246,
+          "sha256": "187dc0687effe5c4db4849794b490e94b6e299e771d1987982ebf53f30fc039e"
+        },
+        {
+          "path": "hardware.json",
+          "bytes": 1961,
+          "sha256": "12c9d830c9bc40d4851defe3a700a90bb85e1110e87f311c9ca387e96138c8c9"
+        },
+        {
+          "path": "raw_can.jsonl",
+          "bytes": 38583194,
+          "sha256": "d49f9e11bd25a1fa4a0018e585a468f8380819a44c2b70f661d763cf53855bf2"
+        },
+        {
+          "path": "reference_plan.json",
+          "bytes": 1860,
+          "sha256": "7ba4f5149729844a781ac33312ea0670012d47f959251914064209a5b38fe630"
+        },
+        {
+          "path": "result.json",
+          "bytes": 6938,
+          "sha256": "c65d7134d0a1b627e827e6b1c9c480766a4c50311f30bded2e69e69328325e2c"
+        },
+        {
+          "path": "samples.jsonl",
+          "bytes": 19986423,
+          "sha256": "66eac410d233969ecf70d3d66e22feb27e39fd3943c579ff0e2d874e16ac816f"
+        },
+        {
+          "path": "session_policy.json",
+          "bytes": 1638,
+          "sha256": "824ff2d72566ea9c1d9754339ca4198cc764a0a01df9a562ef59a823264873cb"
+        },
+        {
+          "path": "test_acceleration.csv",
+          "bytes": 113344,
+          "sha256": "98030253c8d5b8cc00425e717f5e0bd20f4f34b6c8c8e474b526fa737967dc55"
+        },
+        {
+          "path": "test_manifest.json",
+          "bytes": 7552,
+          "sha256": "4fd6b8d8ca24e7f1ad6a22470ab39a1519aebcdf5df35c751670f59f70195b9a"
+        },
+        {
+          "path": "test_quality.json",
+          "bytes": 4796,
+          "sha256": "924e852f8c48c696eaa4e0ab96fc6db28dd1e767a8c606a0e2f0a7e7a4ee79b5"
+        },
+        {
+          "path": "test_raw_can.jsonl",
+          "bytes": 3474935,
+          "sha256": "a1d3fcfd39e0d1c27381ff558ab21417c841a709a5f9b97406cab99d574248e5"
+        },
+        {
+          "path": "test_samples.jsonl",
+          "bytes": 2499665,
+          "sha256": "ce1dd021a777817e229098ca7058d852271cbefbdda0a9d3502d4730e2ae2aaa"
+        },
+        {
+          "path": "test_signals.csv",
+          "bytes": 681190,
+          "sha256": "9169123516ca0dd78279a3551c97dcb53bcd6142658ff66094c8da5952864474"
+        },
+        {
+          "path": "test_signals.npz",
+          "bytes": 137865,
+          "sha256": "dfa668274c1d717c9dc3a1bf2f5fc880c485ca75a1a55777370c7c7d1cc37862"
+        },
+        {
+          "path": "tx_can.jsonl",
+          "bytes": 4212962,
+          "sha256": "a2e10d314c4a85f8d6ff34ca2ac11fea539da1b1b5a936bef5101eeb81fb3233"
+        },
+        {
+          "path": "validation_summary.json",
+          "bytes": 720,
+          "sha256": "70d888534b8d1c03692ae89ed678a5e149b0bcfda192de72ca35fc55bee307ff"
+        }
+      ],
+      "mode": "hardware",
+      "protocol": "drag",
+      "test_duration_s": 6.6500175559776835,
+      "sample_count": 664,
+      "valid_measurement_count": 662,
+      "valid_measurement_ratio": 0.9969879518072289,
+      "can_loss_detected": false,
+      "state": "DONE",
+      "completed": true,
+      "aborted": true,
+      "stop_reason": "LB+RB",
+      "fault_reason": null,
+      "kp_protocol": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "kd_protocol": [
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1
+      ],
+      "ff_scale": 1.0,
+      "gravity_model": {
+        "model": "piper",
+        "gravity_source": "nominal",
+        "assets": {
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/piper.urdf": "d9e97fec40ae47d12cf482417acec48706ce4a1398b31b91f328d5b3d75f6183",
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/nominal_piper.json": "9c7995182cfc3ef16589211081408bcd13392639f8b40f9572236f61652d65a8"
+        },
+        "friction_included": false,
+        "fit_offset_included": false,
+        "torque_reference": "official k*b*c; no extra ratio",
+        "torque_calibrated": false
+      },
+      "source_sha256_at_collection": {
+        "controller.py": "2ec796376f4d23af8100e5c4971e658849a546f6b1f036e7dfb2bf153f8b0a8d",
+        "control/mit_mode.py": "d482227262b1afca2fdea75730a1cb50b33486b33309b4556eaf69f762399e59",
+        "trials/drag.py": "f1b727db3893dbe015e05680bd2e4e41c79c1a6532e717b121337650292dc6f5"
+      },
+      "use_note": "short comparison record"
+    },
+    {
+      "run_id": "20261105_173633_612779",
+      "archive": "20261105_173633_612779.tar.gz",
+      "archive_bytes": 10290033,
+      "archive_sha256": "2830549c3a3164e4108abd9ec1f8e461dc8301a9f06e7858f752c409eb3786a0",
+      "files": [
+        {
+          "path": "config.json",
+          "bytes": 3304,
+          "sha256": "2d9b51c5396539fc3e7706ab517f3b4014e7ec366cdf7561ae5b2cb988d38285"
+        },
+        {
+          "path": "effective_config.json",
+          "bytes": 3507,
+          "sha256": "f4ad5c2d38228630b51b117801568fc7cf5e374ec75cb6bd1a3a2aa5b831fb9e"
+        },
+        {
+          "path": "events.jsonl",
+          "bytes": 4678,
+          "sha256": "6acdfd699dab5f6bb2a7df62e6266ca2468c475509c83d3c8d71ff883f1b848a"
+        },
+        {
+          "path": "hardware.json",
+          "bytes": 1964,
+          "sha256": "50390db68af473e1d4d8f14b757257b9376257e9ec74663a82f124ca44993768"
+        },
+        {
+          "path": "raw_can.jsonl",
+          "bytes": 48694781,
+          "sha256": "c41749e215d20acbf566d1f2059539e24700a975003cce7e50b84e8b5b0b20cf"
+        },
+        {
+          "path": "reference_plan.json",
+          "bytes": 1866,
+          "sha256": "e530c2a0fe2a34b554dc18ab49ca1643d09514020b034482cbd4a82f6c09fef2"
+        },
+        {
+          "path": "result.json",
+          "bytes": 6904,
+          "sha256": "2e069657fba39a4db4f61d9586ab6b789d28ab1d28d63971b84e79c38d379ba1"
+        },
+        {
+          "path": "samples.jsonl",
+          "bytes": 25746818,
+          "sha256": "a8d85cb6f6231c9c0b440d340312a4c1f239bbad93327b9d229776bcf61f013b"
+        },
+        {
+          "path": "session_policy.json",
+          "bytes": 1617,
+          "sha256": "591781a209c251dd86da5de4d3e66dcd9904b911367f6cd3e4841d18396f8ed4"
+        },
+        {
+          "path": "test_acceleration.csv",
+          "bytes": 249032,
+          "sha256": "ff44cfdba35fad8999e7ae031e8335c5d80ff3b59b8d0c4804ec2420d5a78e19"
+        },
+        {
+          "path": "test_manifest.json",
+          "bytes": 7565,
+          "sha256": "b30e55be5511dd82ad0cb3c8290ee1b560fa406688c1132ddcfb89c4c60c7f76"
+        },
+        {
+          "path": "test_quality.json",
+          "bytes": 4799,
+          "sha256": "d7215bad5cb70d3c83b40e72f078c09b00cc5ce48d519ff8d6a6f1cbdead90be"
+        },
+        {
+          "path": "test_raw_can.jsonl",
+          "bytes": 7545496,
+          "sha256": "6c258480a3bb1e94a38cbdfdc4733bf19c3f08e15eb89c3451e4f4bbdf053ab7"
+        },
+        {
+          "path": "test_samples.jsonl",
+          "bytes": 5448642,
+          "sha256": "1dbec27c16bda5c48966b474194b92c21250a451d2ee35bbb11a8bd2cc0f98a1"
+        },
+        {
+          "path": "test_signals.csv",
+          "bytes": 1480916,
+          "sha256": "8b0d81bce7821940b88afc362d64442f396c5b0362688d691a84be537d4c68ef"
+        },
+        {
+          "path": "test_signals.npz",
+          "bytes": 279636,
+          "sha256": "5395fb07c42e8f98019dd672835da5f5fc57c9e632b407dcbb650f380cf03f72"
+        },
+        {
+          "path": "tx_can.jsonl",
+          "bytes": 5440301,
+          "sha256": "bc73dda85bb4feb433d5bdc0f54371c49f3badcb7b71f230727421c1b8305376"
+        },
+        {
+          "path": "validation_summary.json",
+          "bytes": 720,
+          "sha256": "70d888534b8d1c03692ae89ed678a5e149b0bcfda192de72ca35fc55bee307ff"
+        }
+      ],
+      "mode": "hardware",
+      "protocol": "drag",
+      "test_duration_s": 14.43998211500002,
+      "sample_count": 1443,
+      "valid_measurement_count": 1441,
+      "valid_measurement_ratio": 0.9986139986139986,
+      "can_loss_detected": false,
+      "state": "DONE",
+      "completed": true,
+      "aborted": true,
+      "stop_reason": "LB+RB",
+      "fault_reason": null,
+      "kp_protocol": [
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0
+      ],
+      "kd_protocol": [
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05
+      ],
+      "ff_scale": 1.0,
+      "gravity_model": {
+        "model": "piper",
+        "gravity_source": "nominal",
+        "assets": {
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/piper.urdf": "d9e97fec40ae47d12cf482417acec48706ce4a1398b31b91f328d5b3d75f6183",
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/nominal_piper.json": "9c7995182cfc3ef16589211081408bcd13392639f8b40f9572236f61652d65a8"
+        },
+        "friction_included": false,
+        "fit_offset_included": false,
+        "torque_reference": "official k*b*c; no extra ratio",
+        "torque_calibrated": false
+      },
+      "source_sha256_at_collection": {
+        "controller.py": "2ec796376f4d23af8100e5c4971e658849a546f6b1f036e7dfb2bf153f8b0a8d",
+        "control/mit_mode.py": "d482227262b1afca2fdea75730a1cb50b33486b33309b4556eaf69f762399e59",
+        "trials/drag.py": "f1b727db3893dbe015e05680bd2e4e41c79c1a6532e717b121337650292dc6f5"
+      },
+      "use_note": "short comparison record"
+    },
+    {
+      "run_id": "20261105_174548_644413",
+      "archive": "20261105_174548_644413.tar.gz",
+      "archive_bytes": 15668466,
+      "archive_sha256": "ca953ecef2b38f27d33eab5d5a0c04f0cfc45b002b49a02dc54a1c2f76fb5bbc",
+      "files": [
+        {
+          "path": "config.json",
+          "bytes": 3304,
+          "sha256": "66bca9475d28edf6b914df8c234645efab96c1dd1bbe53612b6f2e41b73fbebd"
+        },
+        {
+          "path": "effective_config.json",
+          "bytes": 3507,
+          "sha256": "d6d0dc0e11b095c2defe0c1f20bbe247da08ea56400e385582bf64c295e14ac2"
+        },
+        {
+          "path": "events.jsonl",
+          "bytes": 4088,
+          "sha256": "bc7951586b5cc47db6e03e7e1e308af9a7550e0bebdc8bf7dd9f7440a797ace4"
+        },
+        {
+          "path": "hardware.json",
+          "bytes": 1961,
+          "sha256": "30dae61caf6a2ae0a0cf7922956bf04ec98173671c19cd70a17aff454e6fe620"
+        },
+        {
+          "path": "raw_can.jsonl",
+          "bytes": 75269149,
+          "sha256": "34fa70cf96fe43dc3398e07cf728df06139577a28f8f15262354367c2b47f8af"
+        },
+        {
+          "path": "reference_plan.json",
+          "bytes": 1866,
+          "sha256": "ffbba5fa9c4af8d6df9ba02c0a8f5d3506ead2bd9cbbaebdaef9757fa5062d15"
+        },
+        {
+          "path": "result.json",
+          "bytes": 7060,
+          "sha256": "ffeedea45157bcf7ed815ce5453dd3fb28538dfa9bae8c8aa9ed5857d2519ddf"
+        },
+        {
+          "path": "samples.jsonl",
+          "bytes": 39875937,
+          "sha256": "32d084f2e57268d049f648a1993d1faf98ae5e2f6accd235c718af904aea81aa"
+        },
+        {
+          "path": "session_policy.json",
+          "bytes": 1641,
+          "sha256": "5514046cbc58059feaf468785f2113c48daae0ab5494472955f79a628cf15301"
+        },
+        {
+          "path": "test_acceleration.csv",
+          "bytes": 471595,
+          "sha256": "fe6172d62165dc53272c7caad6fb68c3eaa3aa98cc9b99b9298b0bcfed26c9d9"
+        },
+        {
+          "path": "test_manifest.json",
+          "bytes": 7566,
+          "sha256": "eafe4864e7ba3e0020837d6a98a52f00d77bee4019e2858812107116ccd38541"
+        },
+        {
+          "path": "test_quality.json",
+          "bytes": 4806,
+          "sha256": "6c06f21b105afe2df26b002fb500d5ff1c968242a0a38d9267f26e49919643e1"
+        },
+        {
+          "path": "test_raw_can.jsonl",
+          "bytes": 14353589,
+          "sha256": "06ade278a189f0d4a6175155a94191dc608ec8ef26ac6d9aab5b5728d5d2ed2b"
+        },
+        {
+          "path": "test_samples.jsonl",
+          "bytes": 10409099,
+          "sha256": "93fa588ad03c422def9d109b9f6efd157fb5f77f3f7e53f151085f690d94b673"
+        },
+        {
+          "path": "test_signals.csv",
+          "bytes": 2846078,
+          "sha256": "e1eb114b185e735d2f27f750ab23c4d95fcb44013869756fa9b6d82159933c5f"
+        },
+        {
+          "path": "test_signals.npz",
+          "bytes": 574414,
+          "sha256": "cb78edbb4b6a0239aca0ceb9b97b2a4aec7db0c16da822ae7c0f57b82fa4b3a8"
+        },
+        {
+          "path": "tx_can.jsonl",
+          "bytes": 7296083,
+          "sha256": "869420f70f4403a290f973bd226791751a3cea57fc0fe7648917780fd6f1b666"
+        },
+        {
+          "path": "validation_summary.json",
+          "bytes": 720,
+          "sha256": "70d888534b8d1c03692ae89ed678a5e149b0bcfda192de72ca35fc55bee307ff"
+        }
+      ],
+      "mode": "hardware",
+      "protocol": "drag",
+      "test_duration_s": 27.46994421898853,
+      "sample_count": 2746,
+      "valid_measurement_count": 2744,
+      "valid_measurement_ratio": 0.9992716678805535,
+      "can_loss_detected": false,
+      "state": "FAULT",
+      "completed": false,
+      "aborted": false,
+      "stop_reason": "Operator confirmed physical support; disable at current pose",
+      "fault_reason": "MIT reference outside command bounds: J4 99.020 deg outside [-99.000, 99.000] deg",
+      "kp_protocol": [
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0
+      ],
+      "kd_protocol": [
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15
+      ],
+      "ff_scale": 1.0,
+      "gravity_model": {
+        "model": "piper",
+        "gravity_source": "nominal",
+        "assets": {
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/piper.urdf": "d9e97fec40ae47d12cf482417acec48706ce4a1398b31b91f328d5b3d75f6183",
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/nominal_piper.json": "9c7995182cfc3ef16589211081408bcd13392639f8b40f9572236f61652d65a8"
+        },
+        "friction_included": false,
+        "fit_offset_included": false,
+        "torque_reference": "official k*b*c; no extra ratio",
+        "torque_calibrated": false
+      },
+      "source_sha256_at_collection": {
+        "controller.py": "2ec796376f4d23af8100e5c4971e658849a546f6b1f036e7dfb2bf153f8b0a8d",
+        "control/mit_mode.py": "d482227262b1afca2fdea75730a1cb50b33486b33309b4556eaf69f762399e59",
+        "trials/drag.py": "f1b727db3893dbe015e05680bd2e4e41c79c1a6532e717b121337650292dc6f5"
+      },
+      "use_note": "substantial drag record; preserve termination and gain labels"
+    },
+    {
+      "run_id": "20261105_174831_925005",
+      "archive": "20261105_174831_925005.tar.gz",
+      "archive_bytes": 33049975,
+      "archive_sha256": "0bcb5e80cc8214767674333dfe0e73c90ee4d640548e3cecf1a1295b3cbb157d",
+      "files": [
+        {
+          "path": "config.json",
+          "bytes": 3304,
+          "sha256": "66bca9475d28edf6b914df8c234645efab96c1dd1bbe53612b6f2e41b73fbebd"
+        },
+        {
+          "path": "effective_config.json",
+          "bytes": 3507,
+          "sha256": "d6d0dc0e11b095c2defe0c1f20bbe247da08ea56400e385582bf64c295e14ac2"
+        },
+        {
+          "path": "events.jsonl",
+          "bytes": 5922,
+          "sha256": "83b5642ca3a6271f8e3b78c8a9e18eff1f3737d6bc366edf0122daeb52facc4f"
+        },
+        {
+          "path": "hardware.json",
+          "bytes": 1963,
+          "sha256": "3dc5a88e46e21cabba8c87d4a138fd3ae9b8d52951851a1f738f74ce707719f5"
+        },
+        {
+          "path": "raw_can.jsonl",
+          "bytes": 100319884,
+          "sha256": "98508d1d4dbf7c25c351d1d7261a03f9a7993231326bb8220a1d1cecd3e5f115"
+        },
+        {
+          "path": "reference_plan.json",
+          "bytes": 1866,
+          "sha256": "ffbba5fa9c4af8d6df9ba02c0a8f5d3506ead2bd9cbbaebdaef9757fa5062d15"
+        },
+        {
+          "path": "result.json",
+          "bytes": 6959,
+          "sha256": "e71f3e1dc62544d298ad2ca99051f5b666aa33ccb4f3194ad78abee217462938"
+        },
+        {
+          "path": "samples.jsonl",
+          "bytes": 54098433,
+          "sha256": "38135dd71c18a8368b122d05a54d50facfc07af613001990bd9523fe925b0c3f"
+        },
+        {
+          "path": "session_policy.json",
+          "bytes": 1619,
+          "sha256": "84db63ccaa5fd5669dcdc33097047b5b49f3485e0ca95907eeefd2658894ee3e"
+        },
+        {
+          "path": "test_acceleration.csv",
+          "bytes": 2001672,
+          "sha256": "dbeebef7d5d03e402140f2069da46d3e2cacf426adb0f3b0d0744b2872af2fac"
+        },
+        {
+          "path": "test_manifest.json",
+          "bytes": 7568,
+          "sha256": "d28c4b3da9582d4d3e245ae4643f8a833d62b35743305f276eddd305bff37c74"
+        },
+        {
+          "path": "test_quality.json",
+          "bytes": 4823,
+          "sha256": "31236dbb3eb4ae0684cf59a02c4cf2563b7dcaba537116a7d08b014d6f8f5d62"
+        },
+        {
+          "path": "test_raw_can.jsonl",
+          "bytes": 60985943,
+          "sha256": "79abd5052676e31b1004e41175f662512c47a9cd569d13307dbc9aa876074558"
+        },
+        {
+          "path": "test_samples.jsonl",
+          "bytes": 44981846,
+          "sha256": "09518f361cb88f4a0783520bb4af7534e5009f3e49dfa15c7c744bc30d5dfbc4"
+        },
+        {
+          "path": "test_signals.csv",
+          "bytes": 12641749,
+          "sha256": "bae65d29e923cd3d897c75847487ca9363c35241613c95c41cc8c14331627c49"
+        },
+        {
+          "path": "test_signals.npz",
+          "bytes": 2345129,
+          "sha256": "202a951356c5a63b59b8410fb6ffd0394e982f0ed3b492e4228d694ca7346c2b"
+        },
+        {
+          "path": "tx_can.jsonl",
+          "bytes": 11479289,
+          "sha256": "3a608279516188cab604d41ebaf107f4a06dea81887dc24322e03ab77da6f468"
+        },
+        {
+          "path": "validation_summary.json",
+          "bytes": 720,
+          "sha256": "70d888534b8d1c03692ae89ed678a5e149b0bcfda192de72ca35fc55bee307ff"
+        }
+      ],
+      "mode": "hardware",
+      "protocol": "drag",
+      "test_duration_s": 116.70983722998062,
+      "sample_count": 11670,
+      "valid_measurement_count": 11668,
+      "valid_measurement_ratio": 0.9998286203941731,
+      "can_loss_detected": false,
+      "state": "DONE",
+      "completed": true,
+      "aborted": true,
+      "stop_reason": "LB+RB",
+      "fault_reason": null,
+      "kp_protocol": [
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0
+      ],
+      "kd_protocol": [
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15
+      ],
+      "ff_scale": 1.0,
+      "gravity_model": {
+        "model": "piper",
+        "gravity_source": "nominal",
+        "assets": {
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/piper.urdf": "d9e97fec40ae47d12cf482417acec48706ce4a1398b31b91f328d5b3d75f6183",
+          "/home/shin/Documents/41Piper/Piper_dynamics_identification/real_robot/assets/nominal_piper.json": "9c7995182cfc3ef16589211081408bcd13392639f8b40f9572236f61652d65a8"
+        },
+        "friction_included": false,
+        "fit_offset_included": false,
+        "torque_reference": "official k*b*c; no extra ratio",
+        "torque_calibrated": false
+      },
+      "source_sha256_at_collection": {
+        "controller.py": "2ec796376f4d23af8100e5c4971e658849a546f6b1f036e7dfb2bf153f8b0a8d",
+        "control/mit_mode.py": "d482227262b1afca2fdea75730a1cb50b33486b33309b4556eaf69f762399e59",
+        "trials/drag.py": "f1b727db3893dbe015e05680bd2e4e41c79c1a6532e717b121337650292dc6f5"
+      },
+      "use_note": "substantial drag record; preserve termination and gain labels"
+    }
+  ]
+}
