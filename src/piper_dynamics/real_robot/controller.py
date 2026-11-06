@@ -349,7 +349,9 @@ class Controller(MitControl, Shutdown):
             self.gravity = None
 
     def _initialize_pose(self, cfg):
-        """Capture startup pose, planning bounds and return policy."""
+        """保存启动/回位姿态并建立各任务现有命令范围，角度内部统一为rad。
+
+        本次保留拖动的固件范围内缩1°与启动姿态覆盖规则，不将测量容差混为命令限位。"""
         self.controlled_axes = np.array([True] * 5 + [not cfg.get("passive_wrist", False)])
         self.passive_q = self.home[5]
         self.trial = None
@@ -374,13 +376,13 @@ class Controller(MitControl, Shutdown):
             self.start, self.boundary_goal, self.lower, self.upper = standing_plan(cfg, self.home)
             self.return_home = self.home.copy() if self.mit else self.boundary_goal.copy()
         if cfg.get("trajectory") == "drag":
-            # The drag reference follows the measured pose. Keep the firmware range
-            # and also include the measured park, which may sit a few degrees outside
-            # the nominal J2/J3 limits when the arm is left folded.
+            # 保留当前拖动命令范围：固件范围向内1°，必要时扩展到启动停靠位。
+            # 超界目标由MIT发送检查拒绝；这是软件命令约束，不等同机械止挡或手推限位。
+            inset = np.deg2rad(1.0)
             raw_lower = np.deg2rad(cfg["lower_deg"])
             raw_upper = np.deg2rad(cfg["upper_deg"])
-            self.lower = np.minimum(raw_lower, self.home - np.deg2rad(1.0))
-            self.upper = np.maximum(raw_upper, self.home + np.deg2rad(1.0))
+            self.lower = np.minimum(raw_lower + inset, self.home)
+            self.upper = np.maximum(raw_upper - inset, self.home)
         if self.current_pose_only:
             self.lower, self.upper = current_pose_bounds(cfg, self.home)
             self.emit("当前姿态模式：J1–J5 保持启动目标，仅 J6 运动")

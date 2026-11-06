@@ -74,15 +74,13 @@ def configure(c, ff_scale=0.0, gain_scale=1.0, model="nominal", fit="sg21_LS"):
 
 
 DRAG_KP = 2.0
-DRAG_KD = 0.2
+DRAG_KD = 0.15
 
 
 def configure_drag(c, model="nominal", fit="sg21_LS"):
-    """Low-stiffness drag: Kp 2/Kd 0.2 and 100% FF at test.
+    """配置拖动测试Kp=2、Kd=0.15、前馈100%，准备/回位/急停保留基础10/0.8。
 
-    Prepare, return and the emergency abort keep the base 10/0.8 gains.  The
-    existing FF ramp interpolates Kp and Kd together with the feedforward.
-    """
+    沿用三秒渐变，使测试增益与前馈一起过渡；手推速度、电流监视值保持现有配置。"""
     configure(c, 1.0, 1.0, model, fit)
     c.update(
         mit_kp=[DRAG_KP] * 6,

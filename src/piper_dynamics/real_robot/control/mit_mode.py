@@ -7,14 +7,25 @@ from piper_dynamics.real_robot.trials.trajectory import smooth
 
 class MitControl:
     def _mit_command(self, q):
+        """按当前阶段发送六轴MIT命令，并记录前馈、PD和协议量化候选值。
+
+        使用当前命令范围及持续超预算规则；估计速度限幅不改实际反馈或命令，力矩未标定。"""
         from piper_dynamics.core.torque import WIRE_TO_JOINT
         from piper_dynamics.real_robot.protocol.mit import encode_mit
 
         q = np.asarray(q, float)
         s = self.mit_sample
         v = self.reference_velocity(self.mit_time)
-        if q.shape != (6,) or np.any(q < self.lower - 1e-9) or np.any(q > self.upper + 1e-9):
-            raise ValueError("MIT reference outside command bounds")
+        if q.shape != (6,):
+            raise ValueError("MIT reference must be six-dimensional")
+        outside = (q < self.lower - 1e-9) | (q > self.upper + 1e-9)
+        if np.any(outside):
+            j = int(np.argmax(outside))
+            raise ValueError(
+                f"MIT reference outside command bounds: J{j + 1} "
+                f"{np.rad2deg(q[j]):.3f} deg outside "
+                f"[{np.rad2deg(self.lower[j]):.3f}, {np.rad2deg(self.upper[j]):.3f}] deg"
+            )
         g = np.zeros(6) if self.gravity is None or self.mit_ff_ratio == 0 else self.gravity(s["q"])
         ff = self.mit_ff_ratio * g
         vlim = float(self.config["mit_estimate_velocity_limit_rad_s"])

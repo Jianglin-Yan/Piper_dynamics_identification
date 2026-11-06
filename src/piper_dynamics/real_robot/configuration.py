@@ -254,7 +254,7 @@ def validate_friction(c):
 
 
 def validate_mit(c):
-    "Validate mit."
+    """校验MIT/拖动姿态、前馈和六轴增益；仅测试Kp允许为零，回位增益不得更低。"""
     if c["trajectory"] in ("mit", "drag"):
         if (
             not c.get("standing_start")
@@ -278,7 +278,8 @@ def validate_mit(c):
             "mit_return_kd",
         ):
             values = np.asarray(c[key], float)
-            if values.shape != (6,) or not np.isfinite(values).all() or np.any(values <= 0):
+            minimum = 0.0 if key == "mit_kp" else np.nextafter(0.0, 1.0)
+            if values.shape != (6,) or not np.isfinite(values).all() or np.any(values < minimum):
                 raise ValueError("Invalid " + key)
         if np.any(np.array(c["mit_return_kp"]) < c["mit_kp"]) or np.any(
             np.array(c["mit_return_kd"]) < c["mit_kd"]
@@ -300,15 +301,15 @@ def validate_config(c):
 
 
 def configure_mit(cfg, a, ap, selected):
-    "Apply mit/drag trial overrides."
+    """按所选MIT或拖动任务覆盖配置，保留现有模式约束、默认模型及参数取值。"""
     if selected == "drag":
         if not (a.sim or a.hardware):
             ap.error("Drag trial is sim/hardware only")
         if a.ff_scale is not None or a.mit_gain_scale is not None:
-            ap.error("Drag uses a fixed Kp 5 and 100% feedforward")
+            ap.error("Drag uses a fixed Kp 2 and 100% feedforward")
         from piper_dynamics.real_robot.control.mit_trial import configure_drag
 
-        configure_drag(cfg, a.gravity_model or "identified", a.gravity_fit or "sg21_LS")
+        configure_drag(cfg, a.gravity_model or "nominal", a.gravity_fit or "sg21_LS")
         return
     if selected == "mit":
         if not (a.sim or a.hardware):
