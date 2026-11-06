@@ -47,3 +47,18 @@
 机器可读结果见 refactor_verification.json；X 删除审计见 removed_x_files.json；控制观测夹具见 tests/fixtures/control_behavior.json。
 
 本次证据包括静态检查、数值复算、已有记录分析、合成输入对照与仿真，没有执行实机动作或升级现有控制环境。轨迹设计的 Pinocchio 优化未重新完整运行；其入口已迁移，算法保持原实现。
+
+
+## 2026-11-06 兼容层收缩补充
+
+此补充更新上文“全部旧入口保留”的历史状态：按用户要求，核对src、scripts、tests和相邻identification/tools后，兼容层从50项减为14项；不是删除另一套控制算法。
+
+- 删除24个无外部实际调用方的Python转发，6个real_robot/test_*.sh，3个tools/fit_*.py，根excitation.py、real_robot/tests链接及重复requirements，共36项。
+- 相邻归档工具仍直接使用identify_offline、designed_trajectory；轨迹概览仍生成design_trajectories和pilot旧命令；simulation.py仍参与旧路径指纹读取，因此保留这些入口及其包引导。
+- 正式CLI仍使用旧目录的配置软链接和本地g8手柄配置，轨迹设计仍使用模型/多正弦别名；本次不拆这些路径耦合。
+- 历史SOURCE_MODULES/source_migration映射用于记录源文件身份，保留其标签，不据此认定每个旧物理文件都必须存在。未改写采集和归档哈希。
+- 新脚本Usage及恢复提示改成scripts路径。旧模块兼容测试只覆盖仍保留的四个模块；恢复测试的patch改为同一正式app对象，原失败/退出断言不变。
+
+清理只影响入口与路径兼容，不改控制数值、阶段和算法。相邻工具中还存在历史X路径及旧源码文件依赖，本次没有宣称这些外部工具已全部可运行，也不扩大任务去重写其历史处理链。
+
+本轮验证：220项测试及17项子测试通过，13项正式/保留入口帮助检查通过，产品源码静态检查与差异空白检查通过；28个历史源码名均可定位正式源文件。生产源码执行语法对比只发现命令提示文字更新，控制计算、分支、状态顺序与参数保持。未执行新实机动作。

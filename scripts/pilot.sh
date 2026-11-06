@@ -8,5 +8,5 @@ case "${1:-sim}" in
   read) shift; exec env -u LD_PRELOAD "$piper_python" -m piper_dynamics.real_robot.app --read-only "$@" ;;
   recover) shift; exec env -u LD_PRELOAD "$piper_python" -m piper_dynamics.real_robot.app --recover "$@" ;;
   hardware) shift; exec env -u LD_PRELOAD "$piper_python" -m piper_dynamics.real_robot.app --hardware --max-seconds 300 "$@" ;;
-  *) printf '%s\n' 'Usage: bash real_robot/pilot.sh [pad|sim|read|recover --supported|hardware]'; exit 2 ;;
+  *) printf '%s\n' 'Usage: bash scripts/pilot.sh [pad|sim|read|recover --supported|hardware]'; exit 2 ;;
 esac

@@ -20,6 +20,7 @@ from piper_dynamics.real_robot.controller import Controller
 
 
 class ConfigurationContracts(unittest.TestCase):
+    """核验当前配置语义及外部归档仍依赖的最小兼容集合。"""
     def friction_config(self, *extra):
         parser = build_parser()
         args = parser.parse_args(["--sim", "--standing", "--trajectory", "friction", *extra])
@@ -60,11 +61,12 @@ class ConfigurationContracts(unittest.TestCase):
         self.assertEqual(cfg["park_release_tolerance_deg"], 3.0)
 
     def test_legacy_module_names_share_the_canonical_objects(self):
+        """保留的四个归档模块名直接共享正式实现，不创建第二份模块状态。"""
         aliases = {
-            "controller": "piper_dynamics.real_robot.controller",
-            "run": "piper_dynamics.real_robot.app",
-            "hardware": "piper_dynamics.real_robot.backends.hardware",
             "identify_offline": "piper_dynamics.pipeline.measured_run",
+            "designed_trajectory": "piper_dynamics.real_robot.trials.designed_trajectory",
+            "design_trajectories": "piper_dynamics.pipeline.trajectory_design",
+            "simulation": "piper_dynamics.real_robot.backends.simulation",
         }
         for old, canonical in aliases.items():
             with self.subTest(module=old):

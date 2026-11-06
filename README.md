@@ -23,7 +23,7 @@
 | `outputs/` | 离线结果、参数、图表与报告 |
 | `runs/` | 每次采集的原始记录，继续由 Git 忽略 |
 | `docs/` | 架构补充、迁移与验证记录 |
-| 根目录 `real_robot/`、`tools/`、`excitation.py` | 旧调用兼容转发或资源路径别名，不保留另一份业务实现 |
+| 根目录 `real_robot/` | 外部归档仍依赖的少量接口、`pilot.sh`及配置/模型别名；业务实现在src |
 
 相邻 `../identification/` 继续管理实验索引、修订与验证归档，本次整理不改写其历史记录。共享网格仍保留在 `models/collision_meshes/`；项目的 X 专用实现、模型与结果已按 [文件清单](docs/removed_x_files.json) 删除，Git 历史仍可追溯。
 
@@ -71,7 +71,7 @@ bash scripts/pilot.sh sim --help
 
 `scripts/test_static.sh`、`test_reciprocal.sh`、`test_payload.sh` 继续选择对应 MOVE J 任务。`test_drag.sh` 为零力拖动：LB+X 准备并渐变到 Kp 2／前馈 100%，LB+Y 开始记录（先静置再手推），再次 LB+X 反向渐变并经 MIT 回到停靠位。实机入口仍需显式选择 hardware，并保留当前的检查、手柄/自动运行、停止回收与失能流程。控制参数取当前实现，整理目录不重置参数。
 
-解释器选择依次为 `PIPER_PYTHON`、项目 `.venv/bin/python`、已有 `$HOME/anaconda3/envs/lerobot/bin/python`，最后为 PATH 中的 python3；启动脚本设置本仓库的 src 导入路径。原 `bash real_robot/test_mit.sh ...` 等命令仍兼容。详细使用说明见 [实机运行说明](docs/real_robot.md)。
+解释器选择依次为 `PIPER_PYTHON`、项目 `.venv/bin/python`、已有 `$HOME/anaconda3/envs/lerobot/bin/python`，最后为 PATH 中的 python3；启动脚本设置本仓库的 src 导入路径。旧 `real_robot/test_*.sh`、`tools/fit_*.py`及根目录`excitation.py`已移除，使用上面的`scripts`和pipeline入口；`real_robot/pilot.sh`为外部归档命令暂留。详细使用说明见 [实机运行说明](docs/real_robot.md)。
 
 ## 摩擦分析
 

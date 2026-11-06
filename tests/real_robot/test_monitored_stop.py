@@ -307,12 +307,14 @@ class TestControlledStop(unittest.TestCase):
 
 
 class TestExplicitRecovery(unittest.TestCase):
+    """验证恢复确认先于配置读取，且复位不会隐式使能电机。"""
     def test_requires_support_confirmation_before_any_file_or_device(self):
+        """未确认机械臂支撑时，保留拒绝恢复及不读取配置的断言。"""
         from piper_dynamics.real_robot.app import main
 
         with (
             patch("sys.argv", ["pilot", "--recover"]),
-            patch("real_robot.run.Path.read_text", side_effect=AssertionError("read config")),
+            patch("piper_dynamics.real_robot.app.Path.read_text", side_effect=AssertionError("read config")),
             contextlib.redirect_stderr(io.StringIO()),
         ):
             with self.assertRaises(SystemExit) as error:

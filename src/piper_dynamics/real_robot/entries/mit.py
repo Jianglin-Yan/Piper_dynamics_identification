@@ -1,6 +1,6 @@
 """MIT 固定轨迹入口。
 
-命令仍是你熟悉的 `bash real_robot/test_mit.sh [sim|hardware] --ff-scale 0..1`；
+命令仍是你熟悉的 `bash scripts/test_mit.sh [sim|hardware] --ff-scale 0..1`；
 参数拼装集中在这里，shell 只负责转发。
 """
 

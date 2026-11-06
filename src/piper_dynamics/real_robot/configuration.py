@@ -336,7 +336,7 @@ def configure_gravity(cfg, a, ap, selected):
     if selected == "gravity":
         if a.hardware:
             ap.error(
-                "Legacy MOVE J-to-MIT hardware trial retired. Use bash real_robot/test_mit.sh hardware --ff-scale 0 or 0.25"
+                "Legacy MOVE J-to-MIT hardware trial retired. Use bash scripts/test_mit.sh hardware --ff-scale 0 or 0.25"
             )
         from piper_dynamics.real_robot.control.gravity_hold import configure
 

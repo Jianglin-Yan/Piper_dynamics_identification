@@ -23,7 +23,9 @@ MIT 默认 Kp=10、Kd=0.8；准备与回位容差为当前 8°，前馈从零渐
 
 默认配置位于 `src/piper_dynamics/real_robot/profiles`；`--config`、`--pad`、`--output` 继续覆盖路径。运行记录默认写 `runs`，TESTING 专用数据继续与全流程诊断分开。
 
-旧命令及 `real_robot.*` Python 导入仍由薄兼容层转发到 src 同一实现。相邻实验归档工具仍有旧导入和旧模型路径，因此暂不删除这些别名；后续迁移外围调用后才可移除。兼容层不是新增业务代码的位置。
+2026-11-06清理后，实机/仿真启动统一使用上表`scripts/`入口，旧`real_robot/test_*.sh`已删除。摩擦分析使用`python -m piper_dynamics.pipeline.friction_combined|friction_bins|friction_final`，不再提供`tools/fit_*.py`转发。依赖安装使用根目录requirements.txt和pyproject.toml。
+
+根目录`real_robot/`暂留`identify_offline`、`designed_trajectory`、`design_trajectories`、`simulation`四个Python别名和`pilot.sh`，因为相邻归档工具仍有导入、指纹读取或生成旧命令的依赖。配置/模型软链接、包引导及本地`g8.json`手柄配置保留；默认路径和控制行为不变。不再保证其他旧模块名可导入。
 
 ## 验证
 
@@ -31,4 +33,4 @@ MIT 默认 Kp=10、Kd=0.8；准备与回位容差为当前 8°，前馈从零渐
 PYTHONPATH=src:. python -m pytest -q
 ```
 
-当前共有 206 项测试，包括准备、测试、停止、回位、失能、协议编码、默认摩擦配置和完整仿真会话。测试与仿真不等同于新增实机验证；本次整理没有执行实机动作。
+本轮220项测试及17项子测试通过，包含准备、测试、停止、回位、失能、协议编码、默认摩擦配置和完整仿真会话；另有13项实际入口帮助检查通过。测试与仿真不等同于新增实机验证；本次整理没有执行实机动作。

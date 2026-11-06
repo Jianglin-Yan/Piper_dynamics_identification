@@ -82,12 +82,13 @@ def recovery_notice(info):
 
 
 def require_recovered(info):
+    """若上次会话仍需恢复则拒绝继续，并提示显式恢复命令；不执行任何硬件动作。"""
     if info and info["requires_recovery"]:
         raise RuntimeError(
             "RECOVERY_REQUIRED："
             + info["reason"]
             + " 记录："
             + info["run"]
-            + "。先让机械臂蜷缩并获得支撑，再单独运行 bash real_robot/pilot.sh recover --supported；"
+            + "。先让机械臂蜷缩并获得支撑，再单独运行 bash scripts/pilot.sh recover --supported；"
             "本次不会使能、移动或自动重置。历史日志无法识别外部断电重启。"
         )
