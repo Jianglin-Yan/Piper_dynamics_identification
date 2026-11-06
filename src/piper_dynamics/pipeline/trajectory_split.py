@@ -67,10 +67,18 @@ def materialise_splits(
     train_dir.mkdir(parents=True, exist_ok=True)
     validation_dir.mkdir(parents=True, exist_ok=True)
     roles = (
-        ("train", rule["train"], train_dir,
-         "Training data: one whole real acquisition used for fitting."),
-        ("validation", rule["validation"], validation_dir,
-         "Held-out data: an independent real acquisition used only for validation."),
+        (
+            "train",
+            rule["train"],
+            train_dir,
+            "Training data: one whole real acquisition used for fitting.",
+        ),
+        (
+            "validation",
+            rule["validation"],
+            validation_dir,
+            "Held-out data: an independent real acquisition used only for validation.",
+        ),
     )
     written: list[Path] = []
     for _, label, directory, description in roles:
@@ -98,9 +106,7 @@ def materialise_splits(
             "cycles": sorted(int(c) for c in np.unique(data["cycle"])),
         }
         manifest_path = directory / "manifest.json"
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
-        )
+        manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
         written.extend([out, manifest_path])
         print(f"wrote {out} ({manifest['n_samples']} samples from {label})")
     return written

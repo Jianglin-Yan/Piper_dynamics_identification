@@ -1,4 +1,19 @@
+# Raw identification runs are large (~17 MB for 60 s at 500 Hz) and fully
+# reproducible from the excitation seed, so they are not tracked.
+results/raw_data*.npz
+results/*.npy
+
+# Real-hardware and simulation pilot recordings
+/runs/
+
+# Python runtime caches are not source changes
 __pycache__/
 *.py[cod]
 .venv/
 *.egg-info/
+
+# Local verification and packaging caches
+.pytest_cache/
+.ruff_cache/
+build/
+dist/

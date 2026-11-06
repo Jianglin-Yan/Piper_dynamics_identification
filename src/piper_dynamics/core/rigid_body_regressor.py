@@ -64,12 +64,26 @@ import numpy as np
 
 #: names of the 10 base parameters of one link
 PARAM_NAMES: tuple[str, ...] = (
-    "m", "hx", "hy", "hz", "Ixx", "Iyy", "Izz", "Ixy", "Ixz", "Iyz",
+    "m",
+    "hx",
+    "hy",
+    "hz",
+    "Ixx",
+    "Iyy",
+    "Izz",
+    "Ixy",
+    "Ixz",
+    "Iyz",
 )
 N_LINK_PARAMS = len(PARAM_NAMES)
 
 ARM_JOINT_NAMES: tuple[str, ...] = (
-    "joint1", "joint2", "joint3", "joint4", "joint5", "joint6",
+    "joint1",
+    "joint2",
+    "joint3",
+    "joint4",
+    "joint5",
+    "joint6",
 )
 
 #: Bodies that form one link of the identified model.  The first entry of each
@@ -102,11 +116,13 @@ def quat_to_mat(q: Sequence[float]) -> np.ndarray:
     if n < 1e-12:
         return np.eye(3)
     w, x, y, z = w / n, x / n, y / n, z / n
-    return np.array([
-        [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
-        [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
-        [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)],
-    ])
+    return np.array(
+        [
+            [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
+            [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
+            [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)],
+        ]
+    )
 
 
 def mat_to_quat(R: np.ndarray) -> np.ndarray:
@@ -115,25 +131,21 @@ def mat_to_quat(R: np.ndarray) -> np.ndarray:
     tr = float(np.trace(R))
     if tr > 0.0:
         s = np.sqrt(tr + 1.0) * 2.0
-        q = (0.25 * s, (R[2, 1] - R[1, 2]) / s, (R[0, 2] - R[2, 0]) / s,
-             (R[1, 0] - R[0, 1]) / s)
+        q = (0.25 * s, (R[2, 1] - R[1, 2]) / s, (R[0, 2] - R[2, 0]) / s, (R[1, 0] - R[0, 1]) / s)
     elif R[0, 0] > R[1, 1] and R[0, 0] > R[2, 2]:
         s = np.sqrt(1.0 + R[0, 0] - R[1, 1] - R[2, 2]) * 2.0
-        q = ((R[2, 1] - R[1, 2]) / s, 0.25 * s, (R[0, 1] + R[1, 0]) / s,
-             (R[0, 2] + R[2, 0]) / s)
+        q = ((R[2, 1] - R[1, 2]) / s, 0.25 * s, (R[0, 1] + R[1, 0]) / s, (R[0, 2] + R[2, 0]) / s)
     elif R[1, 1] > R[2, 2]:
         s = np.sqrt(1.0 + R[1, 1] - R[0, 0] - R[2, 2]) * 2.0
-        q = ((R[0, 2] - R[2, 0]) / s, (R[0, 1] + R[1, 0]) / s, 0.25 * s,
-             (R[1, 2] + R[2, 1]) / s)
+        q = ((R[0, 2] - R[2, 0]) / s, (R[0, 1] + R[1, 0]) / s, 0.25 * s, (R[1, 2] + R[2, 1]) / s)
     else:
         s = np.sqrt(1.0 + R[2, 2] - R[0, 0] - R[1, 1]) * 2.0
-        q = ((R[1, 0] - R[0, 1]) / s, (R[0, 2] + R[2, 0]) / s,
-             (R[1, 2] + R[2, 1]) / s, 0.25 * s)
+        q = ((R[1, 0] - R[0, 1]) / s, (R[0, 2] + R[2, 0]) / s, (R[1, 2] + R[2, 1]) / s, 0.25 * s)
     q = np.asarray(q, dtype=float)
     return q / np.linalg.norm(q)
 
 
-def inertia_6vec(I: np.ndarray) -> np.ndarray:
+def inertia_6vec(I: np.ndarray) -> np.ndarray:  # noqa: E741 - conventional inertia tensor symbol
     """3x3 symmetric matrix -> [Ixx, Iyy, Izz, Ixy, Ixz, Iyz]."""
     return np.array([I[0, 0], I[1, 1], I[2, 2], I[0, 1], I[0, 2], I[1, 2]], dtype=float)
 
@@ -141,11 +153,13 @@ def inertia_6vec(I: np.ndarray) -> np.ndarray:
 def inertia_mat(v: Sequence[float]) -> np.ndarray:
     """[Ixx, Iyy, Izz, Ixy, Ixz, Iyz] -> 3x3 symmetric matrix."""
     v = np.asarray(v, dtype=float)
-    return np.array([
-        [v[0], v[3], v[4]],
-        [v[3], v[1], v[5]],
-        [v[4], v[5], v[2]],
-    ])
+    return np.array(
+        [
+            [v[0], v[3], v[4]],
+            [v[3], v[1], v[5]],
+            [v[4], v[5], v[2]],
+        ]
+    )
 
 
 def com_from_params(theta: Sequence[float]) -> np.ndarray:
@@ -189,9 +203,15 @@ class RegressorBuilder:
     is never touched.
     """
 
-    def __init__(self, model, link_bodies: Sequence[Sequence[str]] = LINK_BODIES,
-                 joint_names: Sequence[str] = ARM_JOINT_NAMES, eps: float = 1.0,
-                 carrier: Sequence[float] = CARRIER, gripper_open: float = 0.0):
+    def __init__(
+        self,
+        model,
+        link_bodies: Sequence[Sequence[str]] = LINK_BODIES,
+        joint_names: Sequence[str] = ARM_JOINT_NAMES,
+        eps: float = 1.0,
+        carrier: Sequence[float] = CARRIER,
+        gripper_open: float = 0.0,
+    ):
         import mujoco
 
         self.mujoco = mujoco
@@ -211,8 +231,9 @@ class RegressorBuilder:
         self.link_names = tuple(names[0] for names in self.link_bodies)
         self.n_links = len(self.link_bodies)
 
-        self.joint_ids = [mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, n)
-                          for n in joint_names]
+        self.joint_ids = [
+            mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, n) for n in joint_names
+        ]
         if any(j < 0 for j in self.joint_ids):
             raise ValueError("missing arm joint in model")
         self.qadr = np.array([self.model.jnt_qposadr[j] for j in self.joint_ids])
@@ -352,9 +373,13 @@ def ground_truth_theta(model, gripper_open: float = 0.0) -> np.ndarray:
             R_b = np.asarray(data.xmat[bid], dtype=float).reshape(3, 3)
             p_b = np.asarray(data.xpos[bid], dtype=float)
             R_iq = quat_to_mat(model.body_iquat[bid])
-            I_com_world = (R_b @ R_iq
-                           @ np.diag(np.asarray(model.body_inertia[bid], dtype=float))
-                           @ R_iq.T @ R_b.T)
+            I_com_world = (
+                R_b
+                @ R_iq
+                @ np.diag(np.asarray(model.body_inertia[bid], dtype=float))
+                @ R_iq.T
+                @ R_b.T
+            )
             com = p_b + R_b @ np.asarray(model.body_ipos[bid], dtype=float)
             total_m += m
             com_world += m * com
@@ -382,12 +407,21 @@ def describe_theta(theta: np.ndarray, link_names: Sequence[str]) -> List[Dict[st
     for name, th in zip(link_names, theta):
         th_c = to_com_params(th)
         c = com_from_params(th_c)
-        rows.append({
-            "link": name, "mass": float(th_c[0]),
-            "com_x": float(c[0]), "com_y": float(c[1]), "com_z": float(c[2]),
-            "Ixx": float(th_c[4]), "Iyy": float(th_c[5]), "Izz": float(th_c[6]),
-            "Ixy": float(th_c[7]), "Ixz": float(th_c[8]), "Iyz": float(th_c[9]),
-        })
+        rows.append(
+            {
+                "link": name,
+                "mass": float(th_c[0]),
+                "com_x": float(c[0]),
+                "com_y": float(c[1]),
+                "com_z": float(c[2]),
+                "Ixx": float(th_c[4]),
+                "Iyy": float(th_c[5]),
+                "Izz": float(th_c[6]),
+                "Ixy": float(th_c[7]),
+                "Ixz": float(th_c[8]),
+                "Iyz": float(th_c[9]),
+            }
+        )
     return rows
 
 
@@ -396,7 +430,6 @@ def describe_theta(theta: np.ndarray, link_names: Sequence[str]) -> List[Dict[st
 # ---------------------------------------------------------------------------
 def _self_test(n_samples: int = 25, gripper_open: float = 0.0) -> int:
     import mujoco
-
     from agx_piper_sim.sim.simulation import DEFAULT_SCENE
 
     model = mujoco.MjModel.from_xml_path(str(DEFAULT_SCENE))
@@ -436,8 +469,10 @@ def _self_test(n_samples: int = 25, gripper_open: float = 0.0) -> int:
     scale = max(1e-9, float(np.abs(tau_ref).max()))
     ok = bool(np.all(np.isfinite(Y))) and (err.max() / scale) < 1e-7
 
-    print("self-test: max |Y*theta_gt - mj_inverse| = %.3e N*m (rel %.3e)"
-          % (err.max(), err.max() / scale))
+    print(
+        "self-test: max |Y*theta_gt - mj_inverse| = %.3e N*m (rel %.3e)"
+        % (err.max(), err.max() / scale)
+    )
     print("           max |tau| = %.3f N*m" % scale)
     print("           per-joint max err:", np.array2string(err.max(axis=0), precision=2))
     print("           result:", "PASS" if ok else "FAIL")

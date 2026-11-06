@@ -1,7 +1,6 @@
-# Versions used for the reference identification run (Python 3.10).
+# Runtime baseline validated for both PiPER control simulation and identification.
 numpy==2.2.6
-scipy==1.15.3
-mujoco==3.16.0
-cvxpy==1.7.5
-clarabel
-matplotlib==3.10.8
+scipy>=1.12
+mujoco==3.8.1
+matplotlib>=3.8
+# Optional CAN input, trajectory design and protocol tests are in pyproject.toml.

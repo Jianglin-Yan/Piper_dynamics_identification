@@ -1,0 +1,191 @@
+{
+  "reason": "Standard PiPER only; shared solver extracted before removal.",
+  "recover_from_commit": "292bf1f",
+  "files": [
+    {
+      "path": "models/nominal_x.json",
+      "sha256": "bc54e8c13a7cf65209f9907bd348893d09eb816ed3828972cdf0ebb472e49d02",
+      "kind": "file"
+    },
+    {
+      "path": "models/piper_x.urdf",
+      "sha256": "0477a703b8f7d8bf2b6638c2d34eff5597051c26d171c9b9172ba8f1183788e5",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/minimum_base/base_parameter_fit.npz",
+      "sha256": "b7d71d8ca83508b4ba64ff0850e53f3a22591a67c90726c60e47bab91d5614ea",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/minimum_base/base_parameter_identification_report.json",
+      "sha256": "6ffa2bfd599388d19ae0217f46cf48a8422930e55e150609f7ce08a336ac9b79",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/minimum_base/base_parameter_validation_metrics.csv",
+      "sha256": "61be27c91ddf1e5969101dacc0733545733d807dbe272cd3c8cdfd0400047a37",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/minimum_base/urdf_structural_base_directions.csv",
+      "sha256": "adda84aae1de1082398c683b78282b0324c9cfa9bafb52e55d8e0bf0e7df0171",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/minimum_base/urdf_structural_base_parameters.csv",
+      "sha256": "eb86e67f206bca42f276f6f2ab563b509230f52b7c2d492fe09e42bd6345f4b6",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/physical_constraints/physical_constraint_cv.csv",
+      "sha256": "fb7517157c3cca5673ac583f62ffa150ca1b6527c2d7380a685c096f5356ffd0",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/physical_constraints/physical_constraint_cv.json",
+      "sha256": "745e5387426111de5937b31656649e3e614b074bc1891154196a382481ed0fea",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/physical_constraints/physically_constrained_fit.npz",
+      "sha256": "704f18de5cb0eede0a179a5c6e8ece1fec78072bb634dafd4fc19e206aa094ff",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/physical_constraints/physically_constrained_identification_report.json",
+      "sha256": "c8937b349ec4956814f6a4f5b00c2871531158224666e48be21492eaad6ea519",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/physical_constraints/physically_constrained_link_parameters.csv",
+      "sha256": "3ce420a2e25c58111f3c94f61578b9a49038e30206d78416c15518a96670e37d",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/physical_constraints/physically_constrained_standard_parameters.csv",
+      "sha256": "f16393643d70c9c9ca1b646f7891544ad5d4b58ede5d5a7d832369fc324267c9",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/physical_constraints/physically_constrained_validation_metrics.csv",
+      "sha256": "38955046db3a232c54cdce73eb7512a59b2db27845d8d2710242569726928f0c",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/physical_constraints/piper_x_geometry_constraints.json",
+      "sha256": "0988692939a9ee21fae6c95b9350b88364ee3c9cf7cb395b4853fd40f6a22d58",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/reference/piper_identification_report.pdf",
+      "sha256": "33cbb9bbd5a931ec86f35cd5ecdfa081b0e53f588705625d581c669ad7990dfa",
+      "kind": "file"
+    },
+    {
+      "path": "outputs/robust_comparison.json",
+      "sha256": "5512614fe9d147d8696f8bed854ecdcd1b10080e1531039e6b77ee16df46ba49",
+      "kind": "file"
+    },
+    {
+      "path": "real_robot/assets/nominal_x.json",
+      "sha256": "bc54e8c13a7cf65209f9907bd348893d09eb816ed3828972cdf0ebb472e49d02",
+      "kind": "file"
+    },
+    {
+      "path": "real_robot/assets/piper_x.urdf",
+      "sha256": "0477a703b8f7d8bf2b6638c2d34eff5597051c26d171c9b9172ba8f1183788e5",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/README.md",
+      "sha256": "60461129964cf84a7e5494609f57819de4de6b6a28c382b2ca9f741612d406d7",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/__init__.py",
+      "sha256": "2ca42307ce218293ae55b3a2a5686f0a35d13568a8e97138f605b4de3cb7fb07",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/geometry_bounds.py",
+      "sha256": "8d2b586d9537665f42b28c6e381f0046195eced5763329272d1598b7aa2348f2",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/legacy_paths.py",
+      "sha256": "5bf6d1a5162e4db301637f05ce5aa8405154a366e04087ec547b668caa3832a4",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/minimum_base_svd.py",
+      "sha256": "f49102d013fbfc19544812c90b988520ed9fb1c8b38b41ea6c23579a0c2ea07f",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/model_alignment.py",
+      "sha256": "6f99da379f5484d2dfe8cb7b81d9ea4675af9c999729ebeaed9de03badb5d494",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/physical_constraint_fit.py",
+      "sha256": "882429863e26579e46b13a96340bcfa4ccc7b19a802b2712e5387bd6443cc73e",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/robust_estimator_comparison.py",
+      "sha256": "d9b890edd6bac95d2de7ac625461b41332488d90d16b2a28cd1fdd2d27df64ee",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/snapshot/__init__.py",
+      "sha256": "4ea477304dfe6d995b8ff09e6250aec43b2316fb8c0d3e88937c15d5d6543437",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/snapshot/identify.py",
+      "sha256": "f54f8a79b6d629a6dc206a47b6f9bbc95682f9c491c8b095339385dfc6e0169d",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/snapshot/real_robot/__init__.py",
+      "sha256": "a0eacdd6c0f022f83a7e8171ba9d43291cb5dfa5909ca14b976b2c147732467b",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/snapshot/real_robot/assets/nominal_x.json",
+      "sha256": "1ad7546ab3452976e692f75d6a6537f234b47d8d12056302b185e105a29da55a",
+      "kind": "symlink"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/snapshot/real_robot/assets/piper_x.urdf",
+      "sha256": "d22324866e20af8883e754ae66a213619db68726d68fad1c9b9db0ffb6734779",
+      "kind": "symlink"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/snapshot/real_robot/identify_offline.py",
+      "sha256": "4f27fcf7f14c96a54934692bfc900896938b468bd4d48d5f2967428689e8f548",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/snapshot/real_robot/protocol_read.py",
+      "sha256": "22d112575a6bd5458dffb9c49ca5d9e5f4fec93f95bbb15d8bc05dbde469ed85",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/snapshot/real_robot/simulation.py",
+      "sha256": "89b4b527d55a287b52311273fb941c59b50d651d0298b074071a97e11b204aa6",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/snapshot/regressor.py",
+      "sha256": "36b06830988217c7c2544e202d849b1bafe1980572e8f68e24463936b5ddf9c7",
+      "kind": "file"
+    },
+    {
+      "path": "src/piper_dynamics/legacy/validated_cycle_split.py",
+      "sha256": "1165b541d0c5c8430e0bd03ea3898482d66f21a50b6d9d06f2db2c2bc693a458",
+      "kind": "file"
+    }
+  ]
+}

@@ -49,7 +49,3 @@ PYTHONPATH=src ../.venv/bin/python -m piper_dynamics split
 周期列表和样本数，可用于校验副本是否与原始文件一致。
 
 ## 已清理的数据
-
-旧 PiPER X 复算用的 `experiment_20261029/`（约 222 MB 原始 CAN 记录）与
-`splits/` 已删除，因为该流程的模型机型与已确认的标准 PiPER 不符，不属于当前项目
-需要的数据。如需复算旧报告，请从 git 历史恢复。

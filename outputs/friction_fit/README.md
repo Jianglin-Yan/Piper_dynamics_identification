@@ -1,0 +1,9 @@
+# 摩擦与联合重拟合的既有结果
+
+本目录保留2026-11-05已生成的报告和候选参数，2026-11-06只整理版本管理，没有重新拟合、改写原报告或替换active_revision。结论见combined_decision.md：联合重拟合没有改善独立动态留出结果，不替换修订001。
+
+提交combined_report.json、report.json及theta_combined.json/npz。fit_j1.npz至fit_j6.npz约93 MiB，为friction_combined产生、friction_final读取的逐轴大型矩阵缓存；保留本地并精确忽略，不删除、不假装它们已发布。manifest.json记录这些缓存及报告的原始字节哈希。
+
+复现使用现有三个pipeline入口和相邻identification归档、inputs/friction_runs.json指定的原始runs。请为复算选择新--out目录，避免覆盖既有结果。manifest中的source_snapshot仅表示本次整理时的源码快照，不能当作已证明的原始生成版本。
+
+combined_decision.md提到的独立摩擦theta_new并不位于当前目录；本次没有补造该文件，也不因候选参数已提交就将其用于实机。

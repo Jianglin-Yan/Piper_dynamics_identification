@@ -95,9 +95,7 @@ def fit(
     validation_data = load_dataset(validation_dataset)
 
     rigid_train, nominal_rigid = build_matrix(train_data)
-    design_train = np.concatenate(
-        (rigid_train, make_friction(train_data["qd"])), axis=2
-    )
+    design_train = np.concatenate((rigid_train, make_friction(train_data["qd"])), axis=2)
     nominal = np.concatenate((nominal_rigid, np.zeros(18)))
     scales = nominal_parameter_scales(nominal_rigid)
     theta, singular, keep = solve_truncated_svd(
@@ -165,12 +163,15 @@ def fit(
     if make_plots:
         try:
             train_plot = plot_torque_comparison(
-                train_data["t"], train_data["target_Nm"], predicted_train,
+                train_data["t"],
+                train_data["target_Nm"],
+                predicted_train,
                 out.with_name(f"{out.stem}_torque_train.png"),
                 title=f"Torque comparison: {rule['train']} (training)",
             )
             validation_plot = plot_torque_comparison(
-                validation_data["t"], validation_data["target_Nm"],
+                validation_data["t"],
+                validation_data["target_Nm"],
                 predicted_validation,
                 out.with_name(f"{out.stem}_torque_validation.png"),
                 title=f"Torque comparison: {rule['validation']} (held-out)",
@@ -183,8 +184,5 @@ def fit(
     report_path = out.with_suffix(".json")
     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
     write_markdown_report(markdown_path, report, rows)
-    print(
-        f"wrote {out}, {report_path}, {csv_path} and {markdown_path} "
-        f"(rank {report['rank']}/78)"
-    )
+    print(f"wrote {out}, {report_path}, {csv_path} and {markdown_path} (rank {report['rank']}/78)")
     return out

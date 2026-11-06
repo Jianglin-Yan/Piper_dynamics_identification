@@ -63,10 +63,10 @@ def plot_torque_comparison(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure, axes = plt.subplots(6, 1, figsize=figure_size, sharex=True)
     for joint, axis in enumerate(axes):
-        axis.plot(time, measured[:, joint], color="black", lw=line_width,
-                  label="measured (target)")
-        axis.plot(time, predicted[:, joint], color="tab:red", lw=line_width,
-                  alpha=0.85, label="predicted")
+        axis.plot(time, measured[:, joint], color="black", lw=line_width, label="measured (target)")
+        axis.plot(
+            time, predicted[:, joint], color="tab:red", lw=line_width, alpha=0.85, label="predicted"
+        )
         label = joint_labels[joint]
         if annotate_rmse:
             rmse = float(np.sqrt(np.mean((predicted[:, joint] - measured[:, joint]) ** 2)))
