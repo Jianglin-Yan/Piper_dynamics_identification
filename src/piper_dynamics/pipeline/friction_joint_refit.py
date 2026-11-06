@@ -16,7 +16,7 @@ import numpy as np
 
 from piper_dynamics.core.dataset_io import load_dataset
 from piper_dynamics.core.regression_model import metrics
-from piper_dynamics.paths import IDENTIFICATION_ARCHIVE, OUTPUTS
+from piper_dynamics.paths import IDENTIFICATION_ARCHIVE
 from piper_dynamics.pipeline.friction_combined import load_arrays, load_reference
 from piper_dynamics.pipeline.friction_paths import parse_paths
 from piper_dynamics.pipeline.trajectory_split import default_dataset_paths

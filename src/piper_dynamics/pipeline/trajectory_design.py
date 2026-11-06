@@ -15,6 +15,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from piper_dynamics.paths import LEGACY_ROBOT_ROOT
+from piper_dynamics.core.trajectory_metrics import InformationRegressor
 from piper_dynamics.real_robot.trials.designed_trajectory import (
     coefficients,
     motion,
@@ -27,20 +28,18 @@ REPO = BASE.parent
 
 
 class Designer:
+    """组织冻结评分口径的傅里叶轨迹离线设计，持有单实例回归计算缓存。"""
     def __init__(self, base_file):
-        import pinocchio as pin
-
-        self.pin = pin
-        self.pm = pin.buildModelFromUrdf(str(BASE / "assets/piper.urdf"))
-        self.pd = self.pm.createData()
+        """加载共同36列惯性基，建立共享回归器并保留既有锚点和搜索基线。"""
         mapping = json.loads(Path(base_file).read_text())["mapping"]
         self.indices = np.asarray(mapping["indices"], int)
         if len(self.indices) != 36:
             raise ValueError("Expected the audited common 36-column inertia basis")
-        perm = np.array([0, 1, 2, 3, 4, 7, 5, 8, 9, 6])
-        self.pin_columns = np.concatenate([10 * i + np.argsort(perm) for i in range(6)])[
-            self.indices
-        ]
+        self.regressor = InformationRegressor(BASE / "assets/piper.urdf", self.indices)
+        self.pin = self.regressor.pin
+        self.pm = self.regressor.model
+        self.pd = self.regressor.data
+        self.pin_columns = self.regressor.columns
         self.anchor = np.deg2rad([0, 45, -60, 0, 0, 0])
         cfg = json.loads((BASE / "multisine_profile.json").read_text())
         self.ab0 = coefficients(
@@ -83,20 +82,8 @@ class Designer:
         return np.asarray(ab) * backoff[None, :, None] * 0.999
 
     def matrix(self, q, v, a):
-        Y = np.array(
-            [
-                self.pin.computeJointTorqueRegressor(self.pm, self.pd, qi, vi, ai).copy()[
-                    :, self.pin_columns
-                ]
-                for qi, vi, ai in zip(q, v, a)
-            ]
-        )
-        F = np.zeros((len(q), 6, 18))
-        for axis in range(6):
-            F[:, axis, 3 * axis : 3 * axis + 3] = np.column_stack(
-                [v[:, axis], np.tanh(v[:, axis] / 0.02), np.ones(len(q))]
-            )
-        return np.concatenate([Y, F], axis=2).reshape(-1, 54)
+        """复用共同回归器生成54列矩阵；输入分别为rad、rad/s、rad/s²。"""
+        return self.regressor.build(q, v, a)
 
     def evaluate(self, ab):
         q, v, a, _ = self.design(self.t_info, ab)
