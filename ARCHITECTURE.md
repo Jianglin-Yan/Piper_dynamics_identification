@@ -53,6 +53,7 @@ src/piper_dynamics/
 │   ├── dataset_io.py / excitation.py             数据读取与激励
 │   ├── model.py / regression_model.py            模型加载与回归模型
 │   ├── rigid_body_regressor.py                   刚体回归器
+│   ├── trajectory_metrics.py                    轨迹范围、停留与信息量指标/共同基适配
 │   ├── gravity_model.py / torque.py              重力与力矩换算
 │   ├── least_squares.py / svd_fit.py              原 QR 求解与 main SVD 求解
 │   └── parameter_schema.py / parameter_report.py 参数定义与输出
@@ -60,6 +61,7 @@ src/piper_dynamics/
 │   ├── standard_piper_pipeline.py                main 辨识流程
 │   ├── trajectory_split.py / trajectory_design.py 轨迹划分与设计
 │   ├── measured_run.py                          既有实测记录分析
+│   ├── trajectory_audit.py / trajectory_audit_report.py 既有激励审计与图表报告
 │   ├── run_summary.py / export_signals.py         摘要和信号导出
 │   ├── friction_combined.py / friction_bins.py   摩擦分析
 │   └── friction_final.py / friction_paths.py     摩擦分析及路径选择
@@ -163,3 +165,17 @@ flowchart TD
 最近一次代码验收为 206 项测试通过；4 组仿真场景合计 11,258 个控制周期与基线对照一致；main 拟合结果在浮点误差范围内一致。70 个活动 Python 模块的显式导入检查未发现循环依赖。详细证据和范围见 [验收报告](docs/refactor_report.md) 与 [验证记录](docs/refactor_verification.json)。
 
 这些结果覆盖静态检查、离线分析、数值复算和仿真。本轮没有执行实机动作测试，也没有重新完整运行 Pinocchio 轨迹优化。报告/流程函数中职责连续的较长函数仍可按后续实际需求细化；本轮完成不意味着所有函数都缩短到固定行数，或已排除所有潜在缺陷。
+
+## 2026-11-05 激励评价入口
+
+`pipeline.trajectory_audit`只读取既有记录与归档，复用`paths.py`、共同惯性基、模型与哈希工具。
+`core.trajectory_metrics`承担范围、速度停留、SVD信息与Stribeck局部敏感度数值指标；
+其Pinocchio列顺序适配同时被既有轨迹设计器复用，保持同一矩阵计算实现。
+图表、CSV和报告由`trajectory_audit_report`输出到`outputs`；不修改采集、模型、控制参数或数据划分。
+
+
+## 2026-11-06 工作区整理的控制基线
+
+本次整理遵循用户“保持原有具体控制逻辑”的要求。测试段维持Kp=2、Kd=0.15、名义重力前馈100%；准备/回位/急停保留基础10/0.8及既有三秒渐变与阶段顺序。
+拖动命令范围继续使用固件上下界分别向内1°、再按需覆盖启动home的实现；测量及启动的10°容差是另一路校验，不会自动扩展MIT命令范围。该现状与此前“覆盖整个固件范围”的约定差异已明确记录，本次不修改边界或监视阈值。
+规范、Agent约定、本结构说明和规范副本仅供开发分支使用，正式main交付须显式排除其分支变更。

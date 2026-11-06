@@ -62,7 +62,7 @@
 - 模型唯一来源为`models/standard_piper`，路径复用`paths.py`。保留现有manifest、实验索引、修订及历史哈希；相邻`identification`归档不批量改写。
 - 根目录`real_robot/`、`tools/`、`excitation.py`只保留现有兼容转发，业务实现保持一份；不用动态加载或sys.path拼接绕过正常导入。
 - 准备、回位、急停的基础Kp/Kd保持原约定；测试参数变化来自明确任务。进入/退出时Kp、Kd和前馈按既有渐变协同处理。
-- `measurement_angle_tolerance_deg`与`startup_limit_tolerance_deg`长期保持10°；MIT/拖动命令范围应同时覆盖固件范围和实测停靠位，不用更窄区间覆盖该约定。当前实现是否符合应另行审查，本次接入规范不改控制边界。
+- `measurement_angle_tolerance_deg`与`startup_limit_tolerance_deg`长期保持10°；MIT/拖动命令范围应同时覆盖固件范围和实测停靠位，不用更窄区间覆盖该约定。2026-11-06用户进一步要求本次整理保持现有具体控制逻辑，故当前拖动的1°内缩作为已记录差异保留，不在整理任务中修复；后续调整作为独立行为变更。
 - 数据默认不因制定规范自动公开；前一任务明确授权发布的7组拖动数据保留main现状，不回滚，不改训练/验证划分。后续发布数据按具体任务范围执行。
 
 ## 六、验证与交付
