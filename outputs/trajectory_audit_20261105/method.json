@@ -1,0 +1,22 @@
+{
+  "speed_grid_s": 0.01,
+  "low_moving_rad_s": [
+    0.002,
+    0.02
+  ],
+  "stable_low_acceleration_rad_s2": 0.05,
+  "long_visit_s": 0.25,
+  "high_diagnostic_threshold_rad_s": 0.2,
+  "vs_scan_rad_s": [
+    0.003,
+    0.005,
+    0.01,
+    0.02,
+    0.05,
+    0.1
+  ],
+  "information_basis": "36 common inertial columns + 18 viscous/tanh/offset columns",
+  "information_scaling": "fixed archived column RMS, scalar-row normalized, equal-noise proxy",
+  "speed_source": "SG21 derivative of resampled measured position; SG41 and drive feedback checks",
+  "limits": "recorded per-run hardware joint limits, not measured collision-free workspace"
+}

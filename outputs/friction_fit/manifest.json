@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "inventory_date": "2026-11-06",
+  "generation_date_context": "existing 2026-11-05 analysis outputs; not regenerated during cleanup",
+  "generation_commit_verified": false,
+  "source_snapshot_note": "SHA256 inventory at cleanup, not proof of the original generating source revision",
+  "source_snapshot": {
+    "src/piper_dynamics/pipeline/friction_combined.py": "56a8e97356cab64bc7646580fdfc5d38e0724fdb7c6f5c76d6a46b6b1a289bd6",
+    "src/piper_dynamics/pipeline/friction_joint_refit.py": "9e91f0f42f164c29776ddcbd21d601bc24d9ed8f5656cbaae7aad08ce091a0a4"
+  },
+  "existing_result_bytes_preserved": true,
+  "active_revision_replaced": false,
+  "files": [
+    {
+      "path": "combined_decision.md",
+      "bytes": 1751,
+      "sha256": "121ee0cb345bb0b4597ff625f26e609e9cbb751badbb57a71ff2a0cd847374fc",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "combined_report.json",
+      "bytes": 11987,
+      "sha256": "ab04b2fd2f9f6e1c55c6dfc2c8dcdf92f0b2825a20a46b68dcfe106da38e1bc7",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "fit_j1.npz",
+      "bytes": 21852208,
+      "sha256": "3dca91c8909f53bf0d9b9bfdd146dcf99cd666f54f8de8f3cde389bd9263a2a9",
+      "version_control": "local_rebuildable_cache"
+    },
+    {
+      "path": "fit_j2.npz",
+      "bytes": 13384432,
+      "sha256": "93026e3ff794563caf35860953b83ca6dbc643fc89d467aef86c96aa8f9e6229",
+      "version_control": "local_rebuildable_cache"
+    },
+    {
+      "path": "fit_j3.npz",
+      "bytes": 13432632,
+      "sha256": "351118cdead3088a8192cf2136e3f4b2a6147e0c973ca71c289fddde902ec251",
+      "version_control": "local_rebuildable_cache"
+    },
+    {
+      "path": "fit_j4.npz",
+      "bytes": 13168496,
+      "sha256": "2af9683e7bb551a7e937e0d2d08b519ecc077ee53ee4fc2bb3f02e6e209ffbbc",
+      "version_control": "local_rebuildable_cache"
+    },
+    {
+      "path": "fit_j5.npz",
+      "bytes": 13025824,
+      "sha256": "bdd4cb7bf800f976154728af85f71528e0b8b18f9ca8e5705bbc7cc183134a14",
+      "version_control": "local_rebuildable_cache"
+    },
+    {
+      "path": "fit_j6.npz",
+      "bytes": 22129840,
+      "sha256": "631dfd323c2968eee557a0ce217213f04093332435d52c1d6fd2c3ecc674f1ab",
+      "version_control": "local_rebuildable_cache"
+    },
+    {
+      "path": "report.json",
+      "bytes": 4900,
+      "sha256": "4e111a32bc1d0c05e4125a44b2b48511dbb8ba33359cc61905eed27bbac1bddf",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "theta_combined.json",
+      "bytes": 4221,
+      "sha256": "577d627e95be2e3d18b9e057a0b3952024c26b170bb32e95f8db147ef30f8715",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "theta_combined.npz",
+      "bytes": 1566,
+      "sha256": "b5f96f650284faf0e2329841e304d6b23b606dce28468a557eb91d44f123def5",
+      "version_control": "tracked_result"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "inventory_date": "2026-11-06",
+  "generation_date_context": "existing 2026-11-05 analysis outputs; not regenerated during cleanup",
+  "generation_commit_verified": false,
+  "source_snapshot_note": "SHA256 inventory at cleanup, not proof of the original generating source revision",
+  "source_snapshot": {
+    "src/piper_dynamics/core/trajectory_metrics.py": "45c6f96a2cffaedcb0b4f26c33e47ec607c791088f48aa9cf7f1a9181e8a82cb",
+    "src/piper_dynamics/pipeline/trajectory_audit.py": "e59ddab4d53765c93a07050e98681ca68c779083e6061f8f87dea057c8f33843",
+    "src/piper_dynamics/pipeline/trajectory_audit_report.py": "f5afc1d812b9763cd0e97a0e7196f5b5c9d90cb61e4e31231293cbffe11af625"
+  },
+  "existing_result_bytes_preserved": true,
+  "active_revision_replaced": false,
+  "files": [
+    {
+      "path": "information.csv",
+      "bytes": 3943,
+      "sha256": "eb749d86153cc6e2102576c7316b55ca8b54470f27c2e9d78b13513e6424fe18",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "information_comparison.png",
+      "bytes": 90515,
+      "sha256": "ef5403f495742173330d4a547fef935a0213dfc4f44efdbd240fd09faf640550",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "joint_coverage.png",
+      "bytes": 150549,
+      "sha256": "c4cdbfff8d2ccbdfd974503868b342eb8576eca185ab668a083b49c646a8008b",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "joint_metrics.csv",
+      "bytes": 5334,
+      "sha256": "49f768ca4f7d4cc532a3b04c7943c17bb5ae02644666770b9ef512f722030a64",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "method.json",
+      "bytes": 644,
+      "sha256": "49f1c04f509e94d4fb73971491a71b0c9a2f6c7cc3e3b225c8262be1ee5fba64",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "metrics.json",
+      "bytes": 726039,
+      "sha256": "78f72d7a6850a52a016612ccfc67acb3d10795462f3266aee620158d84156ecf",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "phase_space.png",
+      "bytes": 326652,
+      "sha256": "8cfef4fe4857206184ac15fb8c3cce4a47f55f4f1ec14856987042bab83adca5",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "report.md",
+      "bytes": 12478,
+      "sha256": "4ee62b0ee65a0f18637d40d404ed93911a12e8cc15a3607a2d9ec00bd50791b6",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "stribeck_sensitivity.csv",
+      "bytes": 66241,
+      "sha256": "2de27a274d5e29ed7c5a8e9d884421422f9263342654dfadbd9dad9ca964c63d",
+      "version_control": "tracked_result"
+    },
+    {
+      "path": "velocity_coverage.png",
+      "bytes": 298618,
+      "sha256": "b7edd853330e5d9b18f46115d4ffd438e9ae422d690cf8507a23039ceb02eab5",
+      "version_control": "tracked_result"
+    }
+  ]
+}
