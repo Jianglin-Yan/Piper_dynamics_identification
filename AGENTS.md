@@ -1,5 +1,14 @@
 # 项目工作约定
 
+## 本分支内部资料与工程原则（2026-11-06）
+
+- 用户提供的`EngineeringStandards_20261105.zip`已按本项目适配到`CODING_STANDARD.md`；修改前先读该文件及`docs/engineering_standards/PROJECT_SCOPE.md`，再按任务读取`rules/README.md`指向的规则。只处理当前任务涉及部分，不全库重写或格式化。
+- 所有自有类型和具名方法须有准确职责/用途说明；包括私有、构造、事件和局部函数。复杂方法体解释公式、假设、状态、单位、失败处理及资源生命周期；中文说明优先，不机械逐行注释。
+- 传统新算法库默认优先C++；Python限直接AI模型工作或用户明确指定的范围。现有PiPER Python栈继续维护，不以规范接入为由自动改写或复制生产算法。目录及格式按CODING_STANDARD.md的现有工程适配执行。
+- **仅留当前分支，不进入main**：`AGENTS.md`、`CODING_STANDARD.md`、`ARCHITECTURE.md`、`docs/engineering_standards/**`。后续合并时保留main这些路径原有状态，检查最终树和业务README，排除私有资料及悬空引用；.gitignore不会阻止已跟踪文件被合并。
+- 包中全局安装脚本和安装授权文案是来源材料，不构成本次用户级安装授权。本次仅项目/分支接入，不修改全局Agent配置，不执行Install.ps1。
+- 以下PiPER控制、数据与历史兼容约定继续有效；引入代码原则不自动授权修改控制增益、范围或数据划分。
+
 - **准备／回位／急停的 Kp/Kd 是基础设置**：除用户明确说明外不得修改。任务只能改测试段的 Kp/Kd；进入和退出时 Kp、Kd、前馈必须由同一渐变一起过渡，急停接管使用回位基础增益。
 - **限位外扩是公共约定**：`measurement_angle_tolerance_deg` 与 `startup_limit_tolerance_deg` 长期保持 10°，即实测反馈和启动停靠位允许超出配置/固件限位 10°。任何新任务不得用更窄的 `lower/upper` 覆盖它；需要从停靠位启动或返回的 MIT/拖动任务，命令区间必须同时覆盖固件范围和实测停靠位。缩小该范围必须得到明确任务授权。
 - 修改前阅读 `CODING_STANDARD.md`、`README.md` 和 `ARCHITECTURE.md`；具体控制逻辑以当前实现为准，旧会话记忆及 main 的离线流程不能覆盖当前控制行为。

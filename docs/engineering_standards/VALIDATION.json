@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "limitations": [
+    "Linux/macOS execution not tested",
+    "Agent-specific rule discovery must be confirmed on receiving machine",
+    "Does not install formatters or validate historical project compliance"
+  ],
+  "platformsTested": [
+    "Windows PowerShell 5.1",
+    "PowerShell 7.6.5 on Windows"
+  ],
+  "date": "2026-11-05",
+  "checks": [
+    "Preview does not write files",
+    "Preserves unrelated agent instructions",
+    "Substitutes receiving-machine paths",
+    "Copies all 12 rule/template files with matching hashes",
+    "Repeated installation is idempotent",
+    "Backs up original entry",
+    "Rejects damaged or duplicate markers before writing",
+    "Rejects checksum mismatch before writing"
+  ]
+}

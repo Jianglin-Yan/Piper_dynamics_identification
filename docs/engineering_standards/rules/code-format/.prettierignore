@@ -1,0 +1,11 @@
+node_modules/
+thidparty/
+third_party/
+build/
+dist/
+dist-main/
+release/
+app/
+bin/
+obj/
+**/*.generated.*
